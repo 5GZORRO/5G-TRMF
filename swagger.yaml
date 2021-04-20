@@ -204,11 +204,11 @@ definitions:
       direct_trust:
         type: "double"
       direct_trust_weighting:
-	type: "double"
+        type: "double"
       indirect_trust:
-	type: "double"
+        type: "double"
       indirect_trust_weighting:
-	type: "double"
+        type: "double"
 externalDocs:
   description: "Find out more about 5GZORRO"
   url: "http://5gzorro.eu"
