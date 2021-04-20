@@ -42,9 +42,8 @@ paths:
       - name: "trust_parameters"
         description: "Empty template with the data to be collected in the Data Lake."
         required: true
-        type: "dictionary"
-	#schema:
-          #$ref: "#/definitions/trust_parameters"
+        schema:
+          $ref: "#/definitions/trust_parameters"
       - name: "specific_events"
         description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
         required: false
@@ -87,10 +86,6 @@ paths:
         description: "Stakeholder’s DID on whom the previously collected data is to be recovered."
         required: true
         type: "string"
-      #- name: "port_server"
-      #  description: "Specific port where VPN server will be available"
-      #  required: true
-      #  type: "integer"
       responses:
         200:
           description: "Successful operation."
@@ -116,6 +111,8 @@ paths:
         description: "Dictionary with paramount data to calculate trust level."
         required: true
         type: "dictionary"
+        schema:
+          $ref: "#/definitions/trust_parameters"
       responses:
         200:
           description: "Successful operation."
@@ -142,7 +139,9 @@ paths:
       - name: "trus_information"
         description: "Dictionary containing relevant data on the trust level and confidence parameters used."
         required: true
-        type: "string"
+        type: "dictionary"
+        schema:
+          $ref: "#/definitions/trust_parameters"
       responses:
         200:
           description: "Successful operation."
@@ -164,14 +163,6 @@ paths:
         description: "Stakeholder’s DID from whom to retrieve trust info"
         required: true
         type: "string"
-      #- name: "port_server"
-        #description: "Specific port where VPN server will be available"
-        #required: true
-        #type: "integer"
-      #- name: "IP_range_to_redirect"
-        #description: "Range of IP directions that will be redirected to that VPN peer. Use 0.0.0.0/0 to redirect all traffic."
-        #required: true
-        #type: "string"
       responses:
         200:
           description: "Successful operation"
