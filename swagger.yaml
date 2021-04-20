@@ -39,7 +39,8 @@ paths:
         description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
         required: true
         type: "string"
-      - name: "trust_parameters"
+      - in: "body"
+        name: "trust_parameters"
         description: "Empty template with the data to be collected in the Data Lake."
         required: true
         schema:
@@ -107,10 +108,11 @@ paths:
         description: "Stakeholder's DID."
         required: true
         type: "string"
-      - name: "trust_paremeters"
+      - in: "body"
+        name: "trust_paremeters"
         description: "Dictionary with paramount data to calculate trust level."
         required: true
-        type: "dictionary"
+        #type: "dictionary"
         schema:
           $ref: "#/definitions/trust_parameters"
       responses:
@@ -136,10 +138,11 @@ paths:
         description: "Stakeholder’s DID that wants to store the data for future trust computations."
         required: true
         type: "string"
-      - name: "trus_information"
+      - in: "body"
+        name: "trus_information"
         description: "Dictionary containing relevant data on the trust level and confidence parameters used."
         required: true
-        type: "dictionary"
+        #type: "dictionary"
         schema:
           $ref: "#/definitions/trust_parameters"
       responses:
