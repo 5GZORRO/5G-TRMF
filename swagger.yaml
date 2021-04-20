@@ -179,12 +179,17 @@ definitions:
   recommendation:
     type: "object"
     properties:
-      trusteeDID:
-        type: "string"
       trust_level:
         type: "double"
       location:
         type: "geographicalAddress"
+  trustee:
+    type: "object"
+    properties:
+      trusteeDID:
+        type: "stringW
+      recommendation:
+        $ref: "#/definitions/recommendation"
   direct_parameters:
     type: "object"
     properties:
@@ -257,7 +262,7 @@ definitions:
       trustor:
         $ref: "#/definitions/trustor" 
       trustee:
-        $ref: "#/definitions/recommendation"
+        $ref: "#/definitions/trustee"
       trust_value:
         type: "double"
       evaluation_criteria:
