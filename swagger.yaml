@@ -1,0 +1,206 @@
+---
+swagger: "2.0"
+info:
+  description: "This is the swager server for the trust management framework.  This software is developed\
+    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project."
+  version: "1.0"
+  title: "Trust Management Framework"
+  #termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "josemaria.jorquera@um.es"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+#host: "petstore.swagger.io"
+#basePath: "/v2"
+tags:
+- name: "Trust Framework"
+  description: "Methods related with the trust establisment across domains"
+  externalDocs:
+    description: "Find out more"
+    url: "http://5gzorro.eu"
+schemes:
+- "https"
+- "http"
+paths:
+  /start_data_collection:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Activates the process of collecting trust information about a stakeholder."
+      description: "This method is responsible for starting a continuous collection data from Data Lake."
+      operationId: "startDataCollection"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
+        required: true
+        type: "string"
+      - name: "trust_parameters"
+        description: "Empty template with the data to be collected in the Data Lake."
+        required: true
+        type: "dictionary"
+      - name: "specific_events"
+        description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
+        required: false
+        type: "list of objects"
+      responses:
+        200:
+          description: "Successful operation."
+        400:
+          description: "Invalid status value."
+  /stop_data_collection:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Disables the process of collecting trust information about a stakeholder."
+      description: "This method is responsible for stoping a continous collection data from Data Lake."
+      operationId: "disconnetVPN"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder’s DID on which it stops the process of continuous information recollection"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+        400:
+          description: "Invalid status value"
+  /gather_information:
+    get:
+      tags:
+      - "Trust Framework"
+      summary: "Gets the trust information from the Data Lake platform"
+      description: "This method is responsible for acquiring trust information (previously collected), from Data Lake Platform, which will be used to derive trust parameters."
+      operationId: "gatherInformation"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder’s DID on whom the previously collected data is to be recovered."
+        required: true
+        type: "string"
+      #- name: "port_server"
+      #  description: "Specific port where VPN server will be available"
+      #  required: true
+      #  type: "integer"
+      responses:
+        200:
+          description: "Successful operation."
+          schema:
+            $ref: "#/definitions/VPNInfo" 
+  /compute_trust_level:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Calculates a stakeholder's trust score"
+      description: "This method allows calculating a trust level score from previous data collected. Then, this value will be used to determine the most feasible stakeholder with which to establish a connection."
+      operationId: "computeTrustLevel"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder's DID."
+        required: true
+        type: "string"
+      - name: "trust_paremeters"
+        description: "Dictionary with paramount data to calculate trust level."
+        required: true
+        type: "dictionary"
+      responses:
+        200:
+          description: "Successful operation."
+          schema:
+            $ref: "#/definitions/client_accepted"
+        400:
+          description: "Invalid status value."
+  /store_trust_level:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Stores current trust information for future interactions"
+      description: "This method allows the storage of trustworthy information in any of the available destinations (Data Lake platform and/or PostgreSQL)."
+      operationId: "storeTrustLevel"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder’s DID that wants to store the data for future trust computations."
+        required: true
+        type: "string"
+      - name: "trus_information"
+        description: "Dictionary containing relevant data on the trust level and confidence parameters used."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation."
+        400:
+          description: "Invalid status value."
+  /query_trust_level:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Retrieve the last trust score of a stakeholder."
+      description: "This method requests the last trust score of a particular stakeholder, if there is no previous value or it was calculated too much time ago, it triggers the trust level assessment process."
+      operationId: "queryTrustLevel"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "stakeholder_did"
+        description: "Stakeholder’s DID from whom to retrieve trust info"
+        required: true
+        type: "string"
+      #- name: "port_server"
+        #description: "Specific port where VPN server will be available"
+        #required: true
+        #type: "integer"
+      #- name: "IP_range_to_redirect"
+        #description: "Range of IP directions that will be redirected to that VPN peer. Use 0.0.0.0/0 to redirect all traffic."
+        #required: true
+        #type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+        400:
+          description: "Invalid status value"
+      #security:
+      #- petstore_auth:
+        #- "write:pets"
+        #- "read:pets"
+definitions:
+  VPNInfo:
+    type: "object"
+    properties:
+      did:
+        type: "string"
+        format: "DID"
+      public_key:
+        type: "string"
+      IP_range:
+        type: "string"
+      vpn_port:
+        type: "integer"
+  client_accepted:
+    type: "object"
+    properties:
+      assigned_ip:
+        type: "string"
+      vpn_port:
+        type: "integer"
+      server_public_key:
+        type: "string"
+externalDocs:
+  description: "Find out more about 5GZORRO"
+  url: "http://5gzorro.eu"
