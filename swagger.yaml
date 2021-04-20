@@ -43,6 +43,8 @@ paths:
         description: "Empty template with the data to be collected in the Data Lake."
         required: true
         type: "dictionary"
+	schema:
+          $ref: "#/definitions/trust_parameters"
       - name: "specific_events"
         description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
         required: false
@@ -93,7 +95,7 @@ paths:
         200:
           description: "Successful operation."
           schema:
-            $ref: "#/definitions/VPNInfo" 
+            $ref: "#/definitions/trust_parameters" 
   /compute_trust_level:
     post:
       tags:
@@ -118,7 +120,7 @@ paths:
         200:
           description: "Successful operation."
           schema:
-            $ref: "#/definitions/client_accepted"
+            $ref: "#/definitions/trust_score"
         400:
           description: "Invalid status value."
   /store_trust_level:
@@ -180,7 +182,7 @@ paths:
         #- "write:pets"
         #- "read:pets"
 definitions:
-  VPNInfo:
+  trust_parameters:
     type: "object"
     properties:
       did:
@@ -192,15 +194,21 @@ definitions:
         type: "string"
       vpn_port:
         type: "integer"
-  client_accepted:
+  trust_score:
     type: "object"
     properties:
-      assigned_ip:
+      stakeholder_did:
         type: "string"
-      vpn_port:
-        type: "integer"
-      server_public_key:
-        type: "string"
+      final_trust_score:
+        type: "double"
+      direct_trust:
+        type: "double"
+      direct_trust_weighting:
+	type: "double"
+      indirect_trust:
+	type: "double"
+      indirect_trust_weighting:
+	type: "double"
 externalDocs:
   description: "Find out more about 5GZORRO"
   url: "http://5gzorro.eu"
