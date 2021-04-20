@@ -185,13 +185,79 @@ definitions:
         type: "double"
       location:
         type: "geographicalAddress"
+  direct_parameters:
+    type: "object"
+    properties:
+      direct_weigting:
+       type: "double"
+      name:
+        type: "string"
+      version:
+        type: "string"
+      location:
+        type: "geographicalAddress"
+      last_update:
+        type: "dataTime"
+      validFor:
+        type: "timePeriod"
+      productOfferingTerm:
+        type: "objectList"
+      resource_physical_capabilities:
+        type: "objectList"
+      resource_virtual_capabilities:
+        type: "objectList"
+      tolerance:
+        type: "string"
+      slaRef:
+        type: "SLArefList"
+      consequence:
+        type: "string"
+  indirect_parameters:
+    type: "object"
+    properties:
+      recommendation_weigthing:
+        type: "double"
+      recommendations:
+        type: "recommendationlist"
+  actions:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      user_satisfaction:
+        type: "double"
+  trustor:
+    type: "object"
+    properties:
+      trustorDID:
+        type: "string"
+      history:
+        type: "list(double)"
+      current_action:
+        type: "string"
+      transactionNumber:
+        type: "integer"
+      credibility:
+        type: "double"
+      trust_propagation:
+        type: "boolean"
+      trust_update:
+        type: "triggerList"
+      trust_evaluation:
+        type: "algorithmList"
+      direct_parameters:
+        $ref: "#/definitions/direct_parameters"
+      indirect_parameters:
+        $ref: "#/definitions/indirect_parameters"
+      actions:
+        $ref: "#/definitions/actions"
   trust_parameters:
     type: "object"
     properties:
+      trustor:
+        $ref: "#/definitions/trustor" 
       trustee:
         $ref: "#/definitions/recommendation"
-      trustor:
-        type: "string"
       trust_value:
         type: "double"
       evaluation_criteria:
