@@ -176,18 +176,30 @@ paths:
         #- "write:pets"
         #- "read:pets"
 definitions:
+  recommendation:
+    type: "object"
+    properties:
+      trusteeDID:
+        type: "string"
+      trust_level:
+        type: "double"
+      location:
+        type: "geographicalAddress"
   trust_parameters:
     type: "object"
     properties:
-      did:
+      trustee:
+        $ref: "#/definitions/recommendation"
+      trustor:
         type: "string"
-        format: "DID"
-      public_key:
-        type: "string"
-      IP_range:
-        type: "string"
-      vpn_port:
-        type: "integer"
+      trust_value:
+        type: "double"
+      evaluation_criteria:
+        type: "policiesList"
+      initEvaluationPeriod:
+        type: "timestamp"
+      endEvaluationPeriod:
+        type: "timestamp"
   trust_score:
     type: "object"
     properties:
