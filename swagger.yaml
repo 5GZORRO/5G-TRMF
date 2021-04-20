@@ -43,8 +43,8 @@ paths:
         description: "Empty template with the data to be collected in the Data Lake."
         required: true
         type: "dictionary"
-	schema:
-          $ref: "#/definitions/trust_parameters"
+	#schema:
+          #$ref: "#/definitions/trust_parameters"
       - name: "specific_events"
         description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
         required: false
