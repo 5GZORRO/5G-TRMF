@@ -73,11 +73,11 @@ paths:
           description: "Successful operation"
         400:
           description: "Invalid status value"
-  /request_trust:scores:
+  /request_trust_scores:
    post:
       tags:
       - "Trust Framework"
-      summary: "Sends a list of offer from the Smart Resource and Service Discovery application."
+      summary: "Sends a list of offers from the Smart Resource and Service Discovery application."
       description: "This method is employed by the Smart Service and Resource Discovery application in order to evaluate trust scores of a list of pre-classified offers."
       produces:
       - "application/json"
