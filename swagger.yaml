@@ -73,6 +73,42 @@ paths:
           description: "Successful operation"
         400:
           description: "Invalid status value"
+  /request_trust:scores:
+   post:
+      tags:
+      - "Trust Framework"
+      summary: "Sends a list of offer from the Smart Resource and Service Discovery application."
+      description: "This method is employed by the Smart Service and Resource Discovery application in order to evaluate trust scores of a list of pre-classified offers."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "list_offers"
+        description: "Set of offers matching stakeholder’s criteria such as intent-based priorities."
+        required: true
+        type: "list of product offers"
+      responses:
+        200:
+          description: "Successful operation."
+          schema:
+            $ref: "#/definitions/trust_score"
+  /notify_final_selection:
+    post:
+      tags:
+      - "Trust Framework"
+      summary: "Final resource or service/slice determined by ISSM-WFM."
+      description: "This method is employed by the ISSM-WFM to notify the Trust Management Framework the final resource or service/slice selected and on which the startDataCollection method will be launched internally."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        description: "Distributed identifier of the final resource or service/slice candidate."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation."
+          #schema:
+            #$ref: "#/definitions/trust_score"
   /gather_information:
     get:
       tags:
