@@ -222,40 +222,75 @@ definitions:
         type: "double"
       location:
         type: "geographicalAddress"
+  offerDID:
+    type: "object"
+    properties:
+      type:
+        type: "string"
   trustee:
     type: "object"
     properties:
       trusteeDID:
-        type: "stringW
+        type: "string"
       recommendation:
         $ref: "#/definitions/recommendation"
+      offerDID:
+        $ref: "#/definitions/offerDID"
   direct_parameters:
     type: "object"
     properties:
       direct_weigting:
        type: "double"
-      name:
-        type: "string"
-      version:
-        type: "string"
+      userSatisfaction:
+        type: "double"
+      providerSatisfaction:
+        type: "double"
+      PSWeighting:
+       type: "double"
+      offerSatisfaction:
+        type: "double"
+      OSWeighting:
+        type: "double"
+      providerReputation:
+       type: "double"
+      offerReputation:
+        type: "double"
+      availableAssets:
+        type: "double"
+      totalAssets:
+       type: "double"
+      availableAssetLocation:
+        type: "double"
+      totalAssetLocation:
+        type: "double"
+      managedViolations:
+       type: "double"
+      predictedViolations:
+        type: "double"
+      executedViolations:
+        type: "double"
+      nonPredictedViolations:
+        type: "double"
+      consideredOffers:
+        type: "double"
+      totalOffers:
+       type: "double"
+      consideredOfferLocation:
+        type: "double"
+      totalOfferLocation:
+        type: "double"
+      managedOfferViolations:
+       type: "double"
+      predictedOfferViolations:
+        type: "double"
+      executedOfferViolations:
+        type: "double"
+      nonPredictedOfferViolations:
+        type: "double"
       location:
         type: "geographicalAddress"
-      last_update:
-        type: "dataTime"
       validFor:
         type: "timePeriod"
-      productOfferingTerm:
-        type: "objectList"
-      resource_physical_capabilities:
-        type: "objectList"
-      resource_virtual_capabilities:
-        type: "objectList"
-      tolerance:
-        type: "string"
-      slaRef:
-        type: "SLArefList"
-      consequence:
-        type: "string"
   indirect_parameters:
     type: "object"
     properties:
@@ -263,25 +298,18 @@ definitions:
         type: "double"
       recommendations:
         type: "recommendationlist"
-  actions:
-    type: "object"
-    properties:
-      name:
-        type: "string"
-      user_satisfaction:
-        type: "double"
   trustor:
     type: "object"
     properties:
       trustorDID:
         type: "string"
-      history:
-        type: "list(double)"
-      current_action:
+      trusteeDID:
         type: "string"
-      transactionNumber:
-        type: "integer"
       credibility:
+        type: "double"
+      transactionFactor:
+        type: "double"
+      communityFactor:
         type: "double"
       trust_propagation:
         type: "boolean"
@@ -293,8 +321,8 @@ definitions:
         $ref: "#/definitions/direct_parameters"
       indirect_parameters:
         $ref: "#/definitions/indirect_parameters"
-      actions:
-        $ref: "#/definitions/actions"
+      offerDID:
+        $ref: "#/definitions/offerDID"
   trust_dictionary:
     type: "object"
     properties:
