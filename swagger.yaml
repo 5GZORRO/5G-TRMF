@@ -181,6 +181,7 @@ paths:
         #type: "dictionary"
         schema:
           $ref: "#/definitions/trust_dictionary"
+        schema:
           $ref: "#/definitions/trust_parameters"
       responses:
         200:
