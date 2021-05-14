@@ -181,8 +181,8 @@ paths:
         #type: "dictionary"
         schema:
           $ref: "#/definitions/trust_dictionary"
-        schema:
-          $ref: "#/definitions/trust_parameters"
+        #schema:
+          #$ref: "#/definitions/trust_parameters"
       responses:
         200:
           description: "Successful operation."
