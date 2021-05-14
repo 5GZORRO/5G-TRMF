@@ -44,7 +44,7 @@ paths:
         description: "Empty template with the data to be collected in the Data Lake."
         required: true
         schema:
-          $ref: "#/definitions/trust_parameters"
+          $ref: "#/definitions/trust_dictionary"
       - name: "specific_events"
         description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
         required: false
@@ -90,7 +90,7 @@ paths:
         200:
           description: "Successful operation."
           schema:
-            $ref: "#/definitions/trust_score"
+            $ref: "#/definitions/trust_parameters"
   /notify_final_selection:
     post:
       tags:
@@ -127,7 +127,7 @@ paths:
         200:
           description: "Successful operation."
           schema:
-            $ref: "#/definitions/trust_parameters" 
+            $ref: "#/definitions/trust_dictionary" 
   /compute_trust_level:
     post:
       tags:
@@ -150,7 +150,7 @@ paths:
         required: true
         #type: "dictionary"
         schema:
-          $ref: "#/definitions/trust_parameters"
+          $ref: "#/definitions/trust_dictionary"
       responses:
         200:
           description: "Successful operation."
@@ -180,6 +180,7 @@ paths:
         required: true
         #type: "dictionary"
         schema:
+          $ref: "#/definitions/trust_dictionary"
           $ref: "#/definitions/trust_parameters"
       responses:
         200:
@@ -205,6 +206,8 @@ paths:
       responses:
         200:
           description: "Successful operation"
+          schema:
+            $ref: "#/definitions/trust_parameters"
         400:
           description: "Invalid status value"
       #security:
@@ -292,13 +295,22 @@ definitions:
         $ref: "#/definitions/indirect_parameters"
       actions:
         $ref: "#/definitions/actions"
+  trust_dictionary:
+    type: "object"
+    properties:
+      trustor:
+        $ref: "#/definitions/trustor"
+      trustee:
+        $ref: "#/definitions/trustee"
   trust_parameters:
     type: "object"
     properties:
       trustor:
-        $ref: "#/definitions/trustor" 
+        #$ref: "#/definitions/trustor"
+        type: string 
       trustee:
-        $ref: "#/definitions/trustee"
+        #$ref: "#/definitions/trustee"
+        type: string
       trust_value:
         type: "double"
       evaluation_criteria:
