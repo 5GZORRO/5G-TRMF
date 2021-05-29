@@ -1,0 +1,7 @@
+kafka-python
+flask
+flask_restful
+gevent
+Werkzeug
+requests
+pymongo
