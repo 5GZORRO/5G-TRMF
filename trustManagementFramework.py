@@ -334,7 +334,7 @@ class update_trust_level(Resource):
             elif new_trust_score < 0.0:
                 new_trust_score = 0.0
 
-            print("Previous Trust Score --->", last_trust_score, "Updated Trust Score -->", new_trust_score)
+            print("Previous Trust Score --->", last_trust_score["trust_value"], "Updated Trust Score -->", new_trust_score)
             last_trust_score["trust_value"] = round(new_trust_score, 3)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
             producer.sendMessage(topic_key, topic_key, last_trust_score)
