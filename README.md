@@ -45,7 +45,7 @@ python3 trustManagementFramework.py 5002
 
 #### Step 5 - Send a list of product offers
 
-Given that the TMF is not currently integrated with other 5GZORRO components such as the Smart Resource and Service Discovery (SRSD), it is possible to simulate the requests that will be received from the SRSD. In particular, the _simulatedSRSD.py_ file sends a list of product offers and the requester's DID to the TMF. At that time, the TMF will assess the product offers and send the final trust scores back to the SRSD. Note that the TMF is launched at a given time _t_ where trust information regarding previous interactions is already available in the system. Therefore, it includes the trust information of 8 different domains. 
+In order to check the proper funcionality of the TMF, it is possible to simulate the requests that will be received from the SRSD. In particular, the _simulatedSRSD.py_ file sends a list of product offers and the requester's DID to the TMF. At that time, the TMF will assess the product offers and send the final trust scores back to the SRSD. Note that the TMF is launched at a given time _t_ where trust information regarding previous interactions is already available in the system. Therefore, it includes the trust information of 8 different domains. 
 
 ```
 python3 simulatedSRSD.py
@@ -53,7 +53,7 @@ python3 simulatedSRSD.py
 
 #### Step 6 - Trus evolution with the time (dinamicity)
 
-After computing the trust scores, the TMF is subscribed to the SLA Breach Prediction Kafka where potential breach predictions are notified. Thus, the TMF will add a set of new policies to interpret the SLA events. By means of these events, we attempt to demostrate how some events may decrease or increase a calculated trust score of an Operator. No real integration with the SLA Breach Predictor has been carried out.
+After computing the trust scores, the TMF is subscribed to the SLA Breach Prediction Kafka where potential breach predictions are notified. Thus, the TMF will add a set of new policies to interpret the SLA events. By means of these events, we attempt to demostrate how some events could decrease or increase a calculated trust score of an Operator.
 
 ```
 python3 simulatedSLANotifications.py
