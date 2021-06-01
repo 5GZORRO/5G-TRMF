@@ -2,7 +2,7 @@
 swagger: "2.0"
 info:
   description: "This is the swager server for the trust management framework.  This software is developed\
-    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project."
+    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project. The Trust Management Framework repository can be found at [https://github.com/5GZORRO/Trust-management-framework]."
   version: "1.0"
   title: "Trust Management Framework"
   #termsOfService: "http://swagger.io/terms/"
@@ -14,7 +14,7 @@ info:
 #host: "petstore.swagger.io"
 #basePath: "/v2"
 tags:
-- name: "Trust Framework"
+- name: "Trust ManagementFramework"
   description: "Methods related with the trust establisment across domains"
   externalDocs:
     description: "Find out more"
@@ -52,6 +52,8 @@ paths:
       responses:
         200:
           description: "Successful operation."
+          schema:
+            $ref: "#/definitions/trust_parameters"
         400:
           description: "Invalid status value."
   /stop_data_collection:
@@ -64,10 +66,18 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "stakeholder_did"
-        description: "Stakeholder’s DID on which it stops the process of continuous information recollection"
+      - name: "stakeholder_id"
+        description: "Distributed identifier of the 5GZORRO participant who request a slice or resource."
         required: true
-        type: "string"
+        type: "DID"
+      - name: "candidate_id"
+        description: "Distributed identifier of the final stakeholder candidate."
+        required: true
+        type: "DID"
+      - name: "offer_id"
+        description: "Distributed identifier of the final selected resource or service/slice."
+        required: true
+        type: "DID"
       responses:
         200:
           description: "Successful operation"
@@ -82,6 +92,10 @@ paths:
       produces:
       - "application/json"
       parameters:
+      - name: "participant_did"
+        description: "Unique identifier for a resource or service consumer."
+        required: true
+        type: "string"
       - name: "list_offers"
         description: "Set of offers matching stakeholder’s criteria such as intent-based priorities."
         required: true
@@ -100,7 +114,7 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "id"
+      - name: "participant_id"
         description: "Distributed identifier of the final resource or service/slice candidate."
         required: true
         type: "string"
@@ -155,7 +169,7 @@ paths:
         200:
           description: "Successful operation."
           schema:
-            $ref: "#/definitions/trust_score"
+            $ref: "#/definitions/trust_parameters"
         400:
           description: "Invalid status value."
   /store_trust_level:
@@ -219,6 +233,8 @@ definitions:
   recommendation:
     type: "object"
     properties:
+      recommender:
+        type: "string"
       trust_level:
         type: "double"
       location:
@@ -237,6 +253,8 @@ definitions:
         $ref: "#/definitions/recommendation"
       offerDID:
         $ref: "#/definitions/offerDID"
+      trusteeSatisfaction:
+        type: "double"
   direct_parameters:
     type: "object"
     properties:
@@ -288,6 +306,14 @@ definitions:
         type: "double"
       nonPredictedOfferViolations:
         type: "double"
+      interactionNumber:
+        type: "int"
+      totalInteractionNumber:
+        type: "int"
+      feedbackNumber:
+        type : "int"
+      feedbackOfferNumber:
+        type: "int"
       location:
         type: "geographicalAddress"
       validFor:
@@ -336,12 +362,16 @@ definitions:
     properties:
       trustor:
         #$ref: "#/definitions/trustor"
-        type: string 
+        type: "string" 
       trustee:
         #$ref: "#/definitions/trustee"
-        type: string
+        type: "string"
+      offer:
+        type: "string"
       trust_value:
         type: "double"
+      currentInteractionNumber:
+        type: "int"
       evaluation_criteria:
         type: "policiesList"
       initEvaluationPeriod:
