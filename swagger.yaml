@@ -2,7 +2,7 @@
 swagger: "2.0"
 info:
   description: "This is the swager server for the trust management framework.  This software is developed\
-    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project. The Trust Management Framework repository can be found at [https://github.com/5GZORRO/Trust-management-framework]."
+    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project. The Trust Management Framework repository can be found at https://github.com/5GZORRO/Trust-management-framework ."
   version: "1.0"
   title: "Trust Management Framework"
   #termsOfService: "http://swagger.io/terms/"
