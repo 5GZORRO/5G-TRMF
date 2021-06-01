@@ -14,10 +14,11 @@ api = Api(app)
 
 class request_trust_scores(Resource):
     def post(self):
+        """ The POST method is triggered by the SRSD in order to compute the trust scores of a set of product offers """
         req = request.data.decode("utf-8")
         product_offers = json.loads(req)
 
-        #Read a list of product offers and Trustor' DID
+        """Read a list of product offers and Trustor' DID """
         list_product_offers = {}
         trustor_acquired = False
 
@@ -26,23 +27,22 @@ class request_trust_scores(Resource):
                 list_product_offers['trustorDID'] = i['trustorDID']
                 trustor_acquired = True
             else:
-                #Acquire both provider's DID and offer's DID
+                """ Acquire both provider's DID and offer's DID """
                 did_provider = i['productSpecification']['relatedParty'][0]['href']
                 did_resource = i['productSpecification']['resourceSpecification'][0]['href']
 
-                #If the provider already exits, a list of offers will be added to the same key
+                """ If the provider already exits, a list of offers will be added to the same key """
                 if did_provider in list_product_offers:
                     list_product_offers[did_provider].append(did_resource)
                 else:
                     list_product_offers[did_provider] = [did_resource]
 
-        #Initialize the process of requesting trust information of each offer and provider
+        """ Initialize the process of requesting trust information of each offer and provider """
         response = requests.post("http://localhost:5002/start_data_collection", data=json.dumps(list_product_offers).encode("utf-8"))
 
         if response.status_code == 200:
             response = json.loads(response.text)
-            print("RequestTrustScores: ", response)
-            #Return a list of trust scores linked to the previous list of product offers
+            """ Return a list of trust scores linked to the previous list of product offers """
             return response
         else:
             return response

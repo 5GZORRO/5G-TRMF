@@ -1,15 +1,11 @@
 import json
 import sys
 import logging
-from flask import Flask, request
-from flask_restful import Resource, Api
-from gevent.pywsgi import WSGIServer
 import random
 import time
 import ast
 import math
 import consumer
-import requests
 import os.path
 
 
@@ -19,13 +15,15 @@ from peerTrust import *
 from datetime import datetime
 #logging.basicConfig(level=logging.INFO)
 
+""" This file contains all methods necessary to obtain the minimum information required by the peerTrust model """
 class PeerTrust():
 
     def minimumTrustTemplate(self, trustorDID, trusteeDID, offerDID):
+        """ This method initialises a set of minimum trust parameters to ensure that the system does not start from
+         scratch as well as define a common trust template which will then be updated """
         trustInformationTemplate = TrustInformationTemplate()
         information = trustInformationTemplate.trustTemplate()
-        """ !!!! Cambiar por el último número registrado en la DLT para el Trustor¡¡¡¡"""
-        #interaction_number = 1
+
         """ Adding information related to the specific request """
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
@@ -48,23 +46,26 @@ class PeerTrust():
         information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
         information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-        time.sleep(3)
+        time.sleep(1)
 
         return information
 
     def minimumTrustValuesDLT(self, producer):
-        user_satisfaction_1 = round(random.uniform(0.8, 0.9),3)
-        user_satisfaction_2 = round(random.uniform(0.6, 0.8),3)
-        user_satisfaction_3 = round(random.uniform(0.75, 0.8),3)
-        user_satisfaction_4 = round(random.uniform(0.6, 0.75),3)
-        user_satisfaction_5 = round(random.uniform(0.85, 0.95),3)
-        user_satisfaction_6 = round(random.uniform(0.85, 0.95),3)
-        user_satisfaction_7 = round(random.uniform(0.80, 0.99),3)
-        user_satisfaction_8 = round(random.uniform(0.80, 0.95),3)
-        user_satisfaction_9 = round(random.uniform(0.85, 0.99),3)
-        user_satisfaction_10 = round(random.uniform(0.83, 0.92),3)
-        user_satisfaction_11 = round(random.uniform(0.86, 0.91),3)
-        user_satisfaction_12 = round(random.uniform(0.76, 0.95),3)
+        """ This method establishes multiple trust relationships from domain 5 to domain 8 in order to start the trust
+         model with a set of minimum relationships. In addition, it also simulates the registration of such interactions
+         in the DLT """
+        user_satisfaction_1 = round(random.uniform(0.8, 0.9), 3)
+        user_satisfaction_2 = round(random.uniform(0.6, 0.8), 3)
+        user_satisfaction_3 = round(random.uniform(0.75, 0.8), 3)
+        user_satisfaction_4 = round(random.uniform(0.6, 0.75), 3)
+        user_satisfaction_5 = round(random.uniform(0.85, 0.95), 3)
+        user_satisfaction_6 = round(random.uniform(0.85, 0.95), 3)
+        user_satisfaction_7 = round(random.uniform(0.80, 0.99), 3)
+        user_satisfaction_8 = round(random.uniform(0.80, 0.95), 3)
+        user_satisfaction_9 = round(random.uniform(0.85, 0.99), 3)
+        user_satisfaction_10 = round(random.uniform(0.83, 0.92), 3)
+        user_satisfaction_11 = round(random.uniform(0.86, 0.91), 3)
+        user_satisfaction_12 = round(random.uniform(0.76, 0.95), 3)
 
 
         data = [{"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain6-RAN", "offerDID": "did:5gzorro:domain6-RAN-1",
@@ -115,186 +116,134 @@ class PeerTrust():
                 producer.sendMessage(provider_topic_name, provider_topic_name, trust_informartion)
                 producer.sendMessage(full_topic_name, full_topic_name, trust_informartion)
 
-                #previous_interaction_not_published = random.randint(0, 2)
-                #for i in range(0,previous_interaction_not_published):
-                    #message = {"interaction": interaction["trustorDID"]+" has interacted with "+interaction["trusteeDID"]}
-                    #producer.sendMessage(registered_interaction, registered_offer_interaction, message)
-
         if not os.path.exists('DLT.json'):
             with open('DLT.json', 'a') as json_file:
                 json.dump(string_data, json_file)
                 json_file.close()
 
+    def stringToDictionaryList(self):
+        """Convert string to a list of dictionaries"""
+        new_interaction_list = []
+
+        with open('DLT.json', 'r') as file:
+            file.seek(0)
+            interaction_list = file.read()
+
+            interaction_list = interaction_list.split("\\n")
+            for interaction in interaction_list:
+                interaction = interaction.replace("\\\"","\"")
+                interaction = interaction.replace("\"{", "{")
+                interaction = interaction.replace("}\"", "}")
+                new_interaction_list.append(ast.literal_eval(interaction))
+
+        file.close()
+        return new_interaction_list
+
     def getLastTotalInteractionNumber(self, trusteeDID):
-        """ Retrieve all interactions related to a Trustee"""
+        """ Retrieve the last interactions number registered in the DLT for a Trustee"""
 
         last_total_iteraction_number = 1
+
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-                for i in new_interaction_list:
-                    if i["trustorDID"] == trusteeDID and i["currentInteractionNumber"] > last_total_iteraction_number:
-                        #print("PREVIOUS INTERACTION ---->", last_total_iteraction_number, trusteeDID)
-                        last_total_iteraction_number = i["currentInteractionNumber"]
-                    elif i["trusteeDID"] == trusteeDID and i["totalInteractionNumber"] > last_total_iteraction_number:
-                        last_total_iteraction_number = i["totalInteractionNumber"]
+            for i in new_interaction_list:
+                if i["trustorDID"] == trusteeDID and i["currentInteractionNumber"] > last_total_iteraction_number:
+                    last_total_iteraction_number = i["currentInteractionNumber"]
+                elif i["trusteeDID"] == trusteeDID and i["totalInteractionNumber"] > last_total_iteraction_number:
+                    last_total_iteraction_number = i["totalInteractionNumber"]
 
         return last_total_iteraction_number
 
     def getCurrentInteractionNumber(self, trustorDID):
-        
+        """ This method returns the next interaction number for a trustor """
         current_iteraction_number = 0
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-                for i in new_interaction_list:
-                    if i["trustorDID"] == trustorDID and i["currentInteractionNumber"] > current_iteraction_number:
-                        current_iteraction_number = i["currentInteractionNumber"]
-                        #print("currentInteractionNumber INTERACTION ---->", current_iteraction_number, trustorDID)
-                    elif i["trusteeDID"] == trustorDID and i["totalInteractionNumber"] > current_iteraction_number:
-                        current_iteraction_number = i["totalInteractionNumber"]
-
+            for i in new_interaction_list:
+                if i["trustorDID"] == trustorDID and i["currentInteractionNumber"] > current_iteraction_number:
+                    current_iteraction_number = i["currentInteractionNumber"]
+                elif i["trusteeDID"] == trustorDID and i["totalInteractionNumber"] > current_iteraction_number:
+                    current_iteraction_number = i["totalInteractionNumber"]
 
         return current_iteraction_number+1
 
     def getInteractionNumber(self, trustorDID, trusteeDID):
-        
+        """ This method retrieves the number of interactions between two entities and adds one more interaction """
         iteraction_number = 0
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-                for i in new_interaction_list:
-                    if i["trustorDID"] == trustorDID and i["trusteeDID"] == trusteeDID and i["interactionNumber"] > iteraction_number:
-                        iteraction_number = i["interactionNumber"]
-                        #print("InteractionNumber INTERACTION ---->", iteraction_number, "---", trustorDID, "---", trusteeDID)
+            for i in new_interaction_list:
+                if i["trustorDID"] == trustorDID and i["trusteeDID"] == trusteeDID and i["interactionNumber"] > iteraction_number:
+                    iteraction_number = i["interactionNumber"]
 
         return iteraction_number+1
 
 
     def getRecommenderDLT(self, trustorDID, trusteeDID):
         """ This method recovers a recommender, who is reliable for us, that has recently interacted with a trustee.
-        Return the last interaction in order to request the last trust value"""
+        Return the last interaction in order to request the last trust value. In this case, reliable means
+        other trustees with whom we have previously interacted with """
 
-        last_interaction = ""
+        last_interaction = {}
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
+            last_registered_interaction = True
+            """ Starting from the end to identify the last recommender"""
+            for interaction in reversed(new_interaction_list):
+                """ Check that the last recommender is not ourselves"""
+                if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID:
+                    """ Store the most recent interaction with the Trustee to return it in the case of no trustworthy 
+                    recommenders can be found"""
+                    if last_registered_interaction:
+                        last_interaction = interaction
+                        last_registered_interaction = False
+                    """Check if the Trustor is reliable for us"""
+                    for trustworthy_candidate in reversed(new_interaction_list):
+                        if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID']:
+                            return interaction
 
-                #print(new_interaction_list)
-
-                last_interaction = {}
-                last_registered_interaction = True
-                """ Starting from the end to identify the last recommender"""
-                for interaction in reversed(new_interaction_list):
-                    """ Check that the last recommender is not ourselves"""
-                    if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID:
-                        "Store the most recent interaction with the Trustee"
-                        if last_registered_interaction:
-                            last_interaction = interaction
-                            last_registered_interaction = False
-                        """Check if the Trustor is reliable for us"""
-                        for trustworthy_candidate in reversed(new_interaction_list):
-                            if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID']:
-                                file.close()
-                                #print("RECOMMENDER Trustowrthy ---> ", interaction['trustorDID'], "---->",trustorDID, "--->",trusteeDID)
-                                return interaction
-                        #json_file.close()
-                        #return last_interaction
-
-        file.close()
         return last_interaction
 
     def getRecommenderOfferDLT(self, trustorDID, trusteeDID, offerDID):
-        """ This method recovers a recommender, who is reliable for us, that has recently interacted with a trustee.
-        Return the last interaction in order to request the last trus value"""
+        """ This method recovers an offer associated with a recommender, who is reliable for us, that has recently
+        interacted with a trustee. Return the last interaction in order to request the last trust value.
+        In this case, reliable means other trustees with whom we have previously interacted with"""
 
-        last_interaction = ""
+        last_interaction = {}
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
+            last_registered_interaction = True
+            """ Starting from the end to identify the last recommender """
+            for interaction in reversed(new_interaction_list):
+                """ Check that the last recommender is not ourselves"""
+                if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
+                    """ Store the most recent interaction with the Trustee """
+                    if last_registered_interaction:
+                        last_interaction = interaction
+                        last_registered_interaction = False
+                    """ Check if the Trustor is reliable for us """
+                    for trustworthy_candidate in reversed(new_interaction_list):
+                        if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID'] and trustworthy_candidate['offerDID'] == offerDID:
+                            return interaction
 
-                #print(new_interaction_list)
-
-                last_interaction = {}
-                last_registered_interaction = True
-                """ Starting from the end to identify the last recommender"""
-                for interaction in reversed(new_interaction_list):
-                    """ Check that the last recommender is not ourselves"""
-                    if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
-                        "Store the most recent interaction with the Trustee"
-                        if last_registered_interaction:
-                            last_interaction = interaction
-                            last_registered_interaction = False
-                        """Check if the Trustor is reliable for us"""
-                        for trustworthy_candidate in reversed(new_interaction_list):
-                            if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID'] and trustworthy_candidate['offerDID'] == offerDID:
-                                file.close()
-                                return interaction
-                        #json_file.close()
-                        #return last_interaction
-
-        file.close()
         return last_interaction
 
     def getLastRecommendationValue(self, last_interaction):
-        """This methods goes to a recommender kafka channel to request a trust score"""
+        """ This methods goes to a recommender kafka channel to request a trust score """
 
         last_truste_value = 0.0
 
@@ -304,21 +253,13 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        #print("Provider-Recommender Topic ----> ", recommender_topic, "\n",trust_information)
         print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
         last_truste_value = trust_information["trust_value"]
-
-        #if not trust_information:
-            #print("RECOMMENDER TOPIC DOES NOT EXIT ----->", trust_information)
-            #self.generateHistoryTrustInformation(last_interaction['trustorDID'], last_interaction['trusteeDID'], last_interaction['offerDID'], recommender_topic, 1)
-            #trust_information = consumer.read(recommender_topic)
-            #print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
-            #last_truste_value = trust_information["trust_value"]
 
         return last_truste_value
 
     def getLastOfferRecommendationValue(self, last_interaction):
-        """This methods goes to a recommender kafka channel to request a trust score"""
+        """ This methods goes to an offer recommender kafka channel to request a trust score """
 
         last_truste_value = 0.0
 
@@ -328,27 +269,20 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee+"-"+offer
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        #print("Offer-Recommender ----> ", recommender_topic, "\n",trust_information)
         print("RECOMMENDER Offer TRUST VALUE ----->", trust_information["trust_value"])
         last_truste_value = trust_information["trust_value"]
 
-        #if not trust_information:
-        #print("RECOMMENDER TOPIC DOES NOT EXIT ----->", trust_information)
-        #self.generateHistoryTrustInformation(last_interaction['trustorDID'], last_interaction['trusteeDID'], last_interaction['offerDID'], recommender_topic, 1)
-        #trust_information = consumer.read(recommender_topic)
-        #print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
-        #last_truste_value = trust_information["trust_value"]
-
         return last_truste_value
 
-    """ This method generates information that will be sent to trustor Kafka Topic"""
+
     def generateHistoryTrustInformation(self, producer, trustorDID, trusteeDID, offerDID, provider_topic_name, full_topic_name, topic_trusteeDID, registered_offer_interaction, previous_interaction_number):
+        """ This method generates trust information that will be sent to trustor Kafka Topic. In particular,
+        it is adding _n_ previous interactions (history) to be contemplated in future assessments"""
 
         if previous_interaction_number != 0:
             trustInformationTemplate = TrustInformationTemplate()
             information = trustInformationTemplate.trustTemplate()
-            """ !!!! Cambiar por el último número registrado en la DLT para el Trustor¡¡¡¡"""
-            #interaction_number = 1
+
             """ Adding information related to the specific request """
             information["trustee"]["trusteeDID"] = trusteeDID
             information["trustee"]["offerDID"] = offerDID
@@ -370,7 +304,7 @@ class PeerTrust():
             information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
             information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-            time.sleep(3)
+            time.sleep(1)
 
             message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
             producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
@@ -433,11 +367,12 @@ class PeerTrust():
                     file.write(new_file)
                     file.close()
 
-
         return None
 
     def generateTrusteeInformation(self, producer, trustorDID, trusteeDID, offerDID, interaction, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
-        """ """
+        """ This method introduces Trustee information based on peerTrust equations and using the minimum
+        values previously established"""
+
         information = self.minimumTrustTemplate(trustorDID, trusteeDID, offerDID)
         print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
         print("Trustor --->", trustorDID, "Truestee --->", trusteeDID, "offer --->", offerDID, "\n")
@@ -461,7 +396,6 @@ class PeerTrust():
         offer_reputation = self.offerReputation(consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
         offer_satisfaction = self.offerSatisfaction(trustorDID, trusteeDID, offerDID, offer_reputation)
 
-
         information["trustor"]["direct_parameters"]["providerSatisfaction"] = provider_satisfaction
         ps_weighting = round(random.uniform(0.4, 0.6),2)
         information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
@@ -479,7 +413,6 @@ class PeerTrust():
         information["trustor"]["direct_parameters"]["executedViolations"] = executedViolations
         information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = nonPredictedViolations
 
-
         information["trustor"]["direct_parameters"]["consideredOffers"] = consideredOffers
         information["trustor"]["direct_parameters"]["totalOffers"] = totalOffers
         information["trustor"]["direct_parameters"]["consideredOfferLocation"] = consideredOfferLocation
@@ -493,9 +426,7 @@ class PeerTrust():
         #information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = nonPredictedViolations
         #information["trustor"]["direct_parameters"]["location"] = nonPredictedViolations
         #information["trustor"]["direct_parameters"]["validFor"] = nonPredictedViolations
-
         information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
-
 
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
@@ -506,7 +437,6 @@ class PeerTrust():
         #print("OS ---->", os_weighting)
         print("Offer Satisfaction ---->", offer_satisfaction)
         print("Offer Reputation ---->", offer_reputation)
-        #information["trustee"]["trusteeSatisfaction"] = ps_weighting * provider_satisfaction + os_weighting * offer_satisfaction
         information["trustee"]["trusteeSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
         print("Satisfaction ---->", information["trustee"]["trusteeSatisfaction"])
 
@@ -529,11 +459,8 @@ class PeerTrust():
         if result == 1:
             message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
             producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
-            result = producer.sendMessage(provider_topic_name, provider_topic_name, information)
-            #print("NEW SEND --->",provider_topic_name,"\nValue --->", information)
-            result = producer.sendMessage(full_topic_name, full_topic_name, information)
-            #print("NEW SEND --->",full_topic_name,"\nValue --->", information)
-
+            producer.sendMessage(provider_topic_name, provider_topic_name, information)
+            producer.sendMessage(full_topic_name, full_topic_name, information)
 
         data = "}\\n{\\\"trustorDID\\\": \\\""+trustorDID+"\\\", \\\"trusteeDID\\\": \\\""+trusteeDID+"\\\", \\\"offerDID\\\": \\\""+offerDID+"\\\",\\\"userSatisfaction\\\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information["currentInteractionNumber"])+"}\""
         previous_file = ""
@@ -545,22 +472,13 @@ class PeerTrust():
 
         with open('DLT.json', 'w') as json_file:
             new_file = previous_file.replace("}\"", data)
-            #print("NUEVA DLT", new_file)
             json_file.write(new_file)
             json_file.close()
 
-        #return {"userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"], "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"], "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"], "currentInteractionNumber": information["currentInteractionNumber"]}
         return None
 
     def setTrustee1Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
-        #information_1 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 0, 1, 3, 4, 2, 3, 10, 18, 6, 2)
-        #information_2 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 2, 3, 5, 2, 4, 16, 24, 6, 2)
-        #information_3 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 0, 4, 10, 11, 4, 6, 18, 21, 0, 3)
-        #information_4 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 0, 1, 2, 4, 1, 1, 6, 14, 6, 2)
-        #information_5 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-1", 0, 1, 4, 4, 2, 2, 15, 18, 1, 2)
-        #information_6 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 1, 3, 3, 4, 2, 2, 18, 21, 1, 2)
 
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
@@ -570,17 +488,8 @@ class PeerTrust():
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 2, 3, 4, 2, 2, 18, 21, 1, 2, 4, 8, 2, 2, 7, 11, 2, 2)
 
 
-        return None
-
     def setTrustee2Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
-        #information_1 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 0, 1, 3, 4, 2, 3, 10, 18, 6, 2)
-        #information_2 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 0, 2, 2, 5, 1, 4, 6, 8, 1, 1)
-        #information_3 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-2", 1, 3, 4, 11, 2, 4, 18, 21, 2, 1)
-        #information_4 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-1", 0, 1, 2, 4, 1, 1, 6, 14, 6, 2)
-        #information_5 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 1, 2, 4, 4, 2, 2, 10, 18, 6, 2)
-        #information_6 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 0, 3, 3, 4, 2, 2, 18, 21, 1, 2)
 
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 3, 4, 2, 3, 16, 16, 0, 0, 4, 6, 2, 2, 2, 3, 1, 0)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
@@ -589,31 +498,9 @@ class PeerTrust():
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 1, 3, 4, 2, 2, 18, 21, 1, 2, 2, 4, 2, 2, 7, 10, 1, 2)
 
-        #data = "}\\n{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain5-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain5-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_1["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_1["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_1["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_1["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain6-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain6-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_2["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_2["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_2["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_2["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain6-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain6-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_3["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_3["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_3["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_3["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain7-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain7-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_4["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_4["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_4["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_4["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain7-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain7-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_5["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_5["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_5["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_5["currentInteractionNumber"])+"}\\n"+"{\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain8-RAN\\\", \"offerDID\\\": \\\"did:5gzorro:domain8-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_6["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_6["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_6["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_6["currentInteractionNumber"])+"}\""
-
-
-        #previous_file=""
-
-        """with open('DLT.json', 'r') as json_file:
-            json_file.seek(0)
-            previous_file = json_file.read()
-            json_file.close()
-
-        with open('DLT.json', 'w') as json_file:
-            new_file = previous_file.replace("}\"", data)
-            print("NUEVA DLT", new_file)
-            json_file.write(new_file)
-            json_file.close()"""
-
-        return None
 
     def setTrustee3Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        #information_1 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 0, 1, 1, 2, 1, 1, 6, 9, 1, 2)
-        #information_2 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 2, 2, 5, 2, 2, 10, 14, 2, 2)
-        #information_3 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 0, 1, 4, 8, 2, 2, 18, 21, 2, 1)
-        #information_4 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-2", 1, 2, 3, 8, 1, 1, 18, 23, 2, 3)
-        #information_5 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-1", 0, 1, 4, 4, 2, 2, 10, 18, 6, 2)
 
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 1, 1, 2, 1, 1, 7, 9, 1, 1, 3, 4, 1, 2, 3, 3, 0, 0)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
@@ -621,57 +508,16 @@ class PeerTrust():
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-1", 1, 4, 4, 2, 2, 10, 18, 6, 2, 7, 8, 3, 4, 4, 8, 4, 4)
 
-        #data = "}\\n{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain5-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain5-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_1["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_1["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_1["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_1["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain5-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain5-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_2["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_2["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_2["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_2["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain6-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain6-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_3["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_3["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_3["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_3["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain6-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain6-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_4["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_4["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_4["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_4["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain8-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain8-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_5["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_5["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_5["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_5["currentInteractionNumber"])+"}\""
-
-
-        #previous_file=""
-
-        """with open('DLT.json', 'r') as json_file:
-            json_file.seek(0)
-            previous_file = json_file.read()
-            json_file.close()
-
-        with open('DLT.json', 'w') as json_file:
-            new_file = previous_file.replace("}\"", data)
-            print("NUEVA DLT", new_file)
-            json_file.write(new_file)
-            json_file.close()"""
-
-
-        return None
-
     def setTrustee4Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        #information_1 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 0, 1, 6, 8, 4, 5, 19, 19, 0, 0)
-        #information_2 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-1", 0, 1, 3, 5, 2, 2, 14, 18, 2, 2)
-        #information_3 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 1, 2, 7, 8, 3, 4, 28, 35, 4, 3)
-        #information_4 = self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 4, 5, 4, 8, 1, 1, 19, 25, 3, 3)
 
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 6, 8, 4, 5, 19, 19, 0, 0, 3, 4, 1, 1, 4, 6, 1, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-1", 1, 3, 5, 2, 2, 14, 18, 2, 2, 4, 4, 2, 2, 8, 11, 2, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 1, 4, 8, 1, 1, 19, 25, 3, 3, 1, 2, 1, 1, 9, 9, 0, 0)
 
-
-        #data = "}\\n{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain5-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain5-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_1["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_1["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_1["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_1["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain7-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain7-RAN-1\\\",\\\"userSatisfaction\\\": "+str(information_2["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_2["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_2["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_2["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain7-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain7-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_3["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_3["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_3["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_3["currentInteractionNumber"])+"}\\n"+"{\\\"trustorDID\\\": \\\""+trusteeDID+"\\\", \\\"trusteeDID\\\": \\\"did:5gzorro:domain8-RAN\\\", \\\"offerDID\\\": \\\"did:5gzorro:domain8-RAN-2\\\",\\\"userSatisfaction\\\": "+str(information_4["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information_4["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information_4["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information_4["currentInteractionNumber"])+"}\""
-
-
-        #previous_file=""
-
-        """with open('DLT.json', 'r') as json_file:
-            json_file.seek(0)
-            previous_file = json_file.read()
-            json_file.close()
-
-        with open('DLT.json', 'w') as json_file:
-            new_file = previous_file.replace("}\"", data)
-            json_file.write(new_file)
-            json_file.close()"""
-
-
-        return None
-
     def getLastHistoryTrustValue(self, trustorDID, trusteeDID):
+        """ This method retrieves the last trust score that a trustor has stored about a trustee in its Kafka topic"""
         last_truste_value = 0.0
 
         trustor = trustorDID.split(":")[2]
@@ -680,21 +526,19 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        #print("Provider-Recommender Topic ----> ", recommender_topic, "\n",trust_information, len(trust_information))
-        #print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
-        #last_truste_value = trust_information["trust_value"]
 
         if bool(trust_information):
-            #print("EXIST VALUE --->", trust_information["trust_value"])
             last_truste_value = trust_information["trust_value"]
             return last_truste_value
         else:
             """In this case, Trustor didn't have an interaction with Trustee and 
             the provider recommendation is based on the last interaction registered in the DLT"""
-            #print("NOT EXIST VALUE --->", recommender_topic)
             return 1
 
     def getLastOfferHistoryTrustValue(self, trustorDID, trusteeDID, offerDID):
+        """ This method retrieves the last trust score that a trustor has stored about an offer trustee
+        in its Kafka topic"""
+
         last_truste_value = 0.0
 
         trustor = trustorDID.split(":")[2]
@@ -704,181 +548,110 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee+"-"+offer
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        #print("Offer-Recommender Topic ----> ", recommender_topic, "\n",trust_information, len(trust_information))
-        #print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
-        #last_truste_value = trust_information["trust_value"]
 
         if bool(trust_information):
-            #print("EXIST VALUE --->", trust_information["trust_value"])
             last_truste_value = trust_information["trust_value"]
             return last_truste_value
         else:
             """In this case, Trustor didn't have an interaction with Trustee and 
             the provider recommendation is based on the last interaction registered in the DLT"""
-            #print("NOT EXIST VALUE --->", recommender_topic)
             return 1
 
-    def getOfferTrusteeFeedbackDLT(self, trusteeDID, offerDID):
-        """ This method recovers a recommender, who is reliable for us, that has recently interacted with a trustee.
-        Return the last interaction in order to request the last trus value"""
+    def getOfferFeedbackNumberDLT(self, trusteeDID, offerDID):
+        """ This method counts the number of feedbacks registered in the DLT for a particular offer """
+        counter = 0
+
+        if os.path.exists('DLT.json'):
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
+
+            """ Starting from the end to identify the last recommender"""
+            for interaction in reversed(new_interaction_list):
+                """ Check that the last recommender is not ourselves"""
+                if interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
+                    counter += 1
+
+        return counter
+
+    def getTrusteeFeedbackNumberDLT(self, trusteeDID):
+        """ This method counts the number of feedbacks registered in the DLT for a particular trustee """
 
         counter = 0
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
+            """ Starting from the end to identify the last recommender"""
+            for interaction in reversed(new_interaction_list):
+                """ Check that the last recommender is not ourselves"""
+                if interaction['trusteeDID'] == trusteeDID:
+                    counter += 1
 
-
-                """ Starting from the end to identify the last recommender"""
-                for interaction in reversed(new_interaction_list):
-                    """ Check that the last recommender is not ourselves"""
-                    if interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
-                        counter += 1
-
-            file.close()
         return counter
 
-    def getTrusteeFeedbackDLT(self, trusteeDID):
-        """ This method recovers a recommender, who is reliable for us, that has recently interacted with a trustee.
-        Return the last interaction in order to request the last trust value"""
-
-        counter = 0
-
-        if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
-
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-
-                """ Starting from the end to identify the last recommender"""
-                for interaction in reversed(new_interaction_list):
-                    """ Check that the last recommender is not ourselves"""
-                    if interaction['trusteeDID'] == trusteeDID:
-                        counter += 1
-
-            file.close()
-        return counter
-
-    def getTrustworthyRecommendationDLT(self, trusteeDID, trustworthy_recommender_list):
-        
+    def getTrustworthyRecommendationDLT(self, trustorDID, trusteeDID, trustworthy_recommender_list):
+        """ This method returns from a trusted list those recommender that have interacted with the trustor """
 
         trustworthy_recommendations = []
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
+            """ Starting from the end to identify the last recommender"""
+            for interaction in reversed(new_interaction_list):
+                """ Obtenemos el último valor de confianza de nuestros recommendadores fiable sobre el trustor dando el peso a las recomendaciones finales"""
+                if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID and interaction['trustorDID'] in trustworthy_recommender_list:
+                    trustworthy_recommendations.append(interaction['trustorDID'])
+                    trustworthy_recommender_list.remove(interaction['trustorDID'])
 
-
-                """ Starting from the end to identify the last recommender"""
-                for interaction in reversed(new_interaction_list):
-                    """ Obtenemos el último valor de confianza de nuestros recommendadores fiable sobre el trustor dando el peso a las recomendaciones finales"""
-                    if interaction['trusteeDID'] == trusteeDID and interaction['trustorDID'] in trustworthy_recommender_list:
-                        trustworthy_recommendations.append(interaction['trustorDID'])
-                        trustworthy_recommender_list.remove(interaction['trustorDID'])
-
-
-            file.close()
         return trustworthy_recommendations
 
     def getLastCredibility(self, trustorDID, trusteeDID):
-        
-
+        """ This method recovers the last credibility value registered in the DLT for a particular trustee"""
 
         topic_name = trustorDID.split(":")[2]+"-"+trusteeDID.split(":")[2]
 
-
         trust_information = consumer.readLastTrustValue(topic_name)
-        #print("Credibility ----> ", topic_name, "\n",trust_information, len(trust_information))
 
         if bool(trust_information):
-            #print("EXIST VALUE CREDIBILITY --->", trust_information["credibility"])
             last_credibility = trust_information["credibility"]
             return last_credibility
         else:
-            """In this case, Trustor didn't have an interaction with Trustee and 
-            the provider recommendation is based on the last interaction registered in the DLT"""
-            #print("NOT EXIST VALUE Credibility --->", topic_name)
+            """In this case, Trustor didn't have an credibility with Trustee and 
+            the provider recommendation is based on the last history value registered in its Kafka topic"""
             return 1
 
     def getTrustorInteractions(self, trustorDID):
-
+        """ This methods return all trustor's interactions registered in the DLT"""
         interactions = []
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-
-                """ Starting from the end to identify the last recommender"""
-                for interaction in new_interaction_list:
-                    if interaction["trustorDID"] == trustorDID:
-                        interactions.append(interaction["trusteeDID"])
+            """ Starting from the end to identify the last recommender"""
+            for interaction in new_interaction_list:
+                if interaction["trustorDID"] == trustorDID:
+                    interactions.append(interaction["trusteeDID"])
 
         return interactions
 
     def getTrusteeInteractions(self, trustorDID, trusteeDID):
-
+        """ This methods return all entities that have interacted with a trustee and
+        have published feedbacks in the DLT"""
         interactions = []
 
         if os.path.exists('DLT.json'):
-            with open('DLT.json', 'r') as file:
-                file.seek(0)
-                interaction_list = file.read()
-                """Convert string to a list of dictionaries"""
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
 
-                new_interaction_list = []
-                interaction_list = interaction_list.split("\\n")
-                for interaction in interaction_list:
-                    interaction = interaction.replace("\\\"","\"")
-                    interaction = interaction.replace("\"{", "{")
-                    interaction = interaction.replace("}\"", "}")
-                    new_interaction_list.append(ast.literal_eval(interaction))
-
-
-                """ Starting from the end to identify the last recommender"""
-                for interaction in new_interaction_list:
-                    if interaction["trusteeDID"] == trusteeDID and interaction["trustorDID"] != trustorDID:
-                        interactions.append(interaction["trustorDID"])
-                        return interactions
+            """ Starting from the beginning to identify the last recommender"""
+            for interaction in new_interaction_list:
+                if interaction["trusteeDID"] == trusteeDID and interaction["trustorDID"] != trustorDID:
+                    interactions.append(interaction["trustorDID"])
+                    return interactions
 
         return interactions
 
@@ -908,20 +681,20 @@ class PeerTrust():
         return credibility
 
     def similarity(self, trusteeDID):
+        """ This method identifies stakeholders who have evaluated one or more entities in common with the trustor
+        (trustee parameter) to compare their satisfaction values and determine how credible the trustor's
+        (trustee parameter) satisfaction value is """
 
         common_interaction = []
         trustor_interaction_list = self.getTrustorInteractions(trusteeDID)
-        #print("Trustor interactions --->", trustor_interaction_list, "--->", trusteeDID)
 
         for interaction in trustor_interaction_list:
             common_interaction = self.getTrusteeInteractions(trusteeDID, interaction)
             if common_interaction:
+                """ Currently, only one common interaction is contemplated """
                 break
-        #print("Primer trustee que tiene interacciones en comun --->", common_interaction)
 
         common_interaction_list = self.getTrustorInteractions(common_interaction[0])
-
-        #print("Common interactions del anterior --->", common_interaction_list)
 
         IJS_counter = 0
         global_satisfaction_summation = 0.0
@@ -931,36 +704,35 @@ class PeerTrust():
                 """ Generating kafka topic name """
                 trustor_topic = trusteeDID.split(":")[2]+"-"+interaction.split(":")[2]
                 common_interaction_topic = common_interaction[0].split(":")[2]+"-"+interaction.split(":")[2]
-                #print("TOPICS --->",trustor_topic, common_interaction_topic)
 
                 trustor_satisfaction_summation = consumer.readSatisfactionSummation(trustor_topic)
                 common_interaction_satisfaction_summation = consumer.readSatisfactionSummation(common_interaction_topic)
 
                 satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
-                print("SATISFACTION AL CUADRADO --->", satisfaction_summation)
                 global_satisfaction_summation = global_satisfaction_summation + satisfaction_summation
-                print("GLOBAL SATISFACTION  --->", global_satisfaction_summation)
+                #print("GLOBAL SATISFACTION  --->", global_satisfaction_summation)
                 IJS_counter = IJS_counter + 1
 
         final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
-        print("FINAL SATISFACTION  --->",final_similarity)
+        print("FINAL SATISFACTION  --->", final_similarity)
 
         return final_similarity
 
 
     def communityContextFactor(self, trustorDID, trusteeDID):
+        """ Static list of recommender based on the domains registered in the DLT. TODO dynamic """
         trustworthy_recommender_list = ['did:5gzorro:domain5-RAN', 'did:5gzorro:domain6-RAN', 'did:5gzorro:domain7-RAN','did:5gzorro:domain8-RAN']
 
         topic_trusteeDID = trusteeDID.split(":")[2]
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
-        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackDLT(trusteeDID)
+        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
         trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
 
         if trustorDID in trustworthy_recommender_list:
             trustworthy_recommender_list.remove(trustorDID)
 
-        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trusteeDID, trustworthy_recommender_list)
+        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trustorDID, trusteeDID, trustworthy_recommender_list)
 
         summation_trustworthy_recommendations = 0.0
 
@@ -979,12 +751,12 @@ class PeerTrust():
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
         total_registered_offer_interactions = consumer.readOfferTrusteeInteractions(topic_trusteeDID, offer_trustee)
 
-        number_offer_trustee_feedbacks_DLT = self.getOfferTrusteeFeedbackDLT(trusteeDID, offerDID)
-        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackDLT(trusteeDID)
+        number_offer_trustee_feedbacks_DLT = self.getOfferFeedbackNumberDLT(trusteeDID, offerDID)
+        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
         transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
 
-        return round(transactionFactor,3)
+        return round(transactionFactor, 3)
 
 
     def satisfaction(self, PSWeighting, OSWeighting, providerSatisfaction, offerSatisfaction):
@@ -995,13 +767,12 @@ class PeerTrust():
     def providerSatisfaction(self, trustorDID, trusteeDID, providerReputation):
         """ This method computes the Provider's satisfaction considering its reputation and recommendations"""
 
-        
-        
+        """ Only one recommendation is currently contemplated"""
         last_interaction = self.getRecommenderDLT(trustorDID, trusteeDID)
 
         provider_recommendation = self.getLastRecommendationValue(last_interaction)
 
-        
+        """ We obtain our last trust value on the recommender from our Kafka topic """
         last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
 
         provider_satisfaction = providerReputation * provider_recommendation * last_trust_score_recommender
@@ -1026,12 +797,13 @@ class PeerTrust():
     def offerSatisfaction(self, trustorDID, trusteeDID, offerDID, offerReputation):
         """ This method computes the Provider's satisfaction considering its reputation and recommendations"""
 
-        
+
         """ Only one recommendation is currently contemplated"""
         last_interaction = self.getRecommenderOfferDLT(trustorDID, trusteeDID, offerDID)
 
         provider_recommendation = self.getLastOfferRecommendationValue(last_interaction)
 
+        """ We obtain our last trust value on the offer from our Kafka topic"""
         last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
 
         provider_satisfaction = offerReputation * provider_recommendation * last_trust_score_recommender

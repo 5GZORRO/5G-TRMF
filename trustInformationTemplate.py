@@ -1,8 +1,8 @@
 
 class TrustInformationTemplate():
-    """This methods introduces the general Trust template that will be used in order to generate a dataset,
-    and also to compute new trust scores and provide recomendations. """
     def trustTemplate(self):
+        """This methods introduces the general Trust template that will be used in order to generate a dataset,
+    and also to compute new trust scores and provide recomendations """
         general_JSON = {
                         "trustor": {
                             "trustorDID": "string",
@@ -67,7 +67,7 @@ class TrustInformationTemplate():
                         },
                         "trust_value": "double",
                         "currentInteractionNumber": "int",
-                        "evaluation_criteria": "Unknown Type: policiesList",
+                        "evaluation_criteria": "Inter-domain",
                         "initEvaluationPeriod": "Unknown Type: timestamp",
                         "endEvaluationPeriod": "Unknown Type: timestamp"
                     }

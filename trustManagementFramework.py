@@ -6,16 +6,16 @@ from flask_restful import Resource, Api
 from gevent.pywsgi import WSGIServer
 import random
 import time
-import consumer
 import requests
 import ast
 import re
 from pymongo import MongoClient
 import pprint
 
+from peerTrust import *
 from producer import *
 from trustInformationTemplate import *
-from peerTrust import *
+import consumer
 from datetime import datetime
 #logging.basicConfig(level=logging.INFO)
 
@@ -33,8 +33,8 @@ db = client.rptutorials
 mongoDB = db.tutorial
 
 class start_data_collection(Resource):
-    """ This method is responsible for request a kafka topic for each offer.
-     After creating the Kafka Topics the gatherInformation method will be instantiated."""
+    """ This method is responsible for creating a kafka topic for each offer.
+     After creating the Kafka Topics the gatherInformation method will be instantiated """
     def post(self):
         req = request.data.decode("utf-8")
         dict_product_offers = json.loads(req)
@@ -43,7 +43,10 @@ class start_data_collection(Resource):
         trustor_acquired = False
         trustorDID = ""
 
+        """ Adding a set of minimum interactions between entities that compose the trust model """
         peerTrust.minimumTrustValuesDLT(producer)
+
+        trust_scores = []
 
         for trustee in dict_product_offers:
             if trustor_acquired == False:
@@ -56,19 +59,19 @@ class start_data_collection(Resource):
                     topic_offerDID = offer.split(":")[2]
                     topic_trusteeDID = trustee.split(":")[2]
 
-                    """ Generating kafka topic name """
+                    """ Generating kafka topic where all interactions with a trustee are registered """
                     registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
                     producer.createTopic(topic_trusteeDID)
-
+                    """ Generating kafka topic where all trustor's interactions with a trustee are registered """
                     provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
                     result = producer.createTopic(provider_topic_name)
-
+                    """ Generating kafka topic where all trustor's interactions with a trustee and 
+                    an particular offer are registered """
                     full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
                     result = producer.createTopic(full_topic_name)
 
                     if result == 1:
-                        """ Since the Trust Model is not deployed around all 5GZORRO ecosystem we generated initial 
-                        trust information """
+                        """ we generated initial trust information to avoid the cold start"""
                         peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
 
                         """Change if we consider a higher offer number"""
@@ -81,26 +84,26 @@ class start_data_collection(Resource):
                         else:
                             peerTrust.setTrustee4Interactions(producer, trustee)
 
-
                         """ Retrieve information from trustor and trustee """
                         data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": full_topic_name}
                         response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
-
+                        response = json.loads(response.text)
+                        trust_scores.append(response)
                     else:
                         logging.info("Error generating a Kafka topic")
         client.close()
-        return dict_product_offers
+        return response
 
 
-    def getTrusteeSatisfactionDLT(self, trusteeDID):
-
-
-        return None
+    """def getTrusteeSatisfactionDLT(self, trusteeDID):
+        return None"""
 
 class gather_information(Resource):
     def post(self):
-        # Este metodo recuperará información del DataLake (kafka topic direc trust) +
-        # buscará interacciones del proveedor/oferta en el DLT simulated para recuperar recomendaciones de otros kafka topics (indirect trust)
+        """ This method will retrieve information from the DataLake (kafka topic direct trust) +
+        search for supplier/offer interactions in the simulated DLT to retrieve recommendations from
+        other kafka topics (indirect trust). Currently there is no interaction with DataLake, we generate our
+        internal Kafka topics """
 
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
@@ -113,7 +116,7 @@ class gather_information(Resource):
 
         """Read last value registered in Kafka"""
         last_trust_value = consumer.readLastTrustValue(topic_name)
-        print("LAST VALUES ------->",last_trust_value, topic_name)
+        #print("LAST VALUES ------->",last_trust_value, topic_name)
 
         """Read interactions related to a Trustee"""
         interactions = self.getInteractionTrustee(trusteeDID)
@@ -126,32 +129,17 @@ class gather_information(Resource):
 
         response = requests.post("http://localhost:5002/compute_trust_level", data=json.dumps(trust_information).encode("utf-8"))
 
+        response = json.loads(response.text)
 
-        return 200
+        return response
 
     def getInteractionTrustee(self, trusteeDID):
-        """ Retrieve all interactions related to a Trustee"""
+        """ This method retrieves all interactions related to a Trustee"""
         interactions = []
-        #with open('DLT.json') as json_file:
-            #data = json.load(json_file)
-            #for i in data:
-                #if i["trustorDID"] == trusteeDID:
-                    #interactions.append(i)
 
-        with open('DLT.json', 'r') as file:
-            file.seek(0)
-            interaction_list = file.read()
-            """Convert string to a list of dictionaries"""
-            #print("INTERACTION LIST --->", interaction_list)
-            new_interaction_list = []
-            satisfaction_list = interaction_list.split("\\n")
-            for satisfaction in satisfaction_list:
-                satisfaction = satisfaction.replace("\\\"","\"")
-                satisfaction = satisfaction.replace("\"{", "{")
-                satisfaction = satisfaction.replace("}\"", "}")
-                new_interaction_list.append(ast.literal_eval(satisfaction))
-
-            #print("NEW INTERACTION LIST --->", new_interaction_list)
+        if os.path.exists('DLT.json'):
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = peerTrust.stringToDictionaryList()
 
             for i in new_interaction_list:
                 if i["trustorDID"] == trusteeDID:
@@ -161,6 +149,10 @@ class gather_information(Resource):
 
 class compute_trust_level(Resource):
     def post(self):
+        """This method retrieves the last value of the Trustor for a particular Trustee and the Trustee's interactions.
+        It will then do the summation from its last computed value to the recent one by updating it trust value over
+        the trustee """
+
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
@@ -172,8 +164,8 @@ class compute_trust_level(Resource):
             trustorDID = i['trustorDID']
             offerDID = i['offerDID']
 
+            """ Recovering the last trust information """
             last_trustee_interaction_registered = i['lastValue']['totalInteractionNumber']
-
             last_satisfaction = i['lastValue']['trusteeSatisfaction']
             last_credibility = i['lastValue']['credibility']
             last_transaction_factor = i['lastValue']['transactionFactor']
@@ -181,6 +173,9 @@ class compute_trust_level(Resource):
             last_interaction_number = i['lastValue']['interaction_number']
             last_trust_value = i['lastValue']['trust_value']
 
+            response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": i['lastValue']["trust_value"], "evaluation_criteria": "Inter-domain", "initEvaluationPeriod": i['lastValue']["initEvaluationPeriod"],"endEvaluationPeriod": i['lastValue']["endEvaluationPeriod"]}
+
+            """ Retrieving new trustee's interactions """
             current_trustee_interactions = i['trusteeInteractions']
             current_trustee_interactions = current_trustee_interactions.replace("[", "")
             current_trustee_interactions = current_trustee_interactions.replace("]", "")
@@ -192,14 +187,14 @@ class compute_trust_level(Resource):
             new_community_factor = 0.0
             counter_new_interactions = 0
 
+            """Obtaining the last interaction registered by the Trustee in the DLT """
             last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
             last_interaction_DLT = ast.literal_eval(last_interaction_DLT)
-
 
             if last_interaction_DLT['currentInteractionNumber'] > last_trustee_interaction_registered:
                 for new_interaction in current_trustee_interactions:
                     topic_name = current_trustee.split(":")[2]+"-"+ast.literal_eval(new_interaction)['trusteeDID'].split(":")[2]
-                    new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered)
+                    new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, ast.literal_eval(new_interaction)['currentInteractionNumber'])
                     print("Previous values --->",new_trustee_interaction, "--->", topic_name)
                     for i in new_trustee_interaction:
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
@@ -208,7 +203,7 @@ class compute_trust_level(Resource):
                         new_community_factor = new_community_factor + i['communityFactor']
                         counter_new_interactions += 1
 
-                
+                """ Updating the last value with the summation of new interactions"""
                 print("NEW VALUES --->", new_satisfaction/counter_new_interactions, new_credibility/counter_new_interactions, new_transaction_factor/counter_new_interactions, new_community_factor/counter_new_interactions)
                 new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 3)
                 new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 3)
@@ -238,6 +233,7 @@ class compute_trust_level(Resource):
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
+                response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
                 print("Previous Trust score --->", last_trust_value, "NEW trust score --->", information["trust_value"])
 
@@ -266,12 +262,13 @@ class compute_trust_level(Resource):
                     file.write(new_file)
                     file.close()
 
-                response = requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
+                requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
-        return 200
+        return response
 
 class store_trust_level(Resource):
     def post(self):
+        """ This method is employed to register direct trust in our internal database """
         req = request.data.decode("utf-8")
         information = json.loads(req)
 
@@ -283,11 +280,73 @@ class store_trust_level(Resource):
 
         return 200
 
+class update_trust_level(Resource):
+    def post(self):
+        """ This method updates a trust score based on certain SLA events. More events need to be considered,
+        it is only an initial version"""
+
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        slaBreachPredictor_topic = information["SLABreachPredictor"]
+        topic_key = information["key"]
+
+        notifications = consumer.readSLANotification(slaBreachPredictor_topic, topic_key)
+        print("Nofitications: ", notifications)
+
+        positive_notification = "was able to manage the SLA violation successfully"
+        negative_notification = "was not able to manage the SLA violation successfully"
+        first_range_probability = 0.25
+        second_range_probability = 0.50
+        third_range_probability = 0.75
+        fourth_range_probability = 1.0
+
+        new_trust_score = 0.0
+
+        for notification in notifications:
+            current_notification = notification["notification"]
+            likehood = notification["notification"].split("probability of")[1].split("\n")[0]
+            likehood = float(likehood)
+
+            last_trust_score = consumer.readAllInformationTrustValue(topic_key)
+
+            if positive_notification in current_notification:
+                if likehood <= first_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.075
+                elif likehood <= second_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.10
+                elif likehood <= third_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.125
+                elif likehood <= fourth_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.15
+            elif negative_notification in current_notification:
+                if likehood <= first_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.075
+                elif likehood <= second_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.10
+                elif likehood <= third_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.125
+                elif likehood <= fourth_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.15
+
+            if new_trust_score > 1.0:
+                new_trust_score = 1.0
+            elif new_trust_score < 0.0:
+                new_trust_score = 0.0
+
+            print("Previous Trust Score --->", last_trust_score, "Updated Trust Score -->", new_trust_score)
+            last_trust_score["trust_value"] = round(new_trust_score, 3)
+            last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+            producer.sendMessage(topic_key, topic_key, last_trust_score)
+
+        return 200
+
 def launch_server_REST(port):
     api.add_resource(start_data_collection, '/start_data_collection')
     api.add_resource(gather_information, '/gather_information')
     api.add_resource(compute_trust_level, '/compute_trust_level')
     api.add_resource(store_trust_level, '/store_trust_level')
+    api.add_resource(update_trust_level, '/update_trust_level')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 
