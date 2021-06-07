@@ -95,9 +95,6 @@ class start_data_collection(Resource):
         return response
 
 
-    """def getTrusteeSatisfactionDLT(self, trusteeDID):
-        return None"""
-
 class gather_information(Resource):
     def post(self):
         """ This method will retrieve information from the DataLake (kafka topic direct trust) +
@@ -222,7 +219,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["credibility"] = new_credibility
                 information["trustor"]["transactionFactor"] = new_transaction_factor
                 information["trustor"]["communityFactor"] = new_community_factor
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
+                #information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -233,6 +230,97 @@ class compute_trust_level(Resource):
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
+                """ These values should be requested from other 5GZORRO components in future releases"""
+                if "domain1" in current_trustee:
+                    provider_reputation = peerTrust.providerReputation(3, 5, 3, 3, 22, 24, 1, 1)
+                    information["trustor"]["direct_parameters"]["availableAssets"] = 3
+                    information["trustor"]["direct_parameters"]["totalAssets"] = 5
+                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 3
+                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 3
+                    information["trustor"]["direct_parameters"]["managedViolations"] = 22
+                    information["trustor"]["direct_parameters"]["predictedViolations"] = 24
+                    information["trustor"]["direct_parameters"]["executedViolations"] = 1
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 1
+                    offer_reputation = peerTrust.offerReputation(5, 6, 2, 4, 7, 8, 1, 0)
+                    information["trustor"]["direct_parameters"]["consideredOffers"] = 5
+                    information["trustor"]["direct_parameters"]["totalOffers"] = 6
+                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 2
+                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 4
+                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 7
+                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
+                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
+                elif "domain2" in current_trustee:
+                    provider_reputation = peerTrust.providerReputation(2, 4, 1, 1, 10, 14, 1, 2)
+                    information["trustor"]["direct_parameters"]["availableAssets"] = 2
+                    information["trustor"]["direct_parameters"]["totalAssets"] = 4
+                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 1
+                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 1
+                    information["trustor"]["direct_parameters"]["managedViolations"] = 10
+                    information["trustor"]["direct_parameters"]["predictedViolations"] = 14
+                    information["trustor"]["direct_parameters"]["executedViolations"] = 2
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 2
+                    offer_reputation = peerTrust.offerReputation(2, 5, 1, 1, 5, 5, 0, 0)
+                    information["trustor"]["direct_parameters"]["consideredOffers"] = 2
+                    information["trustor"]["direct_parameters"]["totalOffers"] = 5
+                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 1
+                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 1
+                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 5
+                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 5
+                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 0
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
+                elif "domain3" in current_trustee:
+                    provider_reputation = peerTrust.providerReputation(4, 4, 2, 2, 10, 18, 6, 2)
+                    information["trustor"]["direct_parameters"]["availableAssets"] = 4
+                    information["trustor"]["direct_parameters"]["totalAssets"] = 4
+                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 2
+                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 2
+                    information["trustor"]["direct_parameters"]["managedViolations"] = 10
+                    information["trustor"]["direct_parameters"]["predictedViolations"] = 18
+                    information["trustor"]["direct_parameters"]["executedViolations"] = 6
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 2
+                    offer_reputation = peerTrust.offerReputation(7, 8, 3, 4, 4, 8, 4, 4)
+                    information["trustor"]["direct_parameters"]["consideredOffers"] = 7
+                    information["trustor"]["direct_parameters"]["totalOffers"] = 8
+                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 3
+                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 4
+                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 4
+                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
+                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 4
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 4
+                elif "domain4" in current_trustee:
+                    provider_reputation = peerTrust.providerReputation(6, 8, 4, 5, 19, 19, 0, 0)
+                    information["trustor"]["direct_parameters"]["availableAssets"] = 6
+                    information["trustor"]["direct_parameters"]["totalAssets"] = 8
+                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 4
+                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 5
+                    information["trustor"]["direct_parameters"]["managedViolations"] = 19
+                    information["trustor"]["direct_parameters"]["predictedViolations"] = 19
+                    information["trustor"]["direct_parameters"]["executedViolations"] = 0
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
+                    offer_reputation = peerTrust.offerReputation(3, 4, 1, 1, 4, 6, 1, 1)
+                    information["trustor"]["direct_parameters"]["consideredOffers"] = 3
+                    information["trustor"]["direct_parameters"]["totalOffers"] = 4
+                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 1
+                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 1
+                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 4
+                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 6
+                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
+                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 1
+
+                provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
+                offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
+                ps_weighting = round(random.uniform(0.4, 0.6),2)
+                information["trustor"]["direct_parameters"]["providerSatisfaction"] = provider_satisfaction
+                ps_weighting = round(random.uniform(0.4, 0.6),2)
+                information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
+                information["trustor"]["direct_parameters"]["offerSatisfaction"] = offer_satisfaction
+                os_weighting = 1-ps_weighting
+                information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
+                information["trustor"]["direct_parameters"]["providerReputation"] = provider_reputation
+                information["trustor"]["direct_parameters"]["offerReputation"] = offer_reputation
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
+                
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
                 print("Previous Trust score --->", last_trust_value, "NEW trust score --->", information["trust_value"])

@@ -72,19 +72,19 @@ class PeerTrust():
                  "userSatisfaction": user_satisfaction_1, "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8},
                 {"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain8-RAN", "offerDID": "did:5gzorro:domain8-RAN-2",
                  "userSatisfaction": user_satisfaction_2, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain1-RAN", "offerDID": "did:5gzorro:domain1-RAN-2",
+                {"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain1-RAN", "offerDID": "did:5gzorro:domain1-RAN-1",
                  "userSatisfaction": user_satisfaction_3, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10},
                 {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain7-RAN", "offerDID": "did:5gzorro:domain7-RAN-1",
                  "userSatisfaction": user_satisfaction_4, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 7},
                 {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain8-RAN", "offerDID": "did:5gzorro:domain8-RAN-1",
                  "userSatisfaction": user_satisfaction_5, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain2-RAN", "offerDID": "did:5gzorro:domain2-RAN-1",
+                {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain2-RAN", "offerDID": "did:5gzorro:domain2-RAN-2",
                  "userSatisfaction": user_satisfaction_6, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 9},
                 {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain5-RAN", "offerDID": "did:5gzorro:domain5-RAN-2",
                  "userSatisfaction": user_satisfaction_7, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 11},
                 {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain6-RAN", "offerDID": "did:5gzorro:domain6-RAN-2",
                  "userSatisfaction": user_satisfaction_8, "interactionNumber": 1, "totalInteractionNumber": 9, "currentInteractionNumber": 12},
-                {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain3-RAN", "offerDID": "did:5gzorro:domain3-RAN-2",
+                {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain3-RAN", "offerDID": "did:5gzorro:domain3-RAN-1",
                  "userSatisfaction": user_satisfaction_9, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 13},
                 {"trustorDID": "did:5gzorro:domain8-RAN", "trusteeDID": "did:5gzorro:domain7-RAN", "offerDID": "did:5gzorro:domain7-RAN-2",
                  "userSatisfaction": user_satisfaction_10, "interactionNumber": 1, "totalInteractionNumber": 13, "currentInteractionNumber": 8},
@@ -93,7 +93,7 @@ class PeerTrust():
                 {"trustorDID": "did:5gzorro:domain8-RAN", "trusteeDID": "did:5gzorro:domain4-RAN", "offerDID": "did:5gzorro:domain4-RAN-1",
                  "userSatisfaction": user_satisfaction_12, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10}
                 ]
-        string_data = "{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_1)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 6, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_2)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain1-RAN\", \"offerDID\": \"did:5gzorro:domain1-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_3)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_4)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 7}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_5)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain2-RAN\", \"offerDID\": \"did:5gzorro:domain2-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_6)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_7)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 11}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_8)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 9, \"currentInteractionNumber\": 12}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain3-RAN\", \"offerDID\": \"did:5gzorro:domain3-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_9)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 13}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_10)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 13, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_11)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain4-RAN\", \"offerDID\": \"did:5gzorro:domain4-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_12)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}"
+        string_data = "{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_1)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 6, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_2)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain1-RAN\", \"offerDID\": \"did:5gzorro:domain1-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_3)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_4)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 7}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_5)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain2-RAN\", \"offerDID\": \"did:5gzorro:domain2-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_6)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_7)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 11}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_8)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 9, \"currentInteractionNumber\": 12}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain3-RAN\", \"offerDID\": \"did:5gzorro:domain3-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_9)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 13}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_10)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 13, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_11)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain4-RAN\", \"offerDID\": \"did:5gzorro:domain4-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_12)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}"
 
         for interaction in data:
             trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
@@ -274,6 +274,24 @@ class PeerTrust():
 
         return last_truste_value
 
+    def getTrusteeSatisfactionDLT(self, trusteeDID):
+
+        last_interaction = {}
+        counter = 0
+        general_satisfaction = 0.0
+
+        if os.path.exists('DLT.json'):
+            """ Convert string to a list of dictionaries """
+            new_interaction_list = self.stringToDictionaryList()
+
+            """ Starting from the end to identify the last recommender """
+            for interaction in new_interaction_list:
+                if interaction['trustorDID'] == trusteeDID:
+                    general_satisfaction = general_satisfaction + interaction['userSatisfaction']
+                    counter = counter + 1
+
+        return round(general_satisfaction/counter, 3)
+
 
     def generateHistoryTrustInformation(self, producer, trustorDID, trusteeDID, offerDID, provider_topic_name, full_topic_name, topic_trusteeDID, registered_offer_interaction, previous_interaction_number):
         """ This method generates trust information that will be sent to trustor Kafka Topic. In particular,
@@ -286,7 +304,7 @@ class PeerTrust():
             """ Adding information related to the specific request """
             information["trustee"]["trusteeDID"] = trusteeDID
             information["trustee"]["offerDID"] = offerDID
-            information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95),3)
+            information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95), 3)
             information["trustor"]["trustorDID"] = trustorDID
             information["trustor"]["trusteeDID"] = trusteeDID
             information["trustor"]["offerDID"] = offerDID
@@ -331,8 +349,8 @@ class PeerTrust():
                 trust_data = consumer.readLastTrustInterationValues(full_topic_name, interaction_number)
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
-                #information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
-                information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.9), 3)
+                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
+                #information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.9), 3)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = trusteeDID
                 information["trustor"]["offerDID"] = offerDID
@@ -384,13 +402,12 @@ class PeerTrust():
         print("Transaction Factor ---->", information["trustor"]["transactionFactor"])
         information["trustor"]["communityFactor"] = self.communityContextFactor(trustorDID, trusteeDID)
         print("Community Factor ---->", information["trustor"]["communityFactor"])
-        information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID)
 
         direct_weighting = round(random.uniform(0.6, 0.7),2)
         print("Primer peso --->", direct_weighting)
         print("Segundo peso --->", 1-direct_weighting)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
-        information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9), 3)
+        #information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9), 3)
 
         provider_reputation = self.providerReputation(availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations)
         provider_satisfaction = self.providerSatisfaction(trustorDID, trusteeDID, provider_reputation)
@@ -431,6 +448,8 @@ class PeerTrust():
 
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
+        information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
+
         #information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
         #print("PS ---->", ps_weighting)
         print("Provider Satisfaction ---->", provider_satisfaction)
@@ -438,8 +457,8 @@ class PeerTrust():
         #print("OS ---->", os_weighting)
         print("Offer Satisfaction ---->", offer_satisfaction)
         print("Offer Reputation ---->", offer_reputation)
-        information["trustee"]["trusteeSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
-        print("Satisfaction ---->", information["trustee"]["trusteeSatisfaction"])
+        information["trustor"]["direct_parameters"]["userSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
+        print("Satisfaction ---->", information["trustor"]["direct_parameters"]["userSatisfaction"])
 
         information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
         print("Final Trust Value ---->", information["trust_value"])
