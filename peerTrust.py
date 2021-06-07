@@ -293,7 +293,7 @@ class PeerTrust():
             information["trustor"]["credibility"] = 0.913
             information["trustor"]["transactionFactor"] = 0.856
             information["trustor"]["communityFactor"] = 0.865
-            information["trustor"]["direct_parameters"]["userSatisfaction"] = 0.801
+            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.95),3)
             direct_weighting = round(random.uniform(0.6, 0.7),2)
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
             information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -331,7 +331,8 @@ class PeerTrust():
                 trust_data = consumer.readLastTrustInterationValues(full_topic_name, interaction_number)
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
+                #information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
+                information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.9), 3)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = trusteeDID
                 information["trustor"]["offerDID"] = offerDID
@@ -674,9 +675,9 @@ class PeerTrust():
 
         trustee_similarity = self.similarity(trusteeDID)
 
-        credibility = trustee_similarity/similarity_summation
+        credibility = trustee_similarity/(similarity_summation/summation_counter)
 
-        print("CREDIBILITY ---->", credibility, trustee_similarity, similarity_summation, trustorDID, trusteeDID)
+        print("CREDIBILITY ---->", credibility, trustee_similarity, similarity_summation/summation_counter, trustorDID, trusteeDID)
 
         return credibility
 
@@ -775,7 +776,9 @@ class PeerTrust():
         """ We obtain our last trust value on the recommender from our Kafka topic """
         last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
 
-        provider_satisfaction = providerReputation * provider_recommendation * last_trust_score_recommender
+        print("Provider Reputation --->", providerReputation, "Provider Recommendation -->", provider_recommendation, "Last Trust Recommender -->", last_trust_score_recommender)
+
+        provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 3)
 
         return provider_satisfaction
 
@@ -806,7 +809,7 @@ class PeerTrust():
         """ We obtain our last trust value on the offer from our Kafka topic"""
         last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
 
-        provider_satisfaction = offerReputation * provider_recommendation * last_trust_score_recommender
+        provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 3)
 
         return provider_satisfaction
 

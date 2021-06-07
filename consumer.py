@@ -155,7 +155,7 @@ def readSatisfactionSummation(topic_name):
         trust_information = json.loads(message.value.decode())
         if trust_information:
             counter += 1
-            satisfactionsummation = satisfactionsummation + trust_information["trustee"]["trusteeSatisfaction"]
+            satisfactionsummation = satisfactionsummation + trust_information["trustor"]["direct_parameters"]["userSatisfaction"]
 
     consumer.close()
     print("SUMMATION SATISFACTION ---->", satisfactionsummation, counter)

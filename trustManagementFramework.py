@@ -198,9 +198,9 @@ class compute_trust_level(Resource):
                     print("Previous values --->",new_trustee_interaction, "--->", topic_name)
                     for i in new_trustee_interaction:
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
-                        new_credibility = new_credibility + i['credibility']
-                        new_transaction_factor = new_transaction_factor + i['transactionFactor']
-                        new_community_factor = new_community_factor + i['communityFactor']
+                        new_credibility = new_credibility + peerTrust.credibility(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        new_transaction_factor = new_transaction_factor + peerTrust.transactionContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'], ast.literal_eval(new_interaction)['offerDID'])
+                        new_community_factor = new_community_factor + peerTrust.communityContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
@@ -222,7 +222,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["credibility"] = new_credibility
                 information["trustor"]["transactionFactor"] = new_transaction_factor
                 information["trustor"]["communityFactor"] = new_community_factor
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95),3) + i["userSatisfaction"])/2, 3)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -233,7 +233,7 @@ class compute_trust_level(Resource):
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-                response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
+                response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
                 print("Previous Trust score --->", last_trust_value, "NEW trust score --->", information["trust_value"])
 
@@ -334,7 +334,7 @@ class update_trust_level(Resource):
             elif new_trust_score < 0.0:
                 new_trust_score = 0.0
 
-            print("Previous Trust Score --->", last_trust_score["trust_value"], "Updated Trust Score -->", new_trust_score)
+            print("Previous Trust Score --->", last_trust_score ["trust_value"], "Updated Trust Score -->", new_trust_score)
             last_trust_score["trust_value"] = round(new_trust_score, 3)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
             producer.sendMessage(topic_key, topic_key, last_trust_score)
