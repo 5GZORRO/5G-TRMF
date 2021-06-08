@@ -128,7 +128,7 @@
     "relatedParty": [
       {
         "id": "string",
-        "href": "did:5gzorro:domain3-RAN",
+        "href": "did:5gzorro:domain-E",
         "role": "Radio infrastructure provider",
         "name": "Radio Infrastructure Provider Limited"
       }
@@ -136,7 +136,7 @@
     "resourceSpecification": [
       {
         "id": "5gCell-1",
-        "href": "did:5gzorro:domain3-RAN-1",
+        "href": "did:5gzorro:domain-E-RAN-1",
         "category": "Radio",
         "name": "Cell Resource Specification",
         "description": "A Macro Cell Resource Specification",

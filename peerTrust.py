@@ -68,32 +68,32 @@ class PeerTrust():
         user_satisfaction_12 = round(random.uniform(0.76, 0.95), 3)
 
 
-        data = [{"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain6-RAN", "offerDID": "did:5gzorro:domain6-RAN-1",
+        data = [{"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-G", "offerDID": "did:5gzorro:domain-G-RAN-1",
                  "userSatisfaction": user_satisfaction_1, "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain8-RAN", "offerDID": "did:5gzorro:domain8-RAN-2",
+                {"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-I", "offerDID": "did:5gzorro:domain-I-RAN-2",
                  "userSatisfaction": user_satisfaction_2, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain5-RAN", "trusteeDID": "did:5gzorro:domain1-RAN", "offerDID": "did:5gzorro:domain1-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-B", "offerDID": "did:5gzorro:domain-B-RAN-1",
                  "userSatisfaction": user_satisfaction_3, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10},
-                {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain7-RAN", "offerDID": "did:5gzorro:domain7-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-H", "offerDID": "did:5gzorro:domain-H-RAN-1",
                  "userSatisfaction": user_satisfaction_4, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 7},
-                {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain8-RAN", "offerDID": "did:5gzorro:domain8-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-I", "offerDID": "did:5gzorro:domain-I-RAN-1",
                  "userSatisfaction": user_satisfaction_5, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain6-RAN", "trusteeDID": "did:5gzorro:domain2-RAN", "offerDID": "did:5gzorro:domain2-RAN-2",
+                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-C", "offerDID": "did:5gzorro:domain-C-RAN-2",
                  "userSatisfaction": user_satisfaction_6, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain5-RAN", "offerDID": "did:5gzorro:domain5-RAN-2",
+                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-F", "offerDID": "did:5gzorro:domain-F-RAN-2",
                  "userSatisfaction": user_satisfaction_7, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 11},
-                {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain6-RAN", "offerDID": "did:5gzorro:domain6-RAN-2",
+                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-G", "offerDID": "did:5gzorro:domain-G-RAN-2",
                  "userSatisfaction": user_satisfaction_8, "interactionNumber": 1, "totalInteractionNumber": 9, "currentInteractionNumber": 12},
-                {"trustorDID": "did:5gzorro:domain7-RAN", "trusteeDID": "did:5gzorro:domain3-RAN", "offerDID": "did:5gzorro:domain3-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-D", "offerDID": "did:5gzorro:domain-D-RAN-1",
                  "userSatisfaction": user_satisfaction_9, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 13},
-                {"trustorDID": "did:5gzorro:domain8-RAN", "trusteeDID": "did:5gzorro:domain7-RAN", "offerDID": "did:5gzorro:domain7-RAN-2",
+                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-H", "offerDID": "did:5gzorro:domain-H-RAN-2",
                  "userSatisfaction": user_satisfaction_10, "interactionNumber": 1, "totalInteractionNumber": 13, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain8-RAN", "trusteeDID": "did:5gzorro:domain5-RAN", "offerDID": "did:5gzorro:domain5-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-F", "offerDID": "did:5gzorro:domain-F-RAN-1",
                  "userSatisfaction": user_satisfaction_11, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain8-RAN", "trusteeDID": "did:5gzorro:domain4-RAN", "offerDID": "did:5gzorro:domain4-RAN-1",
+                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-E", "offerDID": "did:5gzorro:domain-E-RAN-1",
                  "userSatisfaction": user_satisfaction_12, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10}
                 ]
-        string_data = "{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_1)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 6, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_2)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain5-RAN\", \"trusteeDID\": \"did:5gzorro:domain1-RAN\", \"offerDID\": \"did:5gzorro:domain1-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_3)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_4)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 7}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain8-RAN\", \"offerDID\": \"did:5gzorro:domain8-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_5)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain6-RAN\", \"trusteeDID\": \"did:5gzorro:domain2-RAN\", \"offerDID\": \"did:5gzorro:domain2-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_6)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_7)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 11}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain6-RAN\", \"offerDID\": \"did:5gzorro:domain6-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_8)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 9, \"currentInteractionNumber\": 12}\n"+"{\"trustorDID\": \"did:5gzorro:domain7-RAN\", \"trusteeDID\": \"did:5gzorro:domain3-RAN\", \"offerDID\": \"did:5gzorro:domain3-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_9)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 13}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain7-RAN\", \"offerDID\": \"did:5gzorro:domain7-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_10)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 13, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain5-RAN\", \"offerDID\": \"did:5gzorro:domain5-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_11)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain8-RAN\", \"trusteeDID\": \"did:5gzorro:domain4-RAN\", \"offerDID\": \"did:5gzorro:domain4-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_12)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}"
+        string_data = "{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-G\", \"offerDID\": \"did:5gzorro:domain-G-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_1)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 6, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-I\", \"offerDID\": \"did:5gzorro:domain-I-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_2)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-B\", \"offerDID\": \"did:5gzorro:domain-B-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_3)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-H\", \"offerDID\": \"did:5gzorro:domain-H-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_4)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 7}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-I\", \"offerDID\": \"did:5gzorro:domain-I-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_5)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-C\", \"offerDID\": \"did:5gzorro:domain-C-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_6)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-F\", \"offerDID\": \"did:5gzorro:domain-F-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_7)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 11}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-G\", \"offerDID\": \"did:5gzorro:domain-G-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_8)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 9, \"currentInteractionNumber\": 12}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-D\", \"offerDID\": \"did:5gzorro:domain-D-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_9)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 13}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-H\", \"offerDID\": \"did:5gzorro:domain-H-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_10)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 13, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-F\", \"offerDID\": \"did:5gzorro:domain-F-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_11)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-E\", \"offerDID\": \"did:5gzorro:domain-E-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_12)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}"
 
         for interaction in data:
             trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
@@ -500,41 +500,41 @@ class PeerTrust():
     def setTrustee1Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
 
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 1, 10, 11, 4, 6, 18, 21, 0, 3, 6, 6, 2, 2, 2, 8, 4, 2)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 2, 1, 1, 3, 4, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 2, 3, 4, 2, 2, 18, 21, 1, 2, 4, 8, 2, 2, 7, 11, 2, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 10, 11, 4, 6, 18, 21, 0, 3, 6, 6, 2, 2, 2, 8, 4, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 2, 1, 1, 3, 4, 1, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 2, 3, 4, 2, 2, 18, 21, 1, 2, 4, 8, 2, 2, 7, 11, 2, 2)
 
 
     def setTrustee2Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
 
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 3, 4, 2, 3, 16, 16, 0, 0, 4, 6, 2, 2, 2, 3, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-2", 2, 4, 11, 2, 4, 18, 21, 2, 1, 5, 8, 3, 3, 5, 9, 2, 2)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-1", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 5, 1, 1, 5, 5, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 1, 3, 4, 2, 2, 18, 21, 1, 2, 2, 4, 2, 2, 7, 10, 1, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 3, 4, 2, 3, 16, 16, 0, 0, 4, 6, 2, 2, 2, 3, 1, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 4, 11, 2, 4, 18, 21, 2, 1, 5, 8, 3, 3, 5, 9, 2, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 5, 1, 1, 5, 5, 0, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 3, 4, 2, 2, 18, 21, 1, 2, 2, 4, 2, 2, 7, 10, 1, 2)
 
 
     def setTrustee3Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
 
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-1", 1, 1, 2, 1, 1, 7, 9, 1, 1, 3, 4, 1, 2, 3, 3, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-1", 1, 4, 8, 2, 2, 18, 21, 2, 1, 4, 8, 2, 2, 11, 11, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain6-RAN", "did:5gzorro:domain6-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-1", 1, 4, 4, 2, 2, 10, 18, 6, 2, 7, 8, 3, 4, 4, 8, 4, 4)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 1, 2, 1, 1, 7, 9, 1, 1, 3, 4, 1, 2, 3, 3, 0, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 4, 8, 2, 2, 18, 21, 2, 1, 4, 8, 2, 2, 11, 11, 0, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 10, 18, 6, 2, 7, 8, 3, 4, 4, 8, 4, 4)
 
     def setTrustee4Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
 
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain5-RAN", "did:5gzorro:domain5-RAN-2", 1, 6, 8, 4, 5, 19, 19, 0, 0, 3, 4, 1, 1, 4, 6, 1, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-1", 1, 3, 5, 2, 2, 14, 18, 2, 2, 4, 4, 2, 2, 8, 11, 2, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain7-RAN", "did:5gzorro:domain7-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain8-RAN", "did:5gzorro:domain8-RAN-2", 1, 4, 8, 1, 1, 19, 25, 3, 3, 1, 2, 1, 1, 9, 9, 0, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 6, 8, 4, 5, 19, 19, 0, 0, 3, 4, 1, 1, 4, 6, 1, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 3, 5, 2, 2, 14, 18, 2, 2, 4, 4, 2, 2, 8, 11, 2, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 4, 8, 1, 1, 19, 25, 3, 3, 1, 2, 1, 1, 9, 9, 0, 0)
 
     def getLastHistoryTrustValue(self, trustorDID, trusteeDID):
         """ This method retrieves the last trust score that a trustor has stored about a trustee in its Kafka topic"""
@@ -741,7 +741,7 @@ class PeerTrust():
 
     def communityContextFactor(self, trustorDID, trusteeDID):
         """ Static list of recommender based on the domains registered in the DLT. TODO dynamic """
-        trustworthy_recommender_list = ['did:5gzorro:domain5-RAN', 'did:5gzorro:domain6-RAN', 'did:5gzorro:domain7-RAN','did:5gzorro:domain8-RAN']
+        trustworthy_recommender_list = ['did:5gzorro:domain-F', 'did:5gzorro:domain-G', 'did:5gzorro:domain-H','did:5gzorro:domain-I']
 
         topic_trusteeDID = trusteeDID.split(":")[2]
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)

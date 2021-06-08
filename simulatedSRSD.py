@@ -11,7 +11,7 @@ change based on decisions taken in the SRSD. """
 list_product_offers = sorted(glob.glob('./RAN*.json'))
 ran_offers = []
 
-trustor_DID = {"trustorDID":"did:5gzorroTrustor:rotsurT"}
+trustor_DID = {"trustorDID":"did:5gzorro:domain-A"}
 ran_offers.append(trustor_DID)
 
 for file_name in list_product_offers:

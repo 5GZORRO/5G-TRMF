@@ -92,7 +92,7 @@ class start_data_collection(Resource):
                     else:
                         logging.info("Error generating a Kafka topic")
         client.close()
-        return response
+        return json.dumps(trust_scores)
 
 
 class gather_information(Resource):
@@ -231,7 +231,7 @@ class compute_trust_level(Resource):
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 """ These values should be requested from other 5GZORRO components in future releases"""
-                if "domain1" in current_trustee:
+                if "domain-B" in current_trustee:
                     provider_reputation = peerTrust.providerReputation(3, 5, 3, 3, 22, 24, 1, 1)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 3
                     information["trustor"]["direct_parameters"]["totalAssets"] = 5
@@ -250,7 +250,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif "domain2" in current_trustee:
+                elif "domain-C" in current_trustee:
                     provider_reputation = peerTrust.providerReputation(2, 4, 1, 1, 10, 14, 1, 2)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 2
                     information["trustor"]["direct_parameters"]["totalAssets"] = 4
@@ -269,7 +269,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 5
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 0
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif "domain3" in current_trustee:
+                elif "domain-D" in current_trustee:
                     provider_reputation = peerTrust.providerReputation(4, 4, 2, 2, 10, 18, 6, 2)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 4
                     information["trustor"]["direct_parameters"]["totalAssets"] = 4
@@ -288,7 +288,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 4
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 4
-                elif "domain4" in current_trustee:
+                elif "domain-E" in current_trustee:
                     provider_reputation = peerTrust.providerReputation(6, 8, 4, 5, 19, 19, 0, 0)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 6
                     information["trustor"]["direct_parameters"]["totalAssets"] = 8
@@ -320,7 +320,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["direct_parameters"]["providerReputation"] = provider_reputation
                 information["trustor"]["direct_parameters"]["offerReputation"] = offer_reputation
                 information["trustor"]["direct_parameters"]["userSatisfaction"] = peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
-                
+
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
                 print("Previous Trust score --->", last_trust_value, "NEW trust score --->", information["trust_value"])
@@ -393,8 +393,8 @@ class update_trust_level(Resource):
 
         for notification in notifications:
             current_notification = notification["notification"]
-            likehood = notification["notification"].split("probability of")[1].split("\n")[0]
-            likehood = float(likehood)
+            likehood = notification["value"]
+            #likehood = float(likehood)
 
             last_trust_score = consumer.readAllInformationTrustValue(topic_key)
 
@@ -409,13 +409,13 @@ class update_trust_level(Resource):
                     new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.15
             elif negative_notification in current_notification:
                 if likehood <= first_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.075
-                elif likehood <= second_range_probability:
                     new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.10
-                elif likehood <= third_range_probability:
+                elif likehood <= second_range_probability:
                     new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.125
-                elif likehood <= fourth_range_probability:
+                elif likehood <= third_range_probability:
                     new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.15
+                elif likehood <= fourth_range_probability:
+                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.175
 
             if new_trust_score > 1.0:
                 new_trust_score = 1.0
