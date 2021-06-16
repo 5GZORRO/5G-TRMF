@@ -93,6 +93,9 @@ class PeerTrust():
                 {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-E", "offerDID": "did:5gzorro:domain-E-RAN-1",
                  "userSatisfaction": user_satisfaction_12, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10}
                 ]
+        print("\n\nSet of previous trust interactions between 5GZORRO domains\n")
+        print(data, "\n")
+
         string_data = "{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-G\", \"offerDID\": \"did:5gzorro:domain-G-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_1)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 6, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-I\", \"offerDID\": \"did:5gzorro:domain-I-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_2)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-F\", \"trusteeDID\": \"did:5gzorro:domain-B\", \"offerDID\": \"did:5gzorro:domain-B-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_3)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-H\", \"offerDID\": \"did:5gzorro:domain-H-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_4)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 7}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-I\", \"offerDID\": \"did:5gzorro:domain-I-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_5)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 7, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-G\", \"trusteeDID\": \"did:5gzorro:domain-C\", \"offerDID\": \"did:5gzorro:domain-C-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_6)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-F\", \"offerDID\": \"did:5gzorro:domain-F-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_7)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 11}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-G\", \"offerDID\": \"did:5gzorro:domain-G-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_8)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 9, \"currentInteractionNumber\": 12}\n"+"{\"trustorDID\": \"did:5gzorro:domain-H\", \"trusteeDID\": \"did:5gzorro:domain-D\", \"offerDID\": \"did:5gzorro:domain-D-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_9)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 13}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-H\", \"offerDID\": \"did:5gzorro:domain-H-RAN-2\",\"userSatisfaction\": "+str(user_satisfaction_10)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 13, \"currentInteractionNumber\": 8}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-F\", \"offerDID\": \"did:5gzorro:domain-F-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_11)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 10, \"currentInteractionNumber\": 9}\n"+"{\"trustorDID\": \"did:5gzorro:domain-I\", \"trusteeDID\": \"did:5gzorro:domain-E\", \"offerDID\": \"did:5gzorro:domain-E-RAN-1\",\"userSatisfaction\": "+str(user_satisfaction_12)+", \"interactionNumber\": 1, \"totalInteractionNumber\": 1, \"currentInteractionNumber\": 10}"
 
         for interaction in data:
@@ -113,6 +116,8 @@ class PeerTrust():
             if result == 1:
                 message = {"interaction": interaction["trustorDID"]+" has interacted with "+interaction["trusteeDID"]}
                 producer.sendMessage(registered_interaction, registered_offer_interaction, message)
+                for i in range(random.randint(0, 1)):
+                    producer.sendMessage(registered_interaction, registered_offer_interaction, message)
                 producer.sendMessage(provider_topic_name, provider_topic_name, trust_informartion)
                 producer.sendMessage(full_topic_name, full_topic_name, trust_informartion)
 
@@ -253,7 +258,7 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
+        #print("RECOMMENDER TRUST VALUE ----->", trust_information["trust_value"])
         last_truste_value = trust_information["trust_value"]
 
         return last_truste_value
@@ -269,7 +274,7 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee+"-"+offer
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
-        print("RECOMMENDER Offer TRUST VALUE ----->", trust_information["trust_value"])
+        #print("RECOMMENDER Offer TRUST VALUE ----->", trust_information["trust_value"])
         last_truste_value = trust_information["trust_value"]
 
         return last_truste_value
@@ -393,19 +398,21 @@ class PeerTrust():
         values previously established"""
 
         information = self.minimumTrustTemplate(trustorDID, trusteeDID, offerDID)
-        print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
-        print("Trustor --->", trustorDID, "Truestee --->", trusteeDID, "offer --->", offerDID, "\n")
+        print("\t* Provider ---> "+trusteeDID+" -- Product offer ---> "+offerDID)
+
+        #print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n")
+        #print("Trustor --->", trustorDID, "Truestee --->", trusteeDID, "offer --->", offerDID, "\n")
 
         information["trustor"]["credibility"] = self.credibility(trustorDID, trusteeDID)
-        print("Credibility ---->", information["trustor"]["credibility"])
+        #print("Credibility ---->", information["trustor"]["credibility"])
         information["trustor"]["transactionFactor"] = self.transactionContextFactor(trustorDID, trusteeDID, offerDID)
-        print("Transaction Factor ---->", information["trustor"]["transactionFactor"])
+        #print("Transaction Factor ---->", information["trustor"]["transactionFactor"])
         information["trustor"]["communityFactor"] = self.communityContextFactor(trustorDID, trusteeDID)
-        print("Community Factor ---->", information["trustor"]["communityFactor"])
+        #print("Community Factor ---->", information["trustor"]["communityFactor"])
 
         direct_weighting = round(random.uniform(0.6, 0.7),2)
-        print("Primer peso --->", direct_weighting)
-        print("Segundo peso --->", 1-direct_weighting)
+        #print("Primer peso --->", direct_weighting)
+        #print("Segundo peso --->", 1-direct_weighting)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         #information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9), 3)
 
@@ -452,17 +459,17 @@ class PeerTrust():
 
         #information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
         #print("PS ---->", ps_weighting)
-        print("Provider Satisfaction ---->", provider_satisfaction)
-        print("Provider Reputation ---->", provider_reputation)
+        #print("Provider Satisfaction ---->", provider_satisfaction)
+        #print("Provider Reputation ---->", provider_reputation)
         #print("OS ---->", os_weighting)
-        print("Offer Satisfaction ---->", offer_satisfaction)
-        print("Offer Reputation ---->", offer_reputation)
+        #print("Offer Satisfaction ---->", offer_satisfaction)
+        #print("Offer Reputation ---->", offer_reputation)
         information["trustor"]["direct_parameters"]["userSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
-        print("Satisfaction ---->", information["trustor"]["direct_parameters"]["userSatisfaction"])
+        #print("Satisfaction ---->", information["trustor"]["direct_parameters"]["userSatisfaction"])
 
         information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
-        print("Final Trust Value ---->", information["trust_value"])
-        print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
+        #print("Final Trust Value ---->", information["trust_value"])
+        #print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n")
 
         topic_trustorDID = trustorDID.split(":")[2]
         topic_trusteeDID = trusteeDID.split(":")[2]
@@ -499,42 +506,51 @@ class PeerTrust():
 
     def setTrustee1Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
+        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
+        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 10, 11, 4, 6, 18, 21, 0, 3, 6, 6, 2, 2, 2, 8, 4, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 2, 1, 1, 3, 4, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 2, 3, 4, 2, 2, 18, 21, 1, 2, 4, 8, 2, 2, 7, 11, 2, 2)
 
 
     def setTrustee2Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
+        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
+        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 3, 4, 2, 3, 16, 16, 0, 0, 4, 6, 2, 2, 2, 3, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 4, 11, 2, 4, 18, 21, 2, 1, 5, 8, 3, 3, 5, 9, 2, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 5, 1, 1, 5, 5, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 3, 4, 2, 2, 18, 21, 1, 2, 2, 4, 2, 2, 7, 10, 1, 2)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
 
 
     def setTrustee3Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
+        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
+        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 1, 2, 1, 1, 7, 9, 1, 1, 3, 4, 1, 2, 3, 3, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 4, 8, 2, 2, 18, 21, 2, 1, 4, 8, 2, 2, 11, 11, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 10, 18, 6, 2, 7, 8, 3, 4, 4, 8, 4, 4)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
+
 
     def setTrustee4Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-
+        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
+        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 6, 8, 4, 5, 19, 19, 0, 0, 3, 4, 1, 1, 4, 6, 1, 1)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 3, 5, 2, 2, 14, 18, 2, 2, 4, 4, 2, 2, 8, 11, 2, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
         self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 4, 8, 1, 1, 19, 25, 3, 3, 1, 2, 1, 1, 9, 9, 0, 0)
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
 
     def getLastHistoryTrustValue(self, trustorDID, trusteeDID):
         """ This method retrieves the last trust score that a trustor has stored about a trustee in its Kafka topic"""
@@ -696,9 +712,9 @@ class PeerTrust():
 
         credibility = trustee_similarity/(similarity_summation/summation_counter)
 
-        print("CREDIBILITY ---->", credibility, trustee_similarity, similarity_summation/summation_counter, trustorDID, trusteeDID)
+        #print("CREDIBILITY ---->", credibility, trustee_similarity, similarity_summation/summation_counter, trustorDID, trusteeDID)
 
-        return credibility
+        return round(credibility, 3)
 
     def similarity(self, trusteeDID):
         """ This method identifies stakeholders who have evaluated one or more entities in common with the trustor
@@ -734,7 +750,7 @@ class PeerTrust():
                 IJS_counter = IJS_counter + 1
 
         final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
-        print("FINAL SATISFACTION  --->", final_similarity)
+        #print("FINAL SATISFACTION  --->", final_similarity)
 
         return final_similarity
 
@@ -758,7 +774,36 @@ class PeerTrust():
 
         for recommender in trustworthy_recommendations:
             last_value = self.getLastHistoryTrustValue(recommender, trusteeDID)
-            last_credibility = self.getLastCredibility(trustorDID, trusteeDID)
+            last_credibility = self.getLastCredibility(trustorDID, recommender)
+            summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
+
+        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,3)
+
+    def communityContextFactor2(self, trustorDID, trusteeDID):
+        """ This method displays the recommender on the screen and we have changed the parameters of the
+        getLastCredibility, the only difference being  """
+
+        trustworthy_recommender_list = ['did:5gzorro:domain-F', 'did:5gzorro:domain-G', 'did:5gzorro:domain-H','did:5gzorro:domain-I']
+
+        topic_trusteeDID = trusteeDID.split(":")[2]
+        total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
+        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
+
+        trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
+
+        if trustorDID in trustworthy_recommender_list:
+            trustworthy_recommender_list.remove(trustorDID)
+
+        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trustorDID, trusteeDID, trustworthy_recommender_list)
+
+        summation_trustworthy_recommendations = 0.0
+        print("\n\tComputing community factor:")
+        for recommender in trustworthy_recommendations:
+            print("\n\tRecommendation from ", recommender, " over ", trusteeDID, " to calculate the community factor")
+            last_value = self.getLastHistoryTrustValue(recommender, trusteeDID)
+            print("\tLast trust score of ", recommender, " on ", trusteeDID, " was ---> ",last_value)
+            last_credibility = self.getLastCredibility(trustorDID, recommender)
+            print("\tCredibility of ",trustorDID," on the recommender (", recommender, ") --->", round(last_credibility, 3), "\n")
             summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,3)
@@ -773,6 +818,7 @@ class PeerTrust():
 
         number_offer_trustee_feedbacks_DLT = self.getOfferFeedbackNumberDLT(trusteeDID, offerDID)
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
+
 
         transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
 
@@ -795,7 +841,7 @@ class PeerTrust():
         """ We obtain our last trust value on the recommender from our Kafka topic """
         last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
 
-        print("Provider Reputation --->", providerReputation, "Provider Recommendation -->", provider_recommendation, "Last Trust Recommender -->", last_trust_score_recommender)
+        #print("Provider Reputation --->", providerReputation, "Provider Recommendation -->", provider_recommendation, "Last Trust Recommender -->", last_trust_score_recommender)
 
         provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 3)
 

@@ -64,10 +64,14 @@ class start_data_collection(Resource):
                     producer.createTopic(topic_trusteeDID)
                     """ Generating kafka topic where all trustor's interactions with a trustee are registered """
                     provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
+                    print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
+                    print("\tKafka Topic name --->", provider_topic_name, "\n")
                     result = producer.createTopic(provider_topic_name)
                     """ Generating kafka topic where all trustor's interactions with a trustee and 
                     an particular offer are registered """
                     full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
+                    print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and a particular product offer ("+offer+")")
+                    print("\tKafka Topic name --->", full_topic_name, "\n")
                     result = producer.createTopic(full_topic_name)
 
                     if result == 1:
@@ -75,6 +79,7 @@ class start_data_collection(Resource):
                         peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
 
                         """Change if we consider a higher offer number"""
+                        print("$$$$$$$$$$$$$$ Starting data collection procces on ",trustee, " $$$$$$$$$$$$$$\n")
                         if list(dict_product_offers).index(trustee) == 1:
                             peerTrust.setTrustee1Interactions(producer, trustee)
                         elif list(dict_product_offers).index(trustee) == 2:
@@ -113,11 +118,13 @@ class gather_information(Resource):
 
         """Read last value registered in Kafka"""
         last_trust_value = consumer.readLastTrustValue(topic_name)
-        #print("LAST VALUES ------->",last_trust_value, topic_name)
+        print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
 
         """Read interactions related to a Trustee"""
         interactions = self.getInteractionTrustee(trusteeDID)
-        #print("TRUSTEEDID interactions ---->", trusteeDID, "\n" ,interactions)
+        print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
+
+        print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
 
         """ Retrieve information from trustor and trustee """
         trust_information = []
@@ -154,9 +161,10 @@ class compute_trust_level(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
-        print("Compute Parameters --->", parameter)
-
         for i in parameter:
+
+            print("$$$$$$$$$$$$$$ Starting trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
+
             current_trustee = i['trusteeDID']
             trustorDID = i['trustorDID']
             offerDID = i['offerDID']
@@ -173,6 +181,9 @@ class compute_trust_level(Resource):
             response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": i['lastValue']["trust_value"], "evaluation_criteria": "Inter-domain", "initEvaluationPeriod": i['lastValue']["initEvaluationPeriod"],"endEvaluationPeriod": i['lastValue']["endEvaluationPeriod"]}
 
             """ Retrieving new trustee's interactions """
+            print("Checking if "+current_trustee+" has had new interactions from last time we interacted with it\n")
+            print("The last time "+trustorDID+" interacted with "+current_trustee+", it had had "+str(last_trustee_interaction_registered)+" interactions in total\n")
+
             current_trustee_interactions = i['trusteeInteractions']
             current_trustee_interactions = current_trustee_interactions.replace("[", "")
             current_trustee_interactions = current_trustee_interactions.replace("]", "")
@@ -187,44 +198,59 @@ class compute_trust_level(Resource):
             """Obtaining the last interaction registered by the Trustee in the DLT """
             last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
             last_interaction_DLT = ast.literal_eval(last_interaction_DLT)
+            print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
 
             if last_interaction_DLT['currentInteractionNumber'] > last_trustee_interaction_registered:
+                print(last_interaction_DLT['currentInteractionNumber']-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
+                print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+                print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
+
                 for new_interaction in current_trustee_interactions:
                     topic_name = current_trustee.split(":")[2]+"-"+ast.literal_eval(new_interaction)['trusteeDID'].split(":")[2]
                     new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, ast.literal_eval(new_interaction)['currentInteractionNumber'])
-                    print("Previous values --->",new_trustee_interaction, "--->", topic_name)
+                    #print("Previous values --->",new_trustee_interaction, "--->", topic_name)
                     for i in new_trustee_interaction:
+                        print(ast.literal_eval(new_interaction)['trustorDID']," had an interaction with ", ast.literal_eval(new_interaction)['trusteeDID'],"\n")
+                        print("\tS(u,i) ---> ", i['trusteeSatisfaction'])
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
-                        new_credibility = new_credibility + peerTrust.credibility(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
-                        new_transaction_factor = new_transaction_factor + peerTrust.transactionContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'], ast.literal_eval(new_interaction)['offerDID'])
-                        new_community_factor = new_community_factor + peerTrust.communityContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        current_credibility = peerTrust.credibility(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        print("\tCr(p(u,i)) ---> ", round(current_credibility, 3))
+                        new_credibility = new_credibility + current_credibility
+                        current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'], ast.literal_eval(new_interaction)['offerDID'])
+                        print("\tTF(u,i) ---> ", current_transaction_factor)
+                        new_transaction_factor = new_transaction_factor + current_transaction_factor
+                        current_community_factor = peerTrust.communityContextFactor2(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        print("\tCF(u) ---> ", current_community_factor, "\n")
+                        new_community_factor = new_community_factor + current_community_factor
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
-                print("NEW VALUES --->", new_satisfaction/counter_new_interactions, new_credibility/counter_new_interactions, new_transaction_factor/counter_new_interactions, new_community_factor/counter_new_interactions)
+                #print("NEW VALUES --->", new_satisfaction/counter_new_interactions, new_credibility/counter_new_interactions, new_transaction_factor/counter_new_interactions, new_community_factor/counter_new_interactions)
                 new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 3)
                 new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 3)
                 new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 3)
                 new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 3)
-                print("UPDATE VALUES --->", new_satisfaction, new_credibility, new_transaction_factor, new_community_factor)
+                #print("UPDATE VALUES --->", new_satisfaction, new_credibility, new_transaction_factor, new_community_factor)
 
                 trustInformationTemplate = TrustInformationTemplate()
-                information = trustInformationTemplate.trustTemplate()
+                information = trustInformationTemplate.trustTemplate2()
                 information["trustee"]["trusteeDID"] = current_trustee
                 information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = new_satisfaction
+                information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 3)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = current_trustee
                 information["trustor"]["offerDID"] = offerDID
-                information["trustor"]["credibility"] = new_credibility
-                information["trustor"]["transactionFactor"] = new_transaction_factor
-                information["trustor"]["communityFactor"] = new_community_factor
+                information["trustor"]["credibility"] = round(new_credibility, 3)
+                information["trustor"]["transactionFactor"] = round(new_transaction_factor, 3)
+                information["trustor"]["communityFactor"] = round(new_community_factor, 3)
                 #information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
-                information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
+                information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 3)
                 information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
                 information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
+                information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
+                information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
                 information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,3)
                 information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
@@ -240,7 +266,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["managedViolations"] = 22
                     information["trustor"]["direct_parameters"]["predictedViolations"] = 24
                     information["trustor"]["direct_parameters"]["executedViolations"] = 1
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 1
+                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 1
                     offer_reputation = peerTrust.offerReputation(5, 6, 2, 4, 7, 8, 1, 0)
                     information["trustor"]["direct_parameters"]["consideredOffers"] = 5
                     information["trustor"]["direct_parameters"]["totalOffers"] = 6
@@ -259,7 +285,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["managedViolations"] = 10
                     information["trustor"]["direct_parameters"]["predictedViolations"] = 14
                     information["trustor"]["direct_parameters"]["executedViolations"] = 2
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 2
+                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 2
                     offer_reputation = peerTrust.offerReputation(2, 5, 1, 1, 5, 5, 0, 0)
                     information["trustor"]["direct_parameters"]["consideredOffers"] = 2
                     information["trustor"]["direct_parameters"]["totalOffers"] = 5
@@ -278,7 +304,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["managedViolations"] = 10
                     information["trustor"]["direct_parameters"]["predictedViolations"] = 18
                     information["trustor"]["direct_parameters"]["executedViolations"] = 6
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 2
+                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 2
                     offer_reputation = peerTrust.offerReputation(7, 8, 3, 4, 4, 8, 4, 4)
                     information["trustor"]["direct_parameters"]["consideredOffers"] = 7
                     information["trustor"]["direct_parameters"]["totalOffers"] = 8
@@ -297,7 +323,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["managedViolations"] = 19
                     information["trustor"]["direct_parameters"]["predictedViolations"] = 19
                     information["trustor"]["direct_parameters"]["executedViolations"] = 0
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
+                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 0
                     offer_reputation = peerTrust.offerReputation(3, 4, 1, 1, 4, 6, 1, 1)
                     information["trustor"]["direct_parameters"]["consideredOffers"] = 3
                     information["trustor"]["direct_parameters"]["totalOffers"] = 4
@@ -311,19 +337,27 @@ class compute_trust_level(Resource):
                 provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
                 offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
-                information["trustor"]["direct_parameters"]["providerSatisfaction"] = provider_satisfaction
+                information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 3)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
                 information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
-                information["trustor"]["direct_parameters"]["offerSatisfaction"] = offer_satisfaction
+                information["trustor"]["direct_parameters"]["offerSatisfaction"] = round(offer_satisfaction, 3)
                 os_weighting = 1-ps_weighting
                 information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
-                information["trustor"]["direct_parameters"]["providerReputation"] = provider_reputation
-                information["trustor"]["direct_parameters"]["offerReputation"] = offer_reputation
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
+                information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 3)
+                information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 3)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 3)
 
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
-                print("Previous Trust score --->", last_trust_value, "NEW trust score --->", information["trust_value"])
+                print("\nNew Trust values after considering new interactions of "+current_trustee+":")
+                print("\tα ---> ", direct_weighting)
+                print("\tS(u,i) ---> ", new_satisfaction)
+                print("\tCr(p(u,i)) ---> ", new_credibility)
+                print("\tTF(u,i) ---> ", new_transaction_factor)
+                print("\tβ ---> ", round(1-direct_weighting, 3))
+                print("\tCF(u) ---> ", new_community_factor)
+
+                print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
                 registered_offer_interaction = current_trustee.split(":")[2] + "-" + offerDID.split(":")[2]
                 producer.createTopic(registered_offer_interaction)
@@ -350,6 +384,8 @@ class compute_trust_level(Resource):
                     file.write(new_file)
                     file.close()
 
+                print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
+
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         return response
@@ -359,6 +395,17 @@ class store_trust_level(Resource):
         """ This method is employed to register direct trust in our internal database """
         req = request.data.decode("utf-8")
         information = json.loads(req)
+
+        print("$$$$$$$$$$$$$$ Starting trust information storage process $$$$$$$$$$$$$$\n")
+
+        print("Registering a new trust interaction between two domains in the DLT\n")
+        data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
+        print(data,"\n")
+        print("Sending new trust information in the Kafka topic generated by the Trust Management Framework \n")
+        print(information)
+        print("\nStoring new trust information in our internal MongoDB database\n")
+
+        print("\n$$$$$$$$$$$$$$ Ending trust information storage process $$$$$$$$$$$$$$\n")
 
         mongoDB.insert_one(information)
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
@@ -376,11 +423,12 @@ class update_trust_level(Resource):
         req = request.data.decode("utf-8")
         information = json.loads(req)
 
+        print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
+
         slaBreachPredictor_topic = information["SLABreachPredictor"]
         topic_key = information["key"]
 
         notifications = consumer.readSLANotification(slaBreachPredictor_topic, topic_key)
-        print("Nofitications: ", notifications)
 
         positive_notification = "was able to manage the SLA violation successfully"
         negative_notification = "was not able to manage the SLA violation successfully"
@@ -392,8 +440,11 @@ class update_trust_level(Resource):
         new_trust_score = 0.0
 
         for notification in notifications:
+            print("Notification received from the SLA Breach Predictor about", notification["breachPredictionNotification"],":\n")
+
             current_notification = notification["notification"]
-            likehood = notification["value"]
+            print("\t-", current_notification,"\n")
+            likehood = notification["breachPredictionNotification"]["value"]
             #likehood = float(likehood)
 
             last_trust_score = consumer.readAllInformationTrustValue(topic_key)
@@ -422,7 +473,7 @@ class update_trust_level(Resource):
             elif new_trust_score < 0.0:
                 new_trust_score = 0.0
 
-            print("Previous Trust Score --->", last_trust_score ["trust_value"], "Updated Trust Score -->", new_trust_score)
+            print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
             last_trust_score["trust_value"] = round(new_trust_score, 3)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
             producer.sendMessage(topic_key, topic_key, last_trust_score)

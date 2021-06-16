@@ -158,6 +158,6 @@ def readSatisfactionSummation(topic_name):
             satisfactionsummation = satisfactionsummation + trust_information["trustor"]["direct_parameters"]["userSatisfaction"]
 
     consumer.close()
-    print("SUMMATION SATISFACTION ---->", satisfactionsummation, counter)
+    #print("SUMMATION SATISFACTION ---->", satisfactionsummation, counter)
 
     return round(satisfactionsummation/counter, 3)
