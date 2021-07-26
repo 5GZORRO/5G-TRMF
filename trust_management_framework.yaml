@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: trust-framework
+    domain: operator-b
+  name: trust-management-framework
+  namespace: domain-operator-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trust-framework
+  template:
+    metadata:
+      labels:
+        app: trust-framework
+        domain: operator-b
+    spec:
+      containers:
+      - name: trust-management-framework
+        image: docker.pkg.github.com/5gzorro/trust-management-framework/trust-management-framework:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: trust-framework
+    domain: operator-b
+  name: trust-management-framework-svc
+  namespace: domain-operator-b
+spec:
+  type: NodePort
+  selector:
+    app: trust-framework
+  ports:
+  - name: http
+    port: 5001
+    targetPort: 5001
+    nodePort: 5001
