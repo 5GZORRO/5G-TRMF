@@ -1,0 +1,288 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: kafka
+      name: kafka
+    spec:
+      ports:
+        - name: "9092"
+          port: 9092
+          targetPort: 9092
+        - name: "9093"
+          port: 9093
+          targetPort: 9093
+      selector:
+        io.kompose.service: kafka
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongodb
+      name: mongodb
+    spec:
+      ports:
+        - name: "27017"
+          port: 27017
+          targetPort: 27017
+      selector:
+        io.kompose.service: mongodb
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: tmf
+      name: tmf
+    spec:
+      ports:
+        - name: "5000"
+          port: 5000
+          targetPort: 5000
+        - name: "5001"
+          port: 5001
+          targetPort: 5001
+        - name: "5002"
+          port: 5002
+          targetPort: 5002
+      selector:
+        io.kompose.service: tmf
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: zookeeper
+      name: zookeeper
+    spec:
+      ports:
+        - name: "2181"
+          port: 2181
+          targetPort: 2181
+      selector:
+        io.kompose.service: zookeeper
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: kafka
+      name: kafka
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: kafka
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: kafka
+        spec:
+          containers:
+            - env:
+                - name: KAFKA_ADVERTISED_LISTENERS
+                  value: INSIDE://kafka:9093,OUTSIDE://localhost:9092
+                - name: KAFKA_CREATE_TOPICS
+                  value: sample:1:1
+                - name: KAFKA_INTER_BROKER_LISTENER_NAME
+                  value: INSIDE
+                - name: KAFKA_LISTENERS
+                  value: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+                - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+                  value: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+                - name: KAFKA_ZOOKEEPER_CONNECT
+                  value: zookeeper:2181
+              image: wurstmeister/kafka
+              name: kafka
+              ports:
+                - containerPort: 9092
+                - containerPort: 9093
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/run/docker.sock
+                  name: kafka-claim0
+          hostname: kafka
+          restartPolicy: Always
+          volumes:
+            - name: kafka-claim0
+              persistentVolumeClaim:
+                claimName: kafka-claim0
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: kafka-claim0
+      name: kafka-claim0
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongodb
+      name: mongodb
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: mongodb
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: mongodb
+        spec:
+          containers:
+            - env:
+                - name: MONGO_INITDB_ROOT_PASSWORD
+                  value: password
+                - name: MONGO_INITDB_ROOT_USERNAME
+                  value: 5gzorro
+              image: mongo:4.0.8
+              name: mongodb
+              ports:
+                - containerPort: 27017
+              resources: {}
+              volumeMounts:
+                - mountPath: /data/db
+                  name: mongodbdata
+          restartPolicy: Always
+          volumes:
+            - name: mongodbdata
+              persistentVolumeClaim:
+                claimName: mongodbdata
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongodbdata
+      name: mongodbdata
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: tmf
+      name: tmf
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: tmf
+      strategy: {}
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: tmf
+        spec:
+          containers:
+            - image: tmf
+              name: tmf
+              ports:
+                - containerPort: 5000
+                - containerPort: 5001
+                - containerPort: 5002
+              resources: {}
+          restartPolicy: Always
+    status: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: zookeeper
+      name: zookeeper
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: zookeeper
+      strategy: {}
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: zookeeper
+        spec:
+          containers:
+            - image: wurstmeister/zookeeper:3.4.6
+              name: zookeeper
+              ports:
+                - containerPort: 2181
+              resources: {}
+          restartPolicy: Always
+    status: {}
+kind: List
+metadata: {}
+

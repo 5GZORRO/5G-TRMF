@@ -37,7 +37,7 @@ docker-compose up --build
 
 #### Step 4 - Launch the Trust Management Framework
 
-In order to start all functionalities of the TMF such as gathering information, computing trust scores, storing trust information, and updating trust scores from new events, it is required to launch the _trustManagementFramework.py_ in the port _5002_.
+In order to start all functionalities of the TMF such as gathering information, computing trust scores, storing trust information, and updating trust scores from new events, it is required to launch the _trustManagementFramework.py_ in the port _5002_ inside docker container.
 
 ```
 python3 trustManagementFramework.py 5002
