@@ -10,7 +10,7 @@ Currently, we have employed the RAN product offer template available in Confluen
 change based on decisions taken in the SRSD. """
 
 #Load JSON files to simulate SRSD information regarding to product offers
-list_product_offers = sorted(glob.glob('./RAN*.json'))
+list_product_offers = sorted(glob.glob('./product_offer_examples/RAN*.json'))
 ran_offers = []
 
 trustor_DID = {"trustorDID":"did:5gzorro:domain-A"}
@@ -23,7 +23,9 @@ for file_name in list_product_offers:
         file.close()
 
 print("The Smart Resource and Service Discovery application needs to identify the most trustworthy offer for", trustor_DID["trustorDID"], "\n")
-print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n\t- did:5gzorro:domain-C-RAN-2\n\t- did:5gzorro:domain-D-RAN-1\n\t- did:5gzorro:domain-E-RAN-1")
+#print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n\t- did:5gzorro:domain-C-RAN-2\n\t- did:5gzorro:domain-D-RAN-1\n\t- did:5gzorro:domain-E-RAN-1")
+print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n")
+
 response = requests.post("http://localhost:5001/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 if response.status_code == 200:

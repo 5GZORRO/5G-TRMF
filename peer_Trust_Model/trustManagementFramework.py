@@ -82,12 +82,12 @@ class start_data_collection(Resource):
                         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trustee, " $$$$$$$$$$$$$$\n")
                         if list(dict_product_offers).index(trustee) == 1:
                             peerTrust.setTrustee1Interactions(producer, trustee)
-                        elif list(dict_product_offers).index(trustee) == 2:
-                            peerTrust.setTrustee2Interactions(producer, trustee)
-                        elif list(dict_product_offers).index(trustee) == 3:
-                            peerTrust.setTrustee3Interactions(producer, trustee)
-                        else:
-                            peerTrust.setTrustee4Interactions(producer, trustee)
+                        #elif list(dict_product_offers).index(trustee) == 2:
+                            #peerTrust.setTrustee2Interactions(producer, trustee)
+                        #elif list(dict_product_offers).index(trustee) == 3:
+                            #peerTrust.setTrustee3Interactions(producer, trustee)
+                        #else:
+                            #peerTrust.setTrustee4Interactions(producer, trustee)
 
                         """ Retrieve information from trustor and trustee """
                         data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": full_topic_name}

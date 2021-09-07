@@ -3,9 +3,9 @@ kind: Deployment
 metadata:
   labels:
     app: trust-framework
-    domain: operator-b
+    domain: operator-a
   name: trust-management-framework
-  namespace: domain-operator-b
+  namespace: domain-operator-a
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         app: trust-framework
-        domain: operator-b
+        domain: operator-a
     spec:
       containers:
       - name: trust-management-framework
@@ -31,9 +31,9 @@ kind: Service
 metadata:
   labels:
     app: trust-framework
-    domain: operator-b
+    domain: operator-a
   name: trust-management-framework-svc
-  namespace: domain-operator-b
+  namespace: domain-operator-a
 spec:
   type: NodePort
   selector:

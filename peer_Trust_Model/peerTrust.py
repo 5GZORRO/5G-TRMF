@@ -711,6 +711,8 @@ class PeerTrust():
         trustee_similarity = self.similarity(trusteeDID)
 
         credibility = trustee_similarity/(similarity_summation/summation_counter)
+        if credibility > 1.0:
+            credibility = (similarity_summation/summation_counter)/trustee_similarity
 
         #print("CREDIBILITY ---->", credibility, trustee_similarity, similarity_summation/summation_counter, trustorDID, trusteeDID)
 
