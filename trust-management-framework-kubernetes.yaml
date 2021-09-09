@@ -52,6 +52,7 @@ items:
         io.kompose.service: tmf
       name: tmf
     spec:
+      type: NodePort
       ports:
         - name: "5000"
           port: 5000
@@ -133,28 +134,43 @@ items:
               resources: {}
               volumeMounts:
                 - mountPath: /var/run/docker.sock
-                  name: kafka-claim0
+                  name: trust-kafka-claim0
           hostname: kafka
           restartPolicy: Always
           volumes:
-            - name: kafka-claim0
+            - name: trust-kafka-claim0
               persistentVolumeClaim:
-                claimName: kafka-claim0
+                claimName: trust-kafka-claim0
     status: {}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: kafka-claim0
-      name: kafka-claim0
+        io.kompose.service: trust-kafka-claim0
+      name: trust-kafka-claim0
     spec:
+      storageClassName: trustkafkavolume
       accessModes:
         - ReadWriteOnce
       resources:
         requests:
           storage: 100Mi
     status: {}
+  - apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: trust-kafka-pv
+      labels:
+        type: local
+    spec:
+      storageClassName: trustkafkavolume
+      capacity:
+        storage: 100Mi
+      accessModes:
+        - ReadWriteOnce
+      hostPath:
+        path: "/mnt/data"
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -194,27 +210,42 @@ items:
               resources: {}
               volumeMounts:
                 - mountPath: /data/db
-                  name: mongodbdata
+                  name: trust-mongodbdata
           restartPolicy: Always
           volumes:
-            - name: mongodbdata
+            - name: trust-mongodbdata
               persistentVolumeClaim:
-                claimName: mongodbdata
+                claimName: trust-mongodbdata
     status: {}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: mongodbdata
-      name: mongodbdata
+        io.kompose.service: trust-mongodbdata
+      name: trust-mongodbdata
     spec:
+      storageClassName: trustmongodbdata
       accessModes:
         - ReadWriteOnce
       resources:
         requests:
           storage: 100Mi
     status: {}
+  - apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: trust-mongodbdata-pv
+      labels:
+        type: local
+    spec:
+      storageClassName: trustmongodbdata
+      capacity:
+        storage: 100Mi
+      accessModes:
+        - ReadWriteOnce
+      hostPath:
+        path: "/mnt/data"
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -241,7 +272,7 @@ items:
             io.kompose.service: tmf
         spec:
           containers:
-            - image: tmf
+            - image: docker.pkg.github.com/5gzorro/trust-management-framework/trust-management-framework:latest
               name: tmf
               ports:
                 - containerPort: 5000
@@ -249,6 +280,8 @@ items:
                 - containerPort: 5002
               resources: {}
           restartPolicy: Always
+          imagePullSecrets:
+          - name: regcred
     status: {}
   - apiVersion: apps/v1
     kind: Deployment
@@ -285,4 +318,3 @@ items:
     status: {}
 kind: List
 metadata: {}
-
