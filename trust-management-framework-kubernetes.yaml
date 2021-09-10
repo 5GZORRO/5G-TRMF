@@ -114,6 +114,8 @@ items:
         spec:
           containers:
             - env:
+                - name: KAFKA_PORT
+                  value: "9092"
                 - name: KAFKA_ADVERTISED_LISTENERS
                   value: INSIDE://kafka:9093,OUTSIDE://localhost:9092
                 - name: KAFKA_CREATE_TOPICS
