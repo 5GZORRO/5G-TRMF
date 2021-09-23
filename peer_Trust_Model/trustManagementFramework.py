@@ -11,6 +11,7 @@ import ast
 import re
 from pymongo import MongoClient
 import pprint
+import csv
 
 from peerTrust import *
 from producer import *
@@ -32,6 +33,30 @@ client = MongoClient(host='mongodb', port=27017, username='5gzorro', password='p
 db = client.rptutorials
 mongoDB = db.tutorial
 
+dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","interactionNumber","totalInteractionNumber", "currentInteractionNumber"]
+dlt_file_name = 'DLT.csv'
+
+
+def find_by_column(filename, column, value):
+    list = []
+    with open(filename) as f:
+        reader = csv.DictReader(f)
+        for item in reader:
+            if item[column] == value:
+                list.append(item)
+    return list
+
+
+def write_data_to_csv(filename, rows):
+    with open(filename, 'a', encoding='UTF8', newline='') as dlt_data:
+        writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
+        writer.writerows(rows)
+
+def write_only_row_to_csv(filename, row):
+    with open(filename, 'a', encoding='UTF8', newline='') as dlt_data:
+        writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
+        writer.writerow(row)
+
 class start_data_collection(Resource):
     """ This method is responsible for creating a kafka topic for each offer.
      After creating the Kafka Topics the gatherInformation method will be instantiated """
@@ -43,8 +68,14 @@ class start_data_collection(Resource):
         trustor_acquired = False
         trustorDID = ""
 
+        if not os.path.exists(dlt_file_name):
+            with open(dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
+                writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
+                writer.writeheader()
+
         """ Adding a set of minimum interactions between entities that compose the trust model """
-        peerTrust.minimumTrustValuesDLT(producer)
+        minimum_data = peerTrust.minimumTrustValuesDLT(producer)
+        write_data_to_csv(dlt_file_name, minimum_data)
 
         trust_scores = []
 
@@ -128,7 +159,7 @@ class gather_information(Resource):
 
         """ Retrieve information from trustor and trustee """
         trust_information = []
-        current_offer = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID, "topicName": topic_name, "lastValue": last_trust_value, "trusteeInteractions": json.dumps(interactions)}
+        current_offer = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID, "topicName": topic_name, "lastValue": last_trust_value, "trusteeInteractions": interactions}
         trust_information.append(current_offer)
 
         response = requests.post("http://localhost:5002/compute_trust_level", data=json.dumps(trust_information).encode("utf-8"))
@@ -139,17 +170,8 @@ class gather_information(Resource):
 
     def getInteractionTrustee(self, trusteeDID):
         """ This method retrieves all interactions related to a Trustee"""
-        interactions = []
 
-        if os.path.exists('DLT.json'):
-            """ Convert string to a list of dictionaries """
-            new_interaction_list = peerTrust.stringToDictionaryList()
-
-            for i in new_interaction_list:
-                if i["trustorDID"] == trusteeDID:
-                    interactions.append(i)
-
-        return interactions
+        return find_by_column(dlt_file_name, "trustorDID", trusteeDID)
 
 class compute_trust_level(Resource):
     def post(self):
@@ -185,9 +207,6 @@ class compute_trust_level(Resource):
             print("The last time "+trustorDID+" interacted with "+current_trustee+", it had had "+str(last_trustee_interaction_registered)+" interactions in total\n")
 
             current_trustee_interactions = i['trusteeInteractions']
-            current_trustee_interactions = current_trustee_interactions.replace("[", "")
-            current_trustee_interactions = current_trustee_interactions.replace("]", "")
-            current_trustee_interactions = re.findall(r'{.*?}', current_trustee_interactions)
 
             new_satisfaction = 0.0
             new_credibility = 0.0
@@ -197,40 +216,37 @@ class compute_trust_level(Resource):
 
             """Obtaining the last interaction registered by the Trustee in the DLT """
             last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
-            last_interaction_DLT = ast.literal_eval(last_interaction_DLT)
             print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
 
-            if last_interaction_DLT['currentInteractionNumber'] > last_trustee_interaction_registered:
-                print(last_interaction_DLT['currentInteractionNumber']-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
+            if int(last_interaction_DLT['currentInteractionNumber']) > last_trustee_interaction_registered:
+                print(int(last_interaction_DLT['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
                 print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
                 print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
 
                 for new_interaction in current_trustee_interactions:
-                    topic_name = current_trustee.split(":")[2]+"-"+ast.literal_eval(new_interaction)['trusteeDID'].split(":")[2]
-                    new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, ast.literal_eval(new_interaction)['currentInteractionNumber'])
-                    #print("Previous values --->",new_trustee_interaction, "--->", topic_name)
+                    topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
+                    new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
+
                     for i in new_trustee_interaction:
-                        print(ast.literal_eval(new_interaction)['trustorDID']," had an interaction with ", ast.literal_eval(new_interaction)['trusteeDID'],"\n")
+                        print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
                         print("\tS(u,i) ---> ", i['trusteeSatisfaction'])
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
-                        current_credibility = peerTrust.credibility(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        current_credibility = peerTrust.credibility(current_trustee, new_interaction['trusteeDID'])
                         print("\tCr(p(u,i)) ---> ", round(current_credibility, 3))
                         new_credibility = new_credibility + current_credibility
-                        current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'], ast.literal_eval(new_interaction)['offerDID'])
+                        current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
                         print("\tTF(u,i) ---> ", current_transaction_factor)
                         new_transaction_factor = new_transaction_factor + current_transaction_factor
-                        current_community_factor = peerTrust.communityContextFactor2(current_trustee, ast.literal_eval(new_interaction)['trusteeDID'])
+                        current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
-                #print("NEW VALUES --->", new_satisfaction/counter_new_interactions, new_credibility/counter_new_interactions, new_transaction_factor/counter_new_interactions, new_community_factor/counter_new_interactions)
                 new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 3)
                 new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 3)
                 new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 3)
                 new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 3)
-                #print("UPDATE VALUES --->", new_satisfaction, new_credibility, new_transaction_factor, new_community_factor)
 
                 trustInformationTemplate = TrustInformationTemplate()
                 information = trustInformationTemplate.trustTemplate2()
@@ -371,18 +387,14 @@ class compute_trust_level(Resource):
                 producer.sendMessage(provider_topic_name, provider_topic_name, information)
                 producer.sendMessage(full_topic_name, full_topic_name, information)
 
-                data = "}\\n{\\\"trustorDID\\\": \\\""+trustorDID+"\\\", \\\"trusteeDID\\\": \\\""+current_trustee+"\\\", \\\"offerDID\\\": \\\""+offerDID+"\\\",\\\"userSatisfaction\\\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information["currentInteractionNumber"])+"}\""
-                previous_file = ""
 
-                with open('DLT.json', 'r') as file:
-                    file.seek(0)
-                    previous_file = file.read()
-                    file.close()
+                data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
+                        "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
+                        "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
+                        "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                        "currentInteractionNumber": information["currentInteractionNumber"]}
 
-                with open('DLT.json', 'w') as file:
-                    new_file = previous_file.replace("}\"", data)
-                    file.write(new_file)
-                    file.close()
+                write_only_row_to_csv(dlt_file_name, data)
 
                 print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
 

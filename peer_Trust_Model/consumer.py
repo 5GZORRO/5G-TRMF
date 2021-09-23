@@ -28,7 +28,7 @@ def readLastTrustValues(topic_name, last_interaction, current_interation_number)
         interation_number = trust_information["currentInteractionNumber"]
 
         """ Looking for all new interactions not previously contemplated"""
-        if interation_number > last_interaction and interation_number == current_interation_number:
+        if int(interation_number) > int(last_interaction) and int(interation_number) == int(current_interation_number):
             data = {"trustorDID": trust_information["trustor"]["trustorDID"],
                     "trusteeDID": trust_information["trustor"]["trusteeDID"],
                     "offerDID": trust_information["trustor"]["offerDID"],
