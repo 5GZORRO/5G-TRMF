@@ -1,41 +1,42 @@
 {
     "_id": {
-        "$oid": "60ffb9c99a1abf35b0d2ce33"
+        "$oid": "60ffc4479a1abf35b0d2e468"
     },
-    "id": 466594,
-    "href": "cloudResourceDID",
-    "name": "virtual node",
-    "description": "CLOUD resource virtual",
+    "id": 761758,
+    "href": "VnfResourceDID",
+    "name": "VnfResource",
+    "description": "VnfResource",
     "lifecycleStatus": "Active",
-    "version": "v2",
+    "lastUpdate": "2020-09-01/21:33:14",
+    "version": "v1.3",
     "category": [
         {
-            "id": "3dab06f5-aa6f-4a0c-9f93-a292a631ca13",
-            "href": "http://serverlocation:port/catalogManagement/category/13",
-            "version": "2.0",
+            "id": "4f72c2a6-d057-4310-81d3-11130f7875b0",
+            "href": "http://serverlocation:port/catalogManagement/category/19",
+            "version": "2.5",
             "@referredType": "Category",
-            "name": "Cloud offerings"
+            "name": "Vnf offerings"
         }
     ],
     "validFor": {
-        "endDateTime": "2021-11-12T00:00",
-        "startDateTime": "2021-04-23T00:00"
+        "endDateTime": "2021-09-27T00:00",
+        "startDateTime": "2021-03-6T00:00"
     },
     "place": [
         {
-            "id": "bce14263-707c-4498-910f-cf2a080a23ca",
+            "id": "095409ea-69e1-42b5-8407-47939cc9da68",
             "href": "http://172.28.3.126:31080/tmf-api/geographicAddressManagement/v4/geographicAddress/83ee73f8-4beb-4f98-b016-09b604ea7c50",
-            "city": "Athens",
-            "country": "Greece",
-            "locality": "Lamias 3, Athens Greece",
+            "city": "Madrid",
+            "country": "Spain",
+            "locality": "new york road 2, Madrid Spain",
             "geographicLocation": {
                 "name": "Company",
                 "geometryType": "Point",
                 "geometry": [
                     {
-                        "id": "2ab0cfb8-97e8-4a88-a3da-89b6d0564d80",
-                        "x": 42.61702075665213,
-                        "y": 150.18533629476042,
+                        "id": "6ddd19c9-5201-4c57-973f-05402dbbad41",
+                        "x": 173.293278846337,
+                        "y": 49.13548342403138,
                         "z": ""
                     }
                 ]
@@ -46,7 +47,7 @@
         {
             "name": "Monthly Price",
             "description": "monthly price",
-            "id": "3819",
+            "id": "446",
             "href": "http://serverlocation:port/catalogManagement/productOfferingPrice/161",
             "@type": "ProductOfferingPrice",
             "@schemaLocation": "http://serverlocation:port/catalogManagement/schema/ProductOfferingPrice.yml",
@@ -61,7 +62,7 @@
             "recurringChargePeriod": "monthly",
             "price": {
                 "UNIT": "EUR",
-                "value": 1925
+                "value": 53
             }
         }
     ],
@@ -73,12 +74,12 @@
         "state": "Standard SLA",
         "approved": 1,
         "validityPeriod": {
-            "endDateTime": "2020-06-03T00:00",
-            "startDateTime": "2020-05-23T00:00"
+            "endDateTime": "2020-09-07T00:00",
+            "startDateTime": "2020-05-14T00:00"
         },
         "template": {
             "href": "http/www.acme.com/slaManagement/slaTemplate/14",
-            "name": "DataSLATemplate2",
+            "name": "DataSLATemplate3",
             "description": "basic template forData SLA"
         },
         "relatedParty": {
@@ -94,16 +95,16 @@
             "id": "response_time",
             "metric": "http://www.provider.com/metrics/response-time",
             "unit": "milliseconds",
-            "referenceValue": "90",
+            "referenceValue": "78",
             "operator": ".ge",
-            "tolerance": "16",
+            "tolerance": "20",
             "consequence": "Extra credit at the end of the billing cycle"
         }
     },
-    "product_id": "3ece5f51-aab2-43ae-81ce-e50fb0e6c549",
-    "resource_id": "6826f5b9-94b3-48c7-a554-af24b3b01c3c",
-    "trust_score": 0.9,
-    "Blueprint_name": "cloud_cache_nst",
+    "product_id": "04ab925a-2378-478f-9dac-7aadb253564d",
+    "resource_id": "3819fd25-6d7d-4752-ac88-eaaacdd44cd3",
+    "trust_score": 0.95,
+    "Blueprint_name": "vnf_nsd",
     "isBundle": 0,
     "isSellable": 0,
     "productSpecification": {
@@ -112,78 +113,105 @@
         "@baseType": "",
         "@referredType": "",
         "resourceSpecification": {
-            "id": "f644a0a1-efe2-4443-8401-e0117dd5212c",
+            "id": "61997b1c-8e2c-4b58-b4a6-fbc1299cb7f9",
             "href": "string",
-            "category": "cloud compute",
-            "name": "cloudResourceSpec",
-            "description": "edgeResourceSpec.",
-            "version": "v1",
+            "category": "VNF",
+            "name": "vnfResourceSpec",
+            "description": "a VNF",
+            "version": "1.0",
+            "lifecycleStatus": "Active",
             "resourceSpecCharacteristic": [
                 {
-                    "id": "dcf0f76f-7cf6-4298-b885-875f37ce2e6b",
-                    "name": "num of cores",
+                    "id": "ba069c76-0256-48a6-9cbb-c9496a72348b",
+                    "name": "PackageFormat",
                     "@type": "ResourceCategory",
                     "@baseType": "Category",
                     "version": "1.0",
-                    "description": "The number of cpu cores of the cloud resource.",
+                    "description": "The VNF package structure format.",
+                    "congigurable": "true",
+                    "extensible": "true",
+                    "isUnique": "false",
+                    "valueType": "string",
+                    "resourceSpecCharacteristicValue": [
+                        {
+                            "@type": "ResourceCategory",
+                            "@baseType": "Category",
+                            "isDefault": "false",
+                            "value": "CSAR",
+                            "validFor": {
+                                "endDateTime": "2021-09-07T00:00",
+                                "startDateTime": "2021-05-14T00:00"
+                            }
+                        }
+                    ],
+                    "validFor": {
+                        "endDateTime": "2021-09-07T00:00",
+                        "startDateTime": "2021-05-14T00:00"
+                    }
+                },
+                {
+                    "id": "f9b8d91f-91db-4cd1-8a95-d347d7d3ccbf",
+                    "name": "PackageRef",
+                    "@type": "ResourceCategory",
+                    "@baseType": "Category",
+                    "version": "1.0",
+                    "description": "Reference to the VNF image.",
+                    "congigurable": "true",
+                    "extensible": "false",
+                    "isUnique": "true",
+                    "valueType": "string",
+                    "resourceSpecCharacteristicValue": [
+                        {
+                            "@type": "ResourceCategory",
+                            "@baseType": "Category",
+                            "isDefault": "false",
+                            "value": "<HrefToPackage>",
+                            "validFor": {
+                                "endDateTime": "2021-09-07T00:00",
+                                "startDateTime": "2021-05-14T00:00"
+                            }
+                        }
+                    ],
+                    "validFor": {
+                        "endDateTime": "2021-09-07T00:00",
+                        "startDateTime": "2021-05-14T00:00"
+                    }
+                },
+                {
+                    "id": "51b12c8b-0db7-469e-94c5-23cab52e5677",
+                    "name": "VDUsNumber",
+                    "@type": "ResourceCategory",
+                    "@baseType": "Category",
+                    "version": "1.0",
+                    "description": "Number of VDUs.",
                     "congigurable": "false",
                     "extensible": "false",
                     "isUnique": "false",
-                    "valueType": "numeric",
+                    "valueType": "string",
                     "resourceSpecCharacteristicValue": [
                         {
                             "@type": "ResourceCategory",
                             "@baseType": "Category",
                             "isDefault": "false",
-                            "unitOfMeasure": "",
-                            "value": 4,
+                            "value": "2",
                             "validFor": {
-                                "endDateTime": "2021-09-17T00:00",
+                                "endDateTime": "2021-09-07T00:00",
                                 "startDateTime": "2021-05-14T00:00"
                             }
                         }
                     ],
                     "validFor": {
-                        "endDateTime": "2021-09-17T00:00",
+                        "endDateTime": "2021-09-07T00:00",
                         "startDateTime": "2021-05-14T00:00"
                     }
                 },
                 {
-                    "id": "862c795a-a772-43a1-8f22-bc909db6b677",
-                    "name": "coreFrequency",
+                    "id": "0f287a45-f9a5-4d70-bcac-351da13cb381",
+                    "name": "Endpoint",
                     "@type": "ResourceCategory",
                     "@baseType": "Category",
                     "version": "1.0",
-                    "description": "The core cpu frequency (MHz) of the cloud resource.",
-                    "congigurable": "true",
-                    "extensible": "false",
-                    "isUnique": "false",
-                    "valueType": "numeric",
-                    "resourceSpecCharacteristicValue": [
-                        {
-                            "@type": "ResourceCategory",
-                            "@baseType": "Category",
-                            "isDefault": "false",
-                            "unitOfMeasure": "MHz",
-                            "value": 3751,
-                            "validFor": {
-                                "endDateTime": "2021-09-17T00:00",
-                                "startDateTime": "2021-05-14T00:00"
-                            }
-                        }
-                    ],
-                    "validFor": {
-                        "endDateTime": "2021-09-17T00:00",
-                        "startDateTime": "2021-05-14T00:00"
-                    }
-                },
-                {
-                    "id": "1a003786-5d31-46c7-a449-9b6d70ba4d38",
-                    "name": "memory",
-                    "@type": "ResourceCategory",
-                    "@baseType": "Category",
-                    "version": "1.0",
-                    "description": "The memory size of the cloud resource expressed in MB.",
+                    "description": "Service access point of VNF.",
                     "congigurable": "true",
                     "extensible": "false",
                     "isUnique": "true",
@@ -192,27 +220,82 @@
                         {
                             "@type": "ResourceCategory",
                             "@baseType": "Category",
-                            "isDefault": "true",
-                            "unitOfMeasure": "MB",
-                            "value": 8192,
+                            "isDefault": "false",
+                            "value": "255.250.0.1",
                             "validFor": {
-                                "endDateTime": "2021-09-17T00:00",
+                                "endDateTime": "2021-09-07T00:00",
                                 "startDateTime": "2021-05-14T00:00"
                             }
                         }
                     ],
                     "validFor": {
-                        "endDateTime": "2021-09-17T00:00",
+                        "endDateTime": "2021-09-07T00:00",
                         "startDateTime": "2021-05-14T00:00"
                     }
                 },
                 {
-                    "id": "4b70c962-140f-4102-9f0e-2277ce4bff7a",
-                    "name": "storage",
+                    "id": "b231f7c3-392c-4c4a-9937-0a2ab66273fe",
+                    "name": "virtual-cpu",
                     "@type": "ResourceCategory",
                     "@baseType": "Category",
                     "version": "1.0",
-                    "description": "The storage size of the cloud resource expressed in GB.",
+                    "description": "cpu cores.",
+                    "congigurable": "false",
+                    "extensible": "true",
+                    "isUnique": "true",
+                    "valueType": "numeric",
+                    "resourceSpecCharacteristicValue": [
+                        {
+                            "@type": "ResourceCategory",
+                            "@baseType": "Category",
+                            "isDefault": "false",
+                            "value": 2,
+                            "validFor": {
+                                "endDateTime": "2021-09-07T00:00",
+                                "startDateTime": "2021-05-14T00:00"
+                            }
+                        }
+                    ],
+                    "validFor": {
+                        "endDateTime": "2021-09-07T00:00",
+                        "startDateTime": "2021-05-14T00:00"
+                    }
+                },
+                {
+                    "id": "c57092fb-b5ff-422a-8411-65ebbc8cf16f",
+                    "name": "virtual-memory",
+                    "@type": "ResourceCategory",
+                    "@baseType": "Category",
+                    "version": "1.0",
+                    "description": "amount of memory in MB.",
+                    "congigurable": "false",
+                    "extensible": "true",
+                    "isUnique": "false",
+                    "valueType": "numeric",
+                    "resourceSpecCharacteristicValue": [
+                        {
+                            "@type": "ResourceCategory",
+                            "@baseType": "Category",
+                            "isDefault": "false",
+                            "value": 2498,
+                            "validFor": {
+                                "endDateTime": "2021-09-07T00:00",
+                                "startDateTime": "2021-05-14T00:00"
+                            }
+                        }
+                    ],
+                    "validFor": {
+                        "endDateTime": "2021-09-07T00:00",
+                        "startDateTime": "2021-05-14T00:00"
+                    }
+                },
+                {
+                    "id": "8a39ce69-c8f7-47af-9edf-edff3a719e09",
+                    "name": "size-of-storage",
+                    "@type": "ResourceCategory",
+                    "@baseType": "Category",
+                    "version": "1.0",
+                    "description": "amount of storage in GB.",
                     "congigurable": "true",
                     "extensible": "true",
                     "isUnique": "true",
@@ -221,46 +304,16 @@
                         {
                             "@type": "ResourceCategory",
                             "@baseType": "Category",
-                            "isDefault": "true",
-                            "unitOfMeasure": "GB",
-                            "value": 1362,
+                            "isDefault": "false",
+                            "value": 45,
                             "validFor": {
-                                "endDateTime": "2021-08-19T00:00",
+                                "endDateTime": "2021-09-07T00:00",
                                 "startDateTime": "2021-05-14T00:00"
                             }
                         }
                     ],
                     "validFor": {
-                        "endDateTime": "2021-08-19T00:00",
-                        "startDateTime": "2021-05-14T00:00"
-                    }
-                },
-                {
-                    "id": "bd07ecfa-525f-43ba-ac3e-8a6a8f665afe",
-                    "name": "bandwidth",
-                    "@type": "ResourceCategory",
-                    "@baseType": "Category",
-                    "version": "1.0",
-                    "description": "The network speed of the cloud resource expressed in Mbps.",
-                    "congigurable": "true",
-                    "extensible": "false",
-                    "isUnique": "true",
-                    "valueType": "numeric",
-                    "resourceSpecCharacteristicValue": [
-                        {
-                            "@type": "ResourceCategory",
-                            "@baseType": "Category",
-                            "isDefault": "true",
-                            "unitOfMeasure": "Mbps",
-                            "value": 100,
-                            "validFor": {
-                                "endDateTime": "2021-08-19T00:00",
-                                "startDateTime": "2021-05-14T00:00"
-                            }
-                        }
-                    ],
-                    "validFor": {
-                        "endDateTime": "2021-08-19T00:00",
+                        "endDateTime": "2021-09-07T00:00",
                         "startDateTime": "2021-05-14T00:00"
                     }
                 }
@@ -268,20 +321,20 @@
         },
         "relatedParty": [
             {
-                "id": "40026a62-67a8-4f46-ae48-d975e723a14e",
+                "id": "3676e09f-dbb3-4c29-ab41-5fc3dd663745",
                 "href": "http://serverLocation:port/partyManagement/partyRole/1234",
                 "role": "Owner",
-                "name": "operator_b",
+                "name": "Operator 3",
                 "validFor": {
-                    "endDateTime": "2021-11-19T00:00",
-                    "startDateTime": "2021-04-4T00:00"
+                    "endDateTime": "2021-10-19T00:00",
+                    "startDateTime": "2021-05-3T00:00"
                 }
             }
         ]
     },
     "resourceCandidate": {
-        "id": "26b38236-0a71-4dc0-97c6-caafa2e98557",
-        "href": "https://mycsp.com:8080/tmf-api/resourceCatalogManagement/v4/resourceCandidate/8938",
-        "name": "Cloud candidate"
+        "id": "a7b308a5-0d7f-441f-a5b6-78b4e60ed72e",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalogManagement/v4/resourceCandidate/8978",
+        "name": "Vnf candidate"
     }
 }

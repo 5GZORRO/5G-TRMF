@@ -36,6 +36,8 @@ mongoDB = db.tutorial
 dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","interactionNumber","totalInteractionNumber", "currentInteractionNumber"]
 dlt_file_name = 'DLT.csv'
 
+provider_list = []
+
 
 def find_by_column(filename, column, value):
     list = []
@@ -74,7 +76,7 @@ class start_data_collection(Resource):
                 writer.writeheader()
 
         """ Adding a set of minimum interactions between entities that compose the trust model """
-        minimum_data = peerTrust.minimumTrustValuesDLT(producer)
+        minimum_data = peerTrust.minimumTrustValuesDLT(producer, dict_product_offers)
         write_data_to_csv(dlt_file_name, minimum_data)
 
         trust_scores = []
@@ -82,13 +84,18 @@ class start_data_collection(Resource):
         for trustee in dict_product_offers:
             if trustor_acquired == False:
                 trustorDID = next(iter(dict_product_offers.values()))
-                topic_trustorDID = trustorDID.split(":")[2]
+                #topic_trustorDID = trustorDID.split(":")[2]
+                topic_trustorDID = trustorDID
                 trustor_acquired = True
             else:
                 for offer in dict_product_offers[trustee]:
                     """ Retrieve last part of DIDs to generate a unique kafka topic """
-                    topic_offerDID = offer.split(":")[2]
-                    topic_trusteeDID = trustee.split(":")[2]
+                    #topic_offerDID = offer.split(":")[2]
+                    #topic_trusteeDID = trustee.split(":")[2]
+                    topic_offerDID = offer
+                    topic_trusteeDID = trustee
+
+                    provider_list.append(trustee)
 
                     """ Generating kafka topic where all interactions with a trustee are registered """
                     registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
@@ -113,8 +120,8 @@ class start_data_collection(Resource):
                         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trustee, " $$$$$$$$$$$$$$\n")
                         if list(dict_product_offers).index(trustee) == 1:
                             peerTrust.setTrustee1Interactions(producer, trustee)
-                        #elif list(dict_product_offers).index(trustee) == 2:
-                            #peerTrust.setTrustee2Interactions(producer, trustee)
+                        elif list(dict_product_offers).index(trustee) == 2:
+                            peerTrust.setTrustee2Interactions(producer, trustee)
                         #elif list(dict_product_offers).index(trustee) == 3:
                             #peerTrust.setTrustee3Interactions(producer, trustee)
                         #else:
@@ -224,7 +231,8 @@ class compute_trust_level(Resource):
                 print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
 
                 for new_interaction in current_trustee_interactions:
-                    topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
+                    #topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
+                    topic_name = current_trustee+"-"+new_interaction['trusteeDID']
                     new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
 
                     for i in new_trustee_interaction:
@@ -273,7 +281,7 @@ class compute_trust_level(Resource):
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 """ These values should be requested from other 5GZORRO components in future releases"""
-                if "domain-B" in current_trustee:
+                if provider_list[0] in current_trustee:
                     provider_reputation = peerTrust.providerReputation(3, 5, 3, 3, 22, 24, 1, 1)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 3
                     information["trustor"]["direct_parameters"]["totalAssets"] = 5
@@ -292,7 +300,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif "domain-C" in current_trustee:
+                elif provider_list[1] in current_trustee:
                     provider_reputation = peerTrust.providerReputation(2, 4, 1, 1, 10, 14, 1, 2)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 2
                     information["trustor"]["direct_parameters"]["totalAssets"] = 4
@@ -311,7 +319,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 5
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 0
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif "domain-D" in current_trustee:
+                elif provider_list[2] in current_trustee:
                     provider_reputation = peerTrust.providerReputation(4, 4, 2, 2, 10, 18, 6, 2)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 4
                     information["trustor"]["direct_parameters"]["totalAssets"] = 4
@@ -330,7 +338,7 @@ class compute_trust_level(Resource):
                     information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
                     information["trustor"]["direct_parameters"]["executedOfferViolations"] = 4
                     information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 4
-                elif "domain-E" in current_trustee:
+                elif provider_list[3] in current_trustee:
                     provider_reputation = peerTrust.providerReputation(6, 8, 4, 5, 19, 19, 0, 0)
                     information["trustor"]["direct_parameters"]["availableAssets"] = 6
                     information["trustor"]["direct_parameters"]["totalAssets"] = 8
@@ -375,15 +383,19 @@ class compute_trust_level(Resource):
 
                 print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
-                registered_offer_interaction = current_trustee.split(":")[2] + "-" + offerDID.split(":")[2]
+                #registered_offer_interaction = current_trustee.split(":")[2] + "-" + offerDID.split(":")[2]
+                registered_offer_interaction = current_trustee + "-" + offerDID
                 producer.createTopic(registered_offer_interaction)
-                provider_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]
+                #provider_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]
+                provider_topic_name = trustorDID+"-"+current_trustee
                 producer.createTopic(provider_topic_name)
-                full_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]+"-"+offerDID.split(":")[2]
+                #full_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]+"-"+offerDID.split(":")[2]
+                full_topic_name = trustorDID+"-"+current_trustee+"-"+offerDID
                 producer.createTopic(full_topic_name)
 
                 message = {"interaction": trustorDID+" has interacted with "+current_trustee}
-                producer.sendMessage(current_trustee.split(":")[2], registered_offer_interaction, message)
+                #producer.sendMessage(current_trustee.split(":")[2], registered_offer_interaction, message)
+                producer.sendMessage(current_trustee, registered_offer_interaction, message)
                 producer.sendMessage(provider_topic_name, provider_topic_name, information)
                 producer.sendMessage(full_topic_name, full_topic_name, information)
 

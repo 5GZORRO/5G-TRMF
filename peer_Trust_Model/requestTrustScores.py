@@ -28,8 +28,11 @@ class request_trust_scores(Resource):
                 trustor_acquired = True
             else:
                 """ Acquire both provider's DID and offer's DID """
-                did_provider = i['productSpecification']['relatedParty'][0]['href']
-                did_resource = i['productSpecification']['resourceSpecification'][0]['href']
+                #did_provider = i['productSpecification']['relatedParty'][0]['href']
+                #did_resource = i['productSpecification']['resourceSpecification'][0]['href']
+                """ The current JSONs does not provide the DID in the href field but the ID field"""
+                did_provider = i['productSpecification']['relatedParty'][0]['id']
+                did_resource = i['productSpecification']['resourceSpecification']['id']
 
                 """ If the provider already exits, a list of offers will be added to the same key """
                 if did_provider in list_product_offers:

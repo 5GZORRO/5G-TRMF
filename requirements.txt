@@ -5,3 +5,5 @@ gevent
 Werkzeug
 requests
 pymongo
+rstr
+

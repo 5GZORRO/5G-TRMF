@@ -1,0 +1,697 @@
+{
+  "name":"Radio Infrastructure Product Offer",
+  "description":"Radio Infrastructure Product Offer",
+  "lifecycleStatus":"Active",
+  "category":[
+    {
+      "id":"string",
+      "href":"http://serverlocation:port/catalogManagement/category/12",
+      "@referredType":"Category",
+      "name":"Radio infrastructure offerings"
+    }
+  ],
+  "validFor":{
+    "endDateTime":"2021-09-27T00:00",
+    "startDateTime":"2021-03-6T00:00"
+  },
+  "place":[
+    {
+      "id":"f3f32dcb-d30e-45f9-a2b4-c05ec19da345",
+      "@referredType":"GeographicLocation",
+      "name":"Barcelona Area 1, Spain",
+      "geometryType":"Polygon",
+      "accuracy  ":"",
+      "spatialRef":"WGS84",
+      "geometry":[
+        {
+          "x":"41.38236",
+          "y":"2.11857",
+          "z":""
+        },
+        {
+          "x":"41.37881",
+          "y":"2.11857",
+          "z":""
+        },
+        {
+          "x":"41.37881",
+          "y":"2.12699",
+          "z":""
+        },
+        {
+          "x":"41.38236",
+          "y":"2.12699",
+          "z":""
+        }
+      ]
+    }
+  ],
+  "productOfferingPrice":[
+    {
+      "id":"string",
+      "name":"RadioInfrastructureOfferingPrice1",
+      "description":"A monthly recurrent payment description for radio infrastructure resources.",
+      "validFor":{
+        "endDateTime":"2021-09-27T00:00",
+        "startDateTime":"2021-03-6T00:00"
+      },
+      "priceType":"Recurrent",
+      "recurringChargePeriodType":6,
+      "recurringChargePeriodLength":"Monthly",
+      "percentage":0,
+      "price":{
+        "unit":"EUR",
+        "amount":1000
+      },
+      "productOfferingTerm":{
+        "name":"Product offering term 1",
+        "description":"The radio infrastructure product offering expiration date",
+        "duration": {
+          "amount":"1",
+          "units":"weeks"
+        },
+        "validFor": {
+          "startDateTime":"2021-03-6T00:00",
+          "endDateTime":"2021-03-22T23:59"
+        }
+      },
+      "tax":{
+        "taxAmount": {
+          "unit":"EUR",
+          "value":230
+        },
+        "taxCategory":"VAT",
+        "taxRate":23.0
+      }
+    }
+  ],
+  "serviceLevelAgreement":{
+    "id":"string",
+    "name":"Radio infrastructure SLA",
+    "@referredType":"BusinessSLA",
+    "validityPeriod": {
+      "startTime":"2021-03-6T00:00",
+      "endTime":"2021-03-22T23:59"
+    },
+    "template": {
+      "name":"Template for RAN use",
+      "href":"https://mycsp.com:8080/tmf-api/slaManagement/v4/sla/8082",
+      "description":"A template issued by the radio provider to determine the use of its infrastructure."
+    },
+    "state":"Active",
+    "approved":true,
+    "rule": [
+      {
+        "id":"94543",
+        "metric":"txPower",
+        "unit":"dBm",
+        "referenceValue":"23",
+        "operator":"<",
+        "tolerance":"+0%",
+        "consecuence":"https://mycsp.com:8080/tmf-api/slaManagement/v4/sla/8082"
+      }
+    ]
+  },
+  "productSpecification":{
+    "id": "string",
+    "href": "string",
+    "@referredType": "ProductSpecification",
+    "name": "Mixed Radio Infrastructure Offer Specification",
+    "description": "A mixed radio infrastructure offer specification",
+    "isBundle": false,
+    "lastUpdate": "2017-04-19T16:42:23.0Z",
+    "lifecycleStatus": "Active",
+    "validFor": {
+      "startDateTime": "2017-06-19T00:00:00.0Z",
+      "endDateTime": "2018-04-25T16:42:23.0Z"
+    },
+    "relatedParty": [
+      {
+        "id": "string",
+        "href": "did:5gzorro:domain-B",
+        "role": "Radio infrastructure provider",
+        "name": "Radio Infrastructure Provider Limited"
+      }
+    ],
+    "resourceSpecification": [
+      {
+        "id": "5gCell-1",
+        "href": "did:5gzorro:domain-B-RAN-1",
+        "category": "Radio",
+        "name": "Cell Resource Specification",
+        "description": "A Macro Cell Resource Specification",
+        "resourceSpecCharacteristic": [
+          {
+            "name": "ranType",
+            "description": "A 5G cell in Barcelona.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "Cellular"
+              }
+            ]
+          },
+          {
+            "name": "geographicalLocation",
+            "description": "Camp Nou Stadium site 1.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "41.37881, 2.11857"
+              }
+            ]
+          },
+          {
+            "name": "technology",
+            "description": "5G NSA. Needs an LTE cell",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "5G_NSA_TDD"
+              }
+            ]
+          },
+          {
+            "name": "operationBand",
+            "description": "The supported NR band.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "n78"
+              }
+            ]
+          },
+          {
+            "name": "bandwidth",
+            "description": "The cell bandwidth.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "50"
+              }
+            ]
+          },
+          {
+            "name": "dlOfferedTraffic",
+            "description": "The maximum offered data traffic in downlink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "684.00"
+              }
+            ]
+          },
+          {
+            "name": "ulOfferedTraffic",
+            "description": "The maximum offered data traffic in uplink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "182.00"
+              }
+            ]
+          },
+          {
+            "name": "freqDl",
+            "description": "The DL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "3500.00"
+              }
+            ]
+          },
+          {
+            "name": "freqUl",
+            "description": "The UL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "3500.00"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "5gCell-2",
+        "href": "string",
+        "category": "Radio",
+        "name": "Cell Resource Specification",
+        "description": "A Small Cell Resource Specification",
+        "resourceSpecCharacteristic": [
+          {
+            "name": "ranType",
+            "description": "Another 5G cell in Barcelona.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "Cellular"
+              }
+            ]
+          },
+          {
+            "name": "geographicalLocation",
+            "description": "Camp Nou Stadium site 1.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "41.37881, 2.11857"
+              }
+            ]
+          },
+          {
+            "name": "technology",
+            "description": "5G SA",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "5G_SA_TDD"
+              }
+            ]
+          },
+          {
+            "name": "operationBand",
+            "description": "The supported NR band.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "n77"
+              }
+            ]
+          },
+          {
+            "name": "bandwidth",
+            "description": "The cell bandwidth.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "50"
+              }
+            ]
+          },
+          {
+            "name": "dlOfferedTraffic",
+            "description": "The maximum offered traffic in downlink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "1402.00"
+              }
+            ]
+          },
+          {
+            "name": "ulOfferedTraffic",
+            "description": "The percentage of available UL radio resources.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "376.00"
+              }
+            ]
+          },
+          {
+            "name": "freqDl",
+            "description": "The DL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "3900.00"
+              }
+            ]
+          },
+          {
+            "name": "freqUl",
+            "description": "The UL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "3900.00"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "4gCell-1",
+        "href": "string",
+        "category": "Radio",
+        "name": "Cell Resource Specification",
+        "description": "A Macro Cell Resource Specification",
+        "resourceSpecCharacteristic": [
+          {
+            "name": "ranType",
+            "description": "A 4G cell in Barcelona.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "Cellular"
+              }
+            ]
+          },
+          {
+            "name": "geographicalLocation",
+            "description": "Camp Nou Stadium site 2.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "41.37881, 2.12699"
+              }
+            ]
+          },
+          {
+            "name": "technology",
+            "description": "4G cell",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "4G_FDD"
+              }
+            ]
+          },
+          {
+            "name": "operationBand",
+            "description": "The supported LTE band.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "b1"
+              }
+            ]
+          },
+          {
+            "name": "bandwidth",
+            "description": "The cell bandwidth.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "10"
+              }
+            ]
+          },
+          {
+            "name": "dlOfferedTraffic",
+            "description": "The maximum offered data traffic in downlink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "38.00"
+              }
+            ]
+          },
+          {
+            "name": "ulOfferedTraffic",
+            "description": "The maximum offered data traffic in uplink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "16.00"
+              }
+            ]
+          },
+          {
+            "name": "freqDl",
+            "description": "The DL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "2500.00"
+              }
+            ]
+          },
+          {
+            "name": "freqUl",
+            "description": "The UL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "2520.00"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "WiFiAp-1",
+        "href": "string",
+        "category": "Radio",
+        "name": "Wi-Fi Access Point Resource Specification",
+        "description": "A Wi-Fi Access Point Resource Specification",
+        "resourceSpecCharacteristic": [
+          {
+            "name": "ranType",
+            "description": "A Wi-Fi AP in Barcelona.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "AP"
+              }
+            ]
+          },
+          {
+            "name": "geographicalLocation",
+            "description": "Camp Nou Stadium site 3.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "41.37881, 2.12620"
+              }
+            ]
+          },
+          {
+            "name": "technology",
+            "description": "Wi-Fi6",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "WIFI6"
+              }
+            ]
+          },
+          {
+            "name": "operationBand",
+            "description": "The channel of the AP.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "value": "Channel38"
+              }
+            ]
+          },
+          {
+            "name": "bandwidth",
+            "description": "The AP bandwidth.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "string",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "40"
+              }
+            ]
+          },
+          {
+            "name": "dlOfferedTraffic",
+            "description": "The maximum offered data traffic in downlink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "154.90"
+              }
+            ]
+          },
+          {
+            "name": "ulOfferedTraffic",
+            "description": "The maximum offered data traffic in uplink.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "Mbps",
+                "value": "154.90"
+              }
+            ]
+          },
+          {
+            "name": "freqDl",
+            "description": "The DL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "5190.00"
+              }
+            ]
+          },
+          {
+            "name": "freqUl",
+            "description": "The UL central frequency (MHz) of the cell.",
+            "configurable": false,
+            "extensible": false,
+            "isUnique": true,
+            "valueType": "numeric",
+            "resourceSpecCharacteristicValue": [
+              {
+                "isDefault": false,
+                "unitOfMeasure": "MHz",
+                "value": "5190.00"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -3,6 +3,8 @@ import requests
 import glob
 import re
 import ast
+import rstr
+import time
 
 """ This file simulates a future request from the SRSD in order compute the trust score of a set of product offers. 
 The request should contain both the requester's DID (5GZORRO Platform participant) and multiple offers.
@@ -13,7 +15,7 @@ change based on decisions taken in the SRSD. """
 list_product_offers = sorted(glob.glob('./product_offer_examples/RAN*.json'))
 ran_offers = []
 
-trustor_DID = {"trustorDID":"did:5gzorro:domain-A"}
+trustor_DID = {"trustorDID": rstr.xeger("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}")}
 ran_offers.append(trustor_DID)
 
 for file_name in list_product_offers:
@@ -24,8 +26,8 @@ for file_name in list_product_offers:
 
 print("The Smart Resource and Service Discovery application needs to identify the most trustworthy offer for", trustor_DID["trustorDID"], "\n")
 #print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n\t- did:5gzorro:domain-C-RAN-2\n\t- did:5gzorro:domain-D-RAN-1\n\t- did:5gzorro:domain-E-RAN-1")
-print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n")
 
+start_time = time.time()
 response = requests.post("http://localhost:5001/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 if response.status_code == 200:
@@ -37,5 +39,6 @@ if response.status_code == 200:
     print("\nTrust scores according to the previous product offers are:\n ")
     for respuesta in req:
         print("\t-",ast.literal_eval(respuesta)["trusteeDID"]["trusteeDID"],"new trust value --->", ast.literal_eval(respuesta)["trust_value"])
+    print("%s seconds" % (time.time()-start_time))
 else:
     print("Error:", response)
