@@ -507,7 +507,7 @@ class PeerTrust():
 
         return None
 
-    def generateTrusteeInformation(self, producer, trustorDID, trusteeDID, offerDID, interaction, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
+    def generateTrusteeInformation(self, producer, trustorDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
         """ This method introduces Trustee information based on peerTrust equations and using the minimum
         values previously established"""
 
@@ -623,12 +623,57 @@ class PeerTrust():
 
         return data
 
+    def setTrusteeInteractions(self, producer, trusteeDID):
+        """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
+
+        availableAssets = randint(2,10)
+        totalAssets = availableAssets + randint(0,2)
+        availableAssetLocation = randint(1,6)
+        totalAssetLocation = availableAssetLocation + randint(0,2)
+        managedViolations = randint(10,25)
+        predictedViolations = managedViolations + randint(0,3)
+        executedViolations = randint(0,3)
+        nonPredictedViolations = randint(0,4)
+
+        consideredOffers = randint(2,10)
+        totalOffers = consideredOffers + randint(0,2)
+        consideredOfferLocation = randint(1,6)
+        totalOfferLocation = consideredOfferLocation + randint(0,2)
+        managedOfferViolations = randint(10,25)
+        predictedOfferViolations = managedOfferViolations + randint(0,3)
+        executedOfferViolations = randint(0,3)
+        nonPredictedOfferViolations = randint(0,4)
+
+        self.generateTrusteeInformation(producer, trusteeDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
+
+
     def setTrustee1Interactions(self, producer, trusteeDID):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
         print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
 
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
+
+        availableAssets = randint(2,10)
+        totalAssets = availableAssets + randint(0,2)
+        availableAssetLocation = randint(1,6)
+        totalAssetLocation = availableAssetLocation + randint(0,2)
+        managedViolations = randint(10,25)
+        predictedViolations = managedViolations + randint(0,3)
+        executedViolations = randint(0,3)
+        nonPredictedViolations = randint(0,4)
+
+        consideredOffers = randint(2,10)
+        totalOffers = consideredOffers + randint(0,2)
+        consideredOfferLocation = randint(1,6)
+        totalOfferLocation = consideredOfferLocation + randint(0,2)
+        managedOfferViolations = randint(10,25)
+        predictedOfferViolations = managedOfferViolations + randint(0,3)
+        executedOfferViolations = randint(0,3)
+        nonPredictedOfferViolations = randint(0,4)
+
+        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
+
+        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
+        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
         #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
         #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 10, 11, 4, 6, 18, 21, 0, 3, 6, 6, 2, 2, 2, 8, 4, 2)
         #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 2, 1, 1, 3, 4, 1, 0)

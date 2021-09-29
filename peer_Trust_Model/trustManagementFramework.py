@@ -118,10 +118,11 @@ class start_data_collection(Resource):
 
                         """Change if we consider a higher offer number"""
                         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trustee, " $$$$$$$$$$$$$$\n")
-                        if list(dict_product_offers).index(trustee) == 1:
-                            peerTrust.setTrustee1Interactions(producer, trustee)
-                        elif list(dict_product_offers).index(trustee) == 2:
-                            peerTrust.setTrustee2Interactions(producer, trustee)
+                        peerTrust.setTrusteeInteractions(producer, trustee)
+                        #if list(dict_product_offers).index(trustee) == 1:
+                            #peerTrust.setTrustee1Interactions(producer, trustee)
+                        #elif list(dict_product_offers).index(trustee) == 2:
+                            #peerTrust.setTrustee2Interactions(producer, trustee)
                         #elif list(dict_product_offers).index(trustee) == 3:
                             #peerTrust.setTrustee3Interactions(producer, trustee)
                         #else:
