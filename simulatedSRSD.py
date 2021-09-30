@@ -15,7 +15,9 @@ change based on decisions taken in the SRSD. """
 list_product_offers = sorted(glob.glob('./product_offer_examples/RAN*.json'))
 ran_offers = []
 
-trustor_DID = {"trustorDID": rstr.xeger("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}")}
+#trustor_DID = {"trustorDID": rstr.xeger("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}")}
+trustor_DID = {"trustorDID": "99lm6s88-jv84-ii57-qq53-6166qvw8l3zt"}
+
 ran_offers.append(trustor_DID)
 
 for file_name in list_product_offers:

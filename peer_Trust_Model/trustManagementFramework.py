@@ -75,9 +75,9 @@ class start_data_collection(Resource):
                 writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
                 writer.writeheader()
 
-        """ Adding a set of minimum interactions between entities that compose the trust model """
-        minimum_data = peerTrust.minimumTrustValuesDLT(producer, dict_product_offers)
-        write_data_to_csv(dlt_file_name, minimum_data)
+            """ Adding a set of minimum interactions between entities that compose the trust model """
+            minimum_data = peerTrust.minimumTrustValuesDLT(producer, dict_product_offers)
+            write_data_to_csv(dlt_file_name, minimum_data)
 
         trust_scores = []
 
@@ -102,7 +102,7 @@ class start_data_collection(Resource):
                     producer.createTopic(topic_trusteeDID)
                     """ Generating kafka topic where all trustor's interactions with a trustee are registered """
                     provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
-                    print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
+                    print("\nIf it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
                     print("\tKafka Topic name --->", provider_topic_name, "\n")
                     result = producer.createTopic(provider_topic_name)
                     """ Generating kafka topic where all trustor's interactions with a trustee and 
@@ -114,22 +114,19 @@ class start_data_collection(Resource):
 
                     if result == 1:
                         """ we generated initial trust information to avoid the cold start"""
+                        print("$$$$$$$$$$$$$$ Starting cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
+
+                        start_time_collection = time.time()
                         peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
 
-                        """Change if we consider a higher offer number"""
-                        print("$$$$$$$$$$$$$$ Starting data collection procces on ",trustee, " $$$$$$$$$$$$$$\n")
-                        peerTrust.setTrusteeInteractions(producer, trustee)
-                        #if list(dict_product_offers).index(trustee) == 1:
-                            #peerTrust.setTrustee1Interactions(producer, trustee)
-                        #elif list(dict_product_offers).index(trustee) == 2:
-                            #peerTrust.setTrustee2Interactions(producer, trustee)
-                        #elif list(dict_product_offers).index(trustee) == 3:
-                            #peerTrust.setTrustee3Interactions(producer, trustee)
-                        #else:
-                            #peerTrust.setTrustee4Interactions(producer, trustee)
+                        """ Establish two new interactions per each provider"""
+                        peerTrust.setTrusteeInteractions(producer, trustee, 1)
+
+                        print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
                         """ Retrieve information from trustor and trustee """
                         data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": full_topic_name}
+                        #print("%s seconds during Cold Start process" % (time.time()-start_time_collection), "\n")
                         response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
                         response = json.loads(response.text)
                         trust_scores.append(response)
@@ -150,13 +147,20 @@ class gather_information(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
+        counter_consumer_130 = 0
+
         trustorDID = parameter["trustorDID"]
         trusteeDID = parameter["trusteeDID"]
         offerDID = parameter["offerDID"]
         topic_name = parameter["topicName"]
 
+        print("$$$$$$$$$$$$$$ Starting data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
+        start_time_gather = time.time()
+
         """Read last value registered in Kafka"""
         last_trust_value = consumer.readLastTrustValue(topic_name)
+        counter_consumer_130+=1
+
         print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
 
         """Read interactions related to a Trustee"""
@@ -164,6 +168,7 @@ class gather_information(Resource):
         print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
 
         print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
+        #print("%s seconds during Gather Information process" % (time.time()-start_time_gather), "\n")
 
         """ Retrieve information from trustor and trustee """
         trust_information = []
@@ -173,6 +178,8 @@ class gather_information(Resource):
         response = requests.post("http://localhost:5002/compute_trust_level", data=json.dumps(trust_information).encode("utf-8"))
 
         response = json.loads(response.text)
+
+        print("Total 130:", counter_consumer_130)
 
         return response
 
@@ -191,10 +198,12 @@ class compute_trust_level(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
+        counter_consumer_130 = 0
+
         for i in parameter:
 
             print("$$$$$$$$$$$$$$ Starting trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
-
+            start_time_compute = time.time()
             current_trustee = i['trusteeDID']
             trustorDID = i['trustorDID']
             offerDID = i['offerDID']
@@ -235,6 +244,7 @@ class compute_trust_level(Resource):
                     #topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
                     topic_name = current_trustee+"-"+new_interaction['trusteeDID']
                     new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
+                    counter_consumer_130+=1
 
                     for i in new_trustee_interaction:
                         print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
@@ -410,8 +420,10 @@ class compute_trust_level(Resource):
                 write_only_row_to_csv(dlt_file_name, data)
 
                 print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
-
+                #print("%s seconds during the Trust Computation Process" % (time.time()-start_time_compute), "\n")
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
+
+        print("Total 130:", counter_consumer_130)
 
         return response
 
@@ -422,7 +434,7 @@ class store_trust_level(Resource):
         information = json.loads(req)
 
         print("$$$$$$$$$$$$$$ Starting trust information storage process $$$$$$$$$$$$$$\n")
-
+        start_time_store = time.time()
         print("Registering a new trust interaction between two domains in the DLT\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
         print(data,"\n")
@@ -431,12 +443,14 @@ class store_trust_level(Resource):
         print("\nStoring new trust information in our internal MongoDB database\n")
 
         print("\n$$$$$$$$$$$$$$ Ending trust information storage process $$$$$$$$$$$$$$\n")
-
+        #print("%s seconds during the Store Process " % (time.time()-start_time_store), "\n")
         mongoDB.insert_one(information)
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
         #mongoDB.insert_many([tutorial2, tutorial1])
         #for doc in mongoDB.find():
         #pprint.pprint(doc)
+
+        print("Total Peer 130:", peerTrust.counter_consumer_130," Total 170: ", peerTrust.counter_consumer_170, " Total 350: ", peerTrust.counter_consumer_350)
 
         return 200
 
@@ -473,6 +487,7 @@ class update_trust_level(Resource):
             #likehood = float(likehood)
 
             last_trust_score = consumer.readAllInformationTrustValue(topic_key)
+            counter_consumer_130+=1
 
             if positive_notification in current_notification:
                 if likehood <= first_range_probability:

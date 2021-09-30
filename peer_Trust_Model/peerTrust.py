@@ -29,6 +29,14 @@ class PeerTrust():
     list_additional_did_providers = []
     list_additional_did_offers = []
 
+    counter_consumer_130 = 0
+    counter_consumer_170 = 0
+    counter_consumer_350 = 0
+    max_previous_providers_DLT = 4
+    max_previous_providers_interactions_DLT = 3
+    max_previous_interactions_DLT = max_previous_providers_DLT * max_previous_providers_interactions_DLT
+    max_different_interactions = max_previous_providers_DLT * 2
+
     def find_by_column(self, filename, column, value):
         list = []
         with open(filename) as f:
@@ -84,45 +92,6 @@ class PeerTrust():
          model with a set of minimum relationships. In addition, it also simulates the registration of such interactions
          in the DLT """
 
-        """user_satisfaction_1 = round(random.uniform(0.8, 0.9), 3)
-        user_satisfaction_2 = round(random.uniform(0.6, 0.8), 3)
-        user_satisfaction_3 = round(random.uniform(0.75, 0.8), 3)
-        user_satisfaction_4 = round(random.uniform(0.6, 0.75), 3)
-        user_satisfaction_5 = round(random.uniform(0.85, 0.95), 3)
-        user_satisfaction_6 = round(random.uniform(0.85, 0.95), 3)
-        user_satisfaction_7 = round(random.uniform(0.80, 0.99), 3)
-        user_satisfaction_8 = round(random.uniform(0.80, 0.95), 3)
-        user_satisfaction_9 = round(random.uniform(0.85, 0.99), 3)
-        user_satisfaction_10 = round(random.uniform(0.83, 0.92), 3)
-        user_satisfaction_11 = round(random.uniform(0.86, 0.91), 3)
-        user_satisfaction_12 = round(random.uniform(0.76, 0.95), 3)
-
-
-        data = [{"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-G", "offerDID": "did:5gzorro:domain-G-RAN-1",
-                 "userSatisfaction": user_satisfaction_1, "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-I", "offerDID": "did:5gzorro:domain-I-RAN-2",
-                 "userSatisfaction": user_satisfaction_2, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain-F", "trusteeDID": "did:5gzorro:domain-B", "offerDID": "did:5gzorro:domain-B-RAN-1",
-                 "userSatisfaction": user_satisfaction_3, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10},
-                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-H", "offerDID": "did:5gzorro:domain-H-RAN-1",
-                 "userSatisfaction": user_satisfaction_4, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 7},
-                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-I", "offerDID": "did:5gzorro:domain-I-RAN-1",
-                 "userSatisfaction": user_satisfaction_5, "interactionNumber": 1, "totalInteractionNumber": 7, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain-G", "trusteeDID": "did:5gzorro:domain-C", "offerDID": "did:5gzorro:domain-C-RAN-2",
-                 "userSatisfaction": user_satisfaction_6, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-F", "offerDID": "did:5gzorro:domain-F-RAN-2",
-                 "userSatisfaction": user_satisfaction_7, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 11},
-                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-G", "offerDID": "did:5gzorro:domain-G-RAN-2",
-                 "userSatisfaction": user_satisfaction_8, "interactionNumber": 1, "totalInteractionNumber": 9, "currentInteractionNumber": 12},
-                {"trustorDID": "did:5gzorro:domain-H", "trusteeDID": "did:5gzorro:domain-D", "offerDID": "did:5gzorro:domain-D-RAN-1",
-                 "userSatisfaction": user_satisfaction_9, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 13},
-                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-H", "offerDID": "did:5gzorro:domain-H-RAN-2",
-                 "userSatisfaction": user_satisfaction_10, "interactionNumber": 1, "totalInteractionNumber": 13, "currentInteractionNumber": 8},
-                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-F", "offerDID": "did:5gzorro:domain-F-RAN-1",
-                 "userSatisfaction": user_satisfaction_11, "interactionNumber": 1, "totalInteractionNumber": 10, "currentInteractionNumber": 9},
-                {"trustorDID": "did:5gzorro:domain-I", "trusteeDID": "did:5gzorro:domain-E", "offerDID": "did:5gzorro:domain-E-RAN-1",
-                 "userSatisfaction": user_satisfaction_12, "interactionNumber": 1, "totalInteractionNumber": 1, "currentInteractionNumber": 10}
-                ]"""
         print("\n\nSet of previous trust interactions between 5GZORRO domains\n")
         data = []
 
@@ -138,17 +107,16 @@ class PeerTrust():
         aux_did_offers = copy.deepcopy(self.list_additional_did_offers)
 
         """ Generating two interactions per provider, one per each offer"""
-        max_different_interactions = 8
         counter = 0
 
-        for i in range(4):
-            providers = list(range(0,4))
+        for i in range(self.max_previous_providers_DLT):
+            providers = list(range(0,self.max_previous_providers_DLT))
             providers.remove(i)
 
             current_additional_provider = random.choice(providers)
             current_additional_offer = randint(0,1)
 
-            for j in range (3):
+            for j in range (self.max_previous_providers_interactions_DLT):
                 interaction = False
 
                 while (interaction == False):
@@ -157,17 +125,16 @@ class PeerTrust():
                         if "$" not in aux_did_offers[current_additional_provider][current_additional_offer]:
                             interaction = True
                             aux_did_offers[current_additional_provider][current_additional_offer] = aux_did_offers[current_additional_provider][current_additional_offer] + "$"
-                            nex_aux_did_offer = (current_additional_offer+1)%(len(aux_did_offers[current_additional_provider]))
-                            if "$" in aux_did_offers[current_additional_provider][nex_aux_did_offer]:
-                                aux_did_providers[current_additional_provider] = aux_did_providers[current_additional_provider] + "$"
-                            current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
                             counter+=1
                         else:
                             current_additional_offer = (current_additional_offer + 1)%(len(aux_did_offers[current_additional_provider]))
+                            if "$" in aux_did_offers[current_additional_provider][current_additional_offer]:
+                                aux_did_providers[current_additional_provider] = aux_did_providers[current_additional_provider] + "$"
+                                current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
                     else:
                         current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
 
-                    if counter >= max_different_interactions:
+                    if counter >= self.max_different_interactions:
                         interaction = True
 
                 new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID":  aux_did_providers[current_additional_provider].replace("$", ""), "offerDID": aux_did_offers[current_additional_provider][current_additional_offer].replace("$", ""),
@@ -378,6 +345,7 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
+        self.counter_consumer_130+=1
         last_truste_value = trust_information["trust_value"]
 
         return last_truste_value
@@ -397,6 +365,7 @@ class PeerTrust():
         recommender_topic = trustor+"-"+trustee+"-"+offer
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
+        self.counter_consumer_130+=1
         last_truste_value = trust_information["trust_value"]
 
         return last_truste_value
@@ -467,6 +436,7 @@ class PeerTrust():
             for i in range(previous_interaction_number-1):
                 interaction_number = self.getInteractionNumber(trustorDID, trusteeDID)
                 trust_data = consumer.readLastTrustInterationValues(full_topic_name, interaction_number)
+                self.counter_consumer_350 +=1
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
                 information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
@@ -510,24 +480,46 @@ class PeerTrust():
     def generateTrusteeInformation(self, producer, trustorDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
         """ This method introduces Trustee information based on peerTrust equations and using the minimum
         values previously established"""
-
+        start_generateTrusteeInformation = time.time()
         trustee_selection = random.randint(0,3)
         offer_selection = random.randint(0,1)
 
+        if not bool(self.list_additional_did_providers):
+            "Adding the previous DID providers autogenerate to avoid the cold start"
+            self.list_additional_did_offers = [[]] * self.max_previous_providers_DLT
+            with open(self.dlt_file_name) as f:
+                reader = csv.DictReader(f)
+                pointer = 0
+                for item in reader:
+                    if item["trustorDID"] not in self.list_additional_did_providers and pointer < self.max_previous_interactions_DLT:
+                        self.list_additional_did_providers.append(item["trustorDID"])
+                    pointer+=1
+            "Adding the previous DID offers autogenerate to avoid the cold start"
+            with open(self.dlt_file_name) as f:
+                reader = csv.DictReader(f)
+                for item in reader:
+                    if item["trusteeDID"] in self.list_additional_did_providers and item["offerDID"] not in self.list_additional_did_offers:
+                        self.list_additional_did_offers[self.list_additional_did_providers.index(item["trusteeDID"])].append(item["offerDID"])
+
         trusteeDID = self.list_additional_did_providers[trustee_selection]
         offerDID = self.list_additional_did_offers[trustee_selection][offer_selection]
-
         information = self.minimumTrustTemplate(trustorDID, trusteeDID, offerDID)
+
         print("\t* Provider ---> "+trusteeDID+" -- Product offer ---> "+offerDID)
 
         #print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n")
         #print("Trustor --->", trustorDID, "Truestee --->", trusteeDID, "offer --->", offerDID, "\n")
-
+        start_credibility = time.time()
         information["trustor"]["credibility"] = self.credibility(trustorDID, trusteeDID)
+        #print("%s seconds during Credibility" % (time.time()-start_credibility))
         #print("Credibility ---->", information["trustor"]["credibility"])
+        start_TF = time.time()
         information["trustor"]["transactionFactor"] = self.transactionContextFactor(trustorDID, trusteeDID, offerDID)
+        #print("%s seconds during Transaction Factor" % (time.time()-start_TF))
         #print("Transaction Factor ---->", information["trustor"]["transactionFactor"])
+        start_CF = time.time()
         information["trustor"]["communityFactor"] = self.communityContextFactor(trustorDID, trusteeDID)
+        #print("%s seconds during Context Factor" % (time.time()-start_CF))
         #print("Community Factor ---->", information["trustor"]["communityFactor"])
 
         direct_weighting = round(random.uniform(0.6, 0.7),2)
@@ -536,10 +528,18 @@ class PeerTrust():
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         #information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9), 3)
 
+        start_PR = time.time()
         provider_reputation = self.providerReputation(availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations)
+        #print("%s seconds during providerReputation" % (time.time()-start_PR))
+        #start_PS = time.time()
         provider_satisfaction = self.providerSatisfaction(trustorDID, trusteeDID, provider_reputation)
+        #print("%s seconds during providerSatisfaction" % (time.time()-start_PS))
+        #start_CF = time.time()
         offer_reputation = self.offerReputation(consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
+        #print("%s seconds during offerReputation" % (time.time()-start_CF))
+        #start_CF = time.time()
         offer_satisfaction = self.offerSatisfaction(trustorDID, trusteeDID, offerDID, offer_reputation)
+        #print("%s seconds during offerSatisfaction" % (time.time()-start_CF))
         information["trustor"]["direct_parameters"]["providerSatisfaction"] = provider_satisfaction
         ps_weighting = round(random.uniform(0.4, 0.6),2)
         information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
@@ -574,7 +574,9 @@ class PeerTrust():
 
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
+        start_CF = time.time()
         information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
+        #print("%s seconds during Get Trustee Satisfaction DLT" % (time.time()-start_CF))
         #information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
         #print("PS ---->", ps_weighting)
         #print("Provider Satisfaction ---->", provider_satisfaction)
@@ -582,7 +584,9 @@ class PeerTrust():
         #print("OS ---->", os_weighting)
         #print("Offer Satisfaction ---->", offer_satisfaction)
         #print("Offer Reputation ---->", offer_reputation)
+        start_CF = time.time()
         information["trustor"]["direct_parameters"]["userSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
+        #print("%s seconds during User Satisfaction process" % (time.time()-start_PR))
         #print("Satisfaction ---->", information["trustor"]["direct_parameters"]["userSatisfaction"])
         information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
         #print("Final Trust Value ---->", information["trust_value"])
@@ -620,101 +624,32 @@ class PeerTrust():
         with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
             writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
             writer.writerow(data)
-
+        #print("%s seconds during Generate Trustee Information" % (time.time()-start_generateTrusteeInformation))
         return data
 
-    def setTrusteeInteractions(self, producer, trusteeDID):
+    def setTrusteeInteractions(self, producer, trusteeDID, interactions):
         """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
 
-        availableAssets = randint(2,10)
-        totalAssets = availableAssets + randint(0,2)
-        availableAssetLocation = randint(1,6)
-        totalAssetLocation = availableAssetLocation + randint(0,2)
-        managedViolations = randint(10,25)
-        predictedViolations = managedViolations + randint(0,3)
-        executedViolations = randint(0,3)
-        nonPredictedViolations = randint(0,4)
+        for i in range(interactions):
+            availableAssets = randint(2,10)
+            totalAssets = availableAssets + randint(0,2)
+            availableAssetLocation = randint(1,6)
+            totalAssetLocation = availableAssetLocation + randint(0,2)
+            managedViolations = randint(10,25)
+            predictedViolations = managedViolations + randint(0,3)
+            executedViolations = randint(0,3)
+            nonPredictedViolations = randint(0,4)
 
-        consideredOffers = randint(2,10)
-        totalOffers = consideredOffers + randint(0,2)
-        consideredOfferLocation = randint(1,6)
-        totalOfferLocation = consideredOfferLocation + randint(0,2)
-        managedOfferViolations = randint(10,25)
-        predictedOfferViolations = managedOfferViolations + randint(0,3)
-        executedOfferViolations = randint(0,3)
-        nonPredictedOfferViolations = randint(0,4)
+            consideredOffers = randint(2,10)
+            totalOffers = consideredOffers + randint(0,2)
+            consideredOfferLocation = randint(1,6)
+            totalOfferLocation = consideredOfferLocation + randint(0,2)
+            managedOfferViolations = randint(10,25)
+            predictedOfferViolations = managedOfferViolations + randint(0,3)
+            executedOfferViolations = randint(0,3)
+            nonPredictedOfferViolations = randint(0,4)
 
-        self.generateTrusteeInformation(producer, trusteeDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
-
-
-    def setTrustee1Interactions(self, producer, trusteeDID):
-        """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
-
-
-        availableAssets = randint(2,10)
-        totalAssets = availableAssets + randint(0,2)
-        availableAssetLocation = randint(1,6)
-        totalAssetLocation = availableAssetLocation + randint(0,2)
-        managedViolations = randint(10,25)
-        predictedViolations = managedViolations + randint(0,3)
-        executedViolations = randint(0,3)
-        nonPredictedViolations = randint(0,4)
-
-        consideredOffers = randint(2,10)
-        totalOffers = consideredOffers + randint(0,2)
-        consideredOfferLocation = randint(1,6)
-        totalOfferLocation = consideredOfferLocation + randint(0,2)
-        managedOfferViolations = randint(10,25)
-        predictedOfferViolations = managedOfferViolations + randint(0,3)
-        executedOfferViolations = randint(0,3)
-        nonPredictedOfferViolations = randint(0,4)
-
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
-
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 3, 4, 2, 3, 16, 18, 0, 2, 2, 3, 2, 2, 5, 6, 0, 1)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 3, 5, 3, 3, 22, 24, 1, 1, 5, 6, 2, 4, 7, 8, 1, 0)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 15, 18, 1, 2, 2, 5, 1, 2, 5, 8, 1, 2)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 10, 11, 4, 6, 18, 21, 0, 3, 6, 6, 2, 2, 2, 8, 4, 2)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 2, 1, 1, 3, 4, 1, 0)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 2, 3, 4, 2, 2, 18, 21, 1, 2, 4, 8, 2, 2, 7, 11, 2, 2)
-
-        return None
-
-    def setTrustee2Interactions(self, producer, trusteeDID):
-        """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
-        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
-        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 3, 4, 2, 3, 16, 16, 0, 0, 4, 6, 2, 2, 2, 3, 1, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 4, 4, 2, 2, 10, 18, 6, 2, 5, 5, 1, 2, 6, 9, 1, 2)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 4, 11, 2, 4, 18, 21, 2, 1, 5, 8, 3, 3, 5, 9, 2, 2)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 2, 4, 1, 1, 6, 14, 6, 2, 2, 5, 1, 1, 5, 5, 0, 0)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 3, 4, 2, 2, 18, 21, 1, 2, 2, 4, 2, 2, 7, 10, 1, 2)
-        #self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 2, 5, 1, 4, 6, 8, 1, 1, 3, 6, 1, 3, 2, 3, 0, 1)
-
-
-    def setTrustee3Interactions(self, producer, trusteeDID):
-        """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
-        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
-        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-1", 1, 1, 2, 1, 1, 7, 9, 1, 1, 3, 4, 1, 2, 3, 3, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-1", 1, 4, 8, 2, 2, 18, 21, 2, 1, 4, 8, 2, 2, 11, 11, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-1", 1, 4, 4, 2, 2, 10, 18, 6, 2, 7, 8, 3, 4, 4, 8, 4, 4)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 2, 4, 5, 2, 2, 13, 14, 1, 0, 8, 10, 3, 5, 6, 9, 2, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-G", "did:5gzorro:domain-G-RAN-2", 2, 3, 8, 1, 1, 18, 23, 2, 3, 5, 9, 2, 2, 4, 5, 0, 1)
-
-
-    def setTrustee4Interactions(self, producer, trusteeDID):
-        """ This method introduces interactions to the DLT in order to avoid a cold start of all system """
-        print("The "+trusteeDID+" trust interactions with other 5GZORRO domains are:\n")
-        #print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
-        #print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF (u,i)) / I(u)) + β * CF(u)\n")
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-F", "did:5gzorro:domain-F-RAN-2", 1, 6, 8, 4, 5, 19, 19, 0, 0, 3, 4, 1, 1, 4, 6, 1, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-1", 1, 3, 5, 2, 2, 14, 18, 2, 2, 4, 4, 2, 2, 8, 11, 2, 1)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-I", "did:5gzorro:domain-I-RAN-2", 1, 4, 8, 1, 1, 19, 25, 3, 3, 1, 2, 1, 1, 9, 9, 0, 0)
-        self.generateTrusteeInformation(producer, trusteeDID, "did:5gzorro:domain-H", "did:5gzorro:domain-H-RAN-2", 2, 7, 8, 3, 4, 28, 35, 4, 3, 3, 6, 1, 2, 14, 15, 1, 0)
+            self.generateTrusteeInformation(producer, trusteeDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
 
     def getLastHistoryTrustValue(self, trustorDID, trusteeDID):
         """ This method retrieves the last trust score that a trustor has stored about a trustee in its Kafka topic"""
@@ -726,6 +661,7 @@ class PeerTrust():
         recommender_topic = trustorDID+"-"+trusteeDID
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
+        self.counter_consumer_130+=1
 
         if bool(trust_information):
             last_truste_value = trust_information["trust_value"]
@@ -748,6 +684,7 @@ class PeerTrust():
         recommender_topic = trustorDID+"-"+trusteeDID+"-"+offerDID
 
         trust_information = consumer.readLastTrustValue(recommender_topic)
+        self.counter_consumer_130+=1
 
         if bool(trust_information):
             last_truste_value = trust_information["trust_value"]
@@ -799,6 +736,7 @@ class PeerTrust():
         topic_name = trustorDID+"-"+trusteeDID
 
         trust_information = consumer.readLastTrustValue(topic_name)
+        self.counter_consumer_130+=1
 
         if bool(trust_information):
             last_credibility = trust_information["credibility"]
@@ -834,12 +772,14 @@ class PeerTrust():
     """%%%%%%%%%%%%%%   PEERTRUST EQUATIONS %%%%%%%%%%%%%%%%%"""
 
     def credibility(self, trustorDID, trusteeDID):
-
+        time_trustor = time.time()
         previous_trustor_interactions = self.getTrustorInteractions(trustorDID)
+        #print("------ %s seconds Get Trustor Interactions" % (time.time()-time_trustor))
         similarity_summation = 0.0
 
         summation_counter = 0
 
+        time_similarity_trustor = time.time()
         if previous_trustor_interactions:
             for previous_interaction in previous_trustor_interactions:
                 summation_counter = summation_counter + 1
@@ -847,8 +787,11 @@ class PeerTrust():
         else:
             similarity_summation = 1
             summation_counter = 1
+        #print("------ %s seconds Similarity Trustor" % (time.time()-time_similarity_trustor))
 
+        time_similarity_trustee = time.time()
         trustee_similarity = self.similarity(trusteeDID)
+        #print("------ %s seconds Similarity Trustee" % (time.time()-time_similarity_trustee))
 
         credibility = trustee_similarity/(similarity_summation/summation_counter)
         if credibility > 1.0:
@@ -862,19 +805,26 @@ class PeerTrust():
         (trustee parameter) satisfaction value is """
 
         common_interaction = []
+        time_1 = time.time()
         trustor_interaction_list = self.getTrustorInteractions(trusteeDID)
+        #print("$$$$$$ %s seconds during Get Trustor Interactions Similarity" % (time.time()-time_1))
 
+        time_2 = time.time()
         for interaction in trustor_interaction_list:
             common_interaction = self.getTrusteeInteractions(trusteeDID, interaction)
             if common_interaction:
                 """ Currently, only one common interaction is contemplated """
                 break
+        #print("$$$$$$ %s seconds during Get Trustee Interactions Similarity" % (time.time()-time_2))
 
+        time_3 = time.time()
         common_interaction_list = self.getTrustorInteractions(common_interaction[0])
+        #print("$$$$$$ %s seconds during Get Common Interactions Similarity" % (time.time()-time_3))
 
         IJS_counter = 0
         global_satisfaction_summation = 0.0
 
+        time_3 = time.time()
         for interaction in trustor_interaction_list:
             if interaction in common_interaction_list:
                 """ Generating kafka topic name """
@@ -882,15 +832,18 @@ class PeerTrust():
                 #common_interaction_topic = common_interaction[0].split(":")[2]+"-"+interaction.split(":")[2]
                 trustor_topic = trusteeDID+"-"+interaction
                 common_interaction_topic = common_interaction[0]+"-"+interaction
-
+                time_read = time.time()
                 trustor_satisfaction_summation = consumer.readSatisfactionSummation(trustor_topic)
+                self.counter_consumer_170+=1
                 common_interaction_satisfaction_summation = consumer.readSatisfactionSummation(common_interaction_topic)
-
+                self.counter_consumer_170+=1
+                #print("$$$$$$ %s seconds during Reading Satisfaction Calculos Similarity" % (time.time()-time_read))
                 satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
                 global_satisfaction_summation = global_satisfaction_summation + satisfaction_summation
                 IJS_counter = IJS_counter + 1
 
         final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
+        #print("$$$$$$ %s seconds during Calculos Similarity" % (time.time()-time_3))
         return final_similarity
 
 
@@ -904,6 +857,7 @@ class PeerTrust():
         #total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
 
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        self.counter_consumer_170+=1
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
         trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
@@ -935,6 +889,7 @@ class PeerTrust():
         #total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
 
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        self.counter_consumer_170+=1
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
         trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
@@ -968,7 +923,9 @@ class PeerTrust():
         offer_trustee = trusteeDID+ "-" +offerDID
 
         total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        self.counter_consumer_170+=1
         total_registered_offer_interactions = consumer.readOfferTrusteeInteractions(trusteeDID, offer_trustee)
+        self.counter_consumer_130+=1
 
         number_offer_trustee_feedbacks_DLT = self.getOfferFeedbackNumberDLT(trusteeDID, offerDID)
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
