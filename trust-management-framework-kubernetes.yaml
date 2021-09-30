@@ -283,7 +283,7 @@ items:
               resources: {}
           restartPolicy: Always
           imagePullSecrets:
-          - name: regcred
+          - name: tmfjmjv
     status: {}
   - apiVersion: apps/v1
     kind: Deployment
