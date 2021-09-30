@@ -148,27 +148,27 @@ def readOfferTrusteeInteractions(topic_name, offerTrusteDIDs):
 
 def readSatisfactionSummation(topic_name):
     """ This method returns the satisfaction average rate between a trustor and a trustee  """
-    time_consumer = time.time()
+    #time_consumer = time.time()
     consumer = KafkaConsumer(topic_name, bootstrap_servers='kafka:9093', group_id=None, enable_auto_commit=False, auto_offset_reset='earliest', consumer_timeout_ms=200)
     #print("##### %s seconds Reading KafkaConsumer" % (time.time()-time_consumer))
     counter = 0
     satisfactionsummation = 0.0
 
-    time_bucle = time.time()
-    time_for = 0
+    #time_bucle = time.time()
+    #time_for = 0
 
     for message in consumer:
         time_json = time.time()
         trust_information = json.loads(message.value.decode())
         #print("##### %s seconds JSON LOADS" % (time.time()-time_json))
-        time_if = time.time()
+        #time_if = time.time()
         if trust_information:
             #print("##### %s seconds Comprobacion IF" % (time.time()-time_if))
-            time_accesso = time.time()
+            #time_accesso = time.time()
             counter += 1
             satisfactionsummation = satisfactionsummation + trust_information["trustor"]["direct_parameters"]["userSatisfaction"]
             #print("##### %s seconds ACCESSO MATRIZ" % (time.time()-time_accesso))
-        time_for = time.time()
+        #time_for = time.time()
 
     #print("##### %s FOR TIME" % (time.time()-time_for))
     #print("##### %s seconds readSatisfactionSummation" % (time.time()-time_consumer))

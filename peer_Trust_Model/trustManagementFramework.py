@@ -116,7 +116,7 @@ class start_data_collection(Resource):
                         """ we generated initial trust information to avoid the cold start"""
                         print("$$$$$$$$$$$$$$ Starting cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
-                        start_time_collection = time.time()
+                        #start_time_collection = time.time()
                         peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
 
                         """ Establish two new interactions per each provider"""
@@ -155,7 +155,7 @@ class gather_information(Resource):
         topic_name = parameter["topicName"]
 
         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
-        start_time_gather = time.time()
+        #start_time_gather = time.time()
 
         """Read last value registered in Kafka"""
         last_trust_value = consumer.readLastTrustValue(topic_name)
@@ -203,7 +203,7 @@ class compute_trust_level(Resource):
         for i in parameter:
 
             print("$$$$$$$$$$$$$$ Starting trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
-            start_time_compute = time.time()
+            #start_time_compute = time.time()
             current_trustee = i['trusteeDID']
             trustorDID = i['trustorDID']
             offerDID = i['offerDID']
@@ -434,7 +434,7 @@ class store_trust_level(Resource):
         information = json.loads(req)
 
         print("$$$$$$$$$$$$$$ Starting trust information storage process $$$$$$$$$$$$$$\n")
-        start_time_store = time.time()
+        #start_time_store = time.time()
         print("Registering a new trust interaction between two domains in the DLT\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
         print(data,"\n")

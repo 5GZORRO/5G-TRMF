@@ -480,7 +480,7 @@ class PeerTrust():
     def generateTrusteeInformation(self, producer, trustorDID, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
         """ This method introduces Trustee information based on peerTrust equations and using the minimum
         values previously established"""
-        start_generateTrusteeInformation = time.time()
+        #start_generateTrusteeInformation = time.time()
         trustee_selection = random.randint(0,3)
         offer_selection = random.randint(0,1)
 
@@ -509,15 +509,15 @@ class PeerTrust():
 
         #print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n")
         #print("Trustor --->", trustorDID, "Truestee --->", trusteeDID, "offer --->", offerDID, "\n")
-        start_credibility = time.time()
+        #start_credibility = time.time()
         information["trustor"]["credibility"] = self.credibility(trustorDID, trusteeDID)
         #print("%s seconds during Credibility" % (time.time()-start_credibility))
         #print("Credibility ---->", information["trustor"]["credibility"])
-        start_TF = time.time()
+        #start_TF = time.time()
         information["trustor"]["transactionFactor"] = self.transactionContextFactor(trustorDID, trusteeDID, offerDID)
         #print("%s seconds during Transaction Factor" % (time.time()-start_TF))
         #print("Transaction Factor ---->", information["trustor"]["transactionFactor"])
-        start_CF = time.time()
+        #start_CF = time.time()
         information["trustor"]["communityFactor"] = self.communityContextFactor(trustorDID, trusteeDID)
         #print("%s seconds during Context Factor" % (time.time()-start_CF))
         #print("Community Factor ---->", information["trustor"]["communityFactor"])
@@ -528,7 +528,7 @@ class PeerTrust():
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         #information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9), 3)
 
-        start_PR = time.time()
+        #start_PR = time.time()
         provider_reputation = self.providerReputation(availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations)
         #print("%s seconds during providerReputation" % (time.time()-start_PR))
         #start_PS = time.time()
@@ -574,7 +574,7 @@ class PeerTrust():
 
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
-        start_CF = time.time()
+        #start_CF = time.time()
         information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
         #print("%s seconds during Get Trustee Satisfaction DLT" % (time.time()-start_CF))
         #information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
@@ -584,7 +584,7 @@ class PeerTrust():
         #print("OS ---->", os_weighting)
         #print("Offer Satisfaction ---->", offer_satisfaction)
         #print("Offer Reputation ---->", offer_reputation)
-        start_CF = time.time()
+        #start_CF = time.time()
         information["trustor"]["direct_parameters"]["userSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
         #print("%s seconds during User Satisfaction process" % (time.time()-start_PR))
         #print("Satisfaction ---->", information["trustor"]["direct_parameters"]["userSatisfaction"])
@@ -772,14 +772,14 @@ class PeerTrust():
     """%%%%%%%%%%%%%%   PEERTRUST EQUATIONS %%%%%%%%%%%%%%%%%"""
 
     def credibility(self, trustorDID, trusteeDID):
-        time_trustor = time.time()
+        #time_trustor = time.time()
         previous_trustor_interactions = self.getTrustorInteractions(trustorDID)
         #print("------ %s seconds Get Trustor Interactions" % (time.time()-time_trustor))
         similarity_summation = 0.0
 
         summation_counter = 0
 
-        time_similarity_trustor = time.time()
+        #time_similarity_trustor = time.time()
         if previous_trustor_interactions:
             for previous_interaction in previous_trustor_interactions:
                 summation_counter = summation_counter + 1
@@ -789,7 +789,7 @@ class PeerTrust():
             summation_counter = 1
         #print("------ %s seconds Similarity Trustor" % (time.time()-time_similarity_trustor))
 
-        time_similarity_trustee = time.time()
+        #time_similarity_trustee = time.time()
         trustee_similarity = self.similarity(trusteeDID)
         #print("------ %s seconds Similarity Trustee" % (time.time()-time_similarity_trustee))
 
@@ -805,11 +805,11 @@ class PeerTrust():
         (trustee parameter) satisfaction value is """
 
         common_interaction = []
-        time_1 = time.time()
+        #time_1 = time.time()
         trustor_interaction_list = self.getTrustorInteractions(trusteeDID)
         #print("$$$$$$ %s seconds during Get Trustor Interactions Similarity" % (time.time()-time_1))
 
-        time_2 = time.time()
+        #time_2 = time.time()
         for interaction in trustor_interaction_list:
             common_interaction = self.getTrusteeInteractions(trusteeDID, interaction)
             if common_interaction:
@@ -817,14 +817,14 @@ class PeerTrust():
                 break
         #print("$$$$$$ %s seconds during Get Trustee Interactions Similarity" % (time.time()-time_2))
 
-        time_3 = time.time()
+        #time_3 = time.time()
         common_interaction_list = self.getTrustorInteractions(common_interaction[0])
         #print("$$$$$$ %s seconds during Get Common Interactions Similarity" % (time.time()-time_3))
 
         IJS_counter = 0
         global_satisfaction_summation = 0.0
 
-        time_3 = time.time()
+        #time_3 = time.time()
         for interaction in trustor_interaction_list:
             if interaction in common_interaction_list:
                 """ Generating kafka topic name """
@@ -832,7 +832,7 @@ class PeerTrust():
                 #common_interaction_topic = common_interaction[0].split(":")[2]+"-"+interaction.split(":")[2]
                 trustor_topic = trusteeDID+"-"+interaction
                 common_interaction_topic = common_interaction[0]+"-"+interaction
-                time_read = time.time()
+                #time_read = time.time()
                 trustor_satisfaction_summation = consumer.readSatisfactionSummation(trustor_topic)
                 self.counter_consumer_170+=1
                 common_interaction_satisfaction_summation = consumer.readSatisfactionSummation(common_interaction_topic)
