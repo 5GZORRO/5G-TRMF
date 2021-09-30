@@ -274,7 +274,7 @@ items:
             io.kompose.service: tmf
         spec:
           containers:
-            - image: docker.pkg.github.com/5gzorro/trust-management-framework/trust-management-framework:latest
+            - image: ghcr.io/5gzorro/trust-management-framework/trust-management-framework:latest
               name: tmf
               ports:
                 - containerPort: 5000
