@@ -4,6 +4,7 @@
     },
     "id": 466594,
     "href": "cloudResourceDID",
+    "did": "a292a631-aa6f-4a0c-9f93-ca133dab06f5",
     "name": "virtual node",
     "description": "CLOUD resource virtual",
     "lifecycleStatus": "Active",
@@ -272,6 +273,7 @@
                 "href": "http://serverLocation:port/partyManagement/partyRole/1234",
                 "role": "Owner",
                 "name": "operator_b",
+                "extendedInfo": "40026a62-4f46-67a8-ae48-d975e723a14e",
                 "validFor": {
                     "endDateTime": "2021-11-19T00:00",
                     "startDateTime": "2021-04-4T00:00"

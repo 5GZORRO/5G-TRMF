@@ -12,7 +12,7 @@ services:
      - "kafka"
   mongodb:
     image: mongo:4.0.8
-    container_name: "mongodb"
+    container_name: "mongodb-tmf"
     environment:
       MONGO_INITDB_ROOT_USERNAME: 5gzorro
       MONGO_INITDB_ROOT_PASSWORD: password

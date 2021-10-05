@@ -4,6 +4,7 @@
     },
     "id": 761758,
     "href": "VnfResourceDID",
+    "did": "11130f78-d057-4310-81d3-75b04f72c2a6",
     "name": "VnfResource",
     "description": "VnfResource",
     "lifecycleStatus": "Active",
@@ -325,6 +326,7 @@
                 "href": "http://serverLocation:port/partyManagement/partyRole/1234",
                 "role": "Owner",
                 "name": "Operator 3",
+                "extendedInfo": "3676e09f-dbb3-ab41-4c29-5fc3dd663745",
                 "validFor": {
                     "endDateTime": "2021-10-19T00:00",
                     "startDateTime": "2021-05-3T00:00"

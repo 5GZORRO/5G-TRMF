@@ -29,7 +29,7 @@ api = Api(app)
 producer = Producer()
 peerTrust = PeerTrust()
 
-client = MongoClient(host='mongodb', port=27017, username='5gzorro', password='password')
+client = MongoClient(host='mongodb-tmf', port=27017, username='5gzorro', password='password')
 db = client.rptutorials
 mongoDB = db.tutorial
 
