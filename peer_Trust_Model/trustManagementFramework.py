@@ -120,7 +120,7 @@ class start_data_collection(Resource):
                         peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
 
                         """ Establish two new interactions per each provider"""
-                        peerTrust.setTrusteeInteractions(producer, trustee, 2)
+                        peerTrust.setTrusteeInteractions(producer, trustee, 1)
 
                         print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 

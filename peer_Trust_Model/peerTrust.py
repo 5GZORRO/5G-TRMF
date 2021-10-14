@@ -120,7 +120,6 @@ class PeerTrust():
                 interaction = False
 
                 while (interaction == False):
-
                     if "$" not in aux_did_providers[current_additional_provider] and self.list_additional_did_providers[i] != aux_did_providers[current_additional_provider]:
                         if "$" not in aux_did_offers[current_additional_provider][current_additional_offer]:
                             interaction = True
@@ -131,8 +130,20 @@ class PeerTrust():
                             if "$" in aux_did_offers[current_additional_provider][current_additional_offer]:
                                 aux_did_providers[current_additional_provider] = aux_did_providers[current_additional_provider] + "$"
                                 current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
+                            else:
+                                interaction = True
+                                aux_did_offers[current_additional_provider][current_additional_offer] = aux_did_offers[current_additional_provider][current_additional_offer] + "$"
+                                aux_did_providers[current_additional_provider] = aux_did_providers[current_additional_provider] + "$"
+                                current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
+                                counter+=1
                     else:
                         current_additional_provider = (current_additional_provider+1)%(len(aux_did_providers))
+                        if counter == self.max_different_interactions-1:
+                            interaction = True
+                            aux_did_providers[current_additional_provider] = aux_did_providers[current_additional_provider] + "$"
+                            aux_did_offers[current_additional_provider][current_additional_offer] = aux_did_offers[current_additional_provider][current_additional_offer] + "$"
+                            counter+=1
+
 
                     if counter >= self.max_different_interactions:
                         interaction = True
@@ -500,6 +511,7 @@ class PeerTrust():
                 for item in reader:
                     if item["trusteeDID"] in self.list_additional_did_providers and item["offerDID"] not in self.list_additional_did_offers:
                         self.list_additional_did_offers[self.list_additional_did_providers.index(item["trusteeDID"])].append(item["offerDID"])
+
 
         trusteeDID = self.list_additional_did_providers[trustee_selection]
         offerDID = self.list_additional_did_offers[trustee_selection][offer_selection]
