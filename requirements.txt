@@ -6,4 +6,5 @@ Werkzeug
 requests
 pymongo
 rstr
+threaded
 

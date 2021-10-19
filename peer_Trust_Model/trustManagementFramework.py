@@ -12,12 +12,14 @@ import re
 from pymongo import MongoClient
 import pprint
 import csv
+import threading
 
 from peerTrust import *
 from producer import *
+from consumer import *
 from trustInformationTemplate import *
-import consumer
 from datetime import datetime
+from multiprocessing import Process
 #logging.basicConfig(level=logging.INFO)
 
 from gevent import monkey
@@ -27,6 +29,7 @@ app = Flask(__name__)
 api = Api(app)
 
 producer = Producer()
+consumer = Consumer()
 peerTrust = PeerTrust()
 
 client = MongoClient(host='mongodb-tmf', port=27017, username='5gzorro', password='password')
@@ -37,6 +40,7 @@ dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","intera
 dlt_file_name = 'DLT.csv'
 
 provider_list = []
+consumer_instance = None
 
 
 def find_by_column(filename, column, value):
@@ -75,10 +79,6 @@ class start_data_collection(Resource):
                 writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
                 writer.writeheader()
 
-            """ Adding a set of minimum interactions between entities that compose the trust model """
-            minimum_data = peerTrust.minimumTrustValuesDLT(producer, dict_product_offers)
-            write_data_to_csv(dlt_file_name, minimum_data)
-
         trust_scores = []
 
         for trustee in dict_product_offers:
@@ -87,6 +87,11 @@ class start_data_collection(Resource):
                 #topic_trustorDID = trustorDID.split(":")[2]
                 topic_trustorDID = trustorDID
                 trustor_acquired = True
+
+                """ Adding a set of minimum interactions between entities that compose the trust model """
+                minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, dict_product_offers)
+                write_data_to_csv(dlt_file_name, minimum_data)
+
             else:
                 for offer in dict_product_offers[trustee]:
                     """ Retrieve last part of DIDs to generate a unique kafka topic """
@@ -98,34 +103,48 @@ class start_data_collection(Resource):
                     provider_list.append(trustee)
 
                     """ Generating kafka topic where all interactions with a trustee are registered """
-                    registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
-                    producer.createTopic(topic_trusteeDID)
+                    #registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
+                    #producer.createTopic(topic_trusteeDID)
                     """ Generating kafka topic where all trustor's interactions with a trustee are registered """
-                    provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
-                    print("\nIf it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
-                    print("\tKafka Topic name --->", provider_topic_name, "\n")
-                    result = producer.createTopic(provider_topic_name)
+                    #provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
+                    #print("\nIf it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
+                    #print("\tKafka Topic name --->", provider_topic_name, "\n")
+                    #result = producer.createTopic(provider_topic_name)
                     """ Generating kafka topic where all trustor's interactions with a trustee and 
                     an particular offer are registered """
-                    full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
-                    print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and a particular product offer ("+offer+")")
-                    print("\tKafka Topic name --->", full_topic_name, "\n")
-                    result = producer.createTopic(full_topic_name)
+                    #full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
+                    #print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and a particular product offer ("+offer+")")
+                    #print("\tKafka Topic name --->", full_topic_name, "\n")
+                    #result = producer.createTopic(full_topic_name)
+
+                    print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+", "+trustee+" and a particular product offer ("+offer+")")
+                    print("\tKafka Topic name --->", trustorDID, "\n")
+
+                    consumer_instance = consumer.start()
+                    if consumer_instance is not None:
+                        result = consumer.subscribe(topic_trustorDID)
 
                     if result == 1:
+
                         """ we generated initial trust information to avoid the cold start"""
                         print("$$$$$$$$$$$$$$ Starting cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
-                        #start_time_collection = time.time()
-                        peerTrust.generateHistoryTrustInformation(producer, trustorDID, trustee, offer, provider_topic_name, full_topic_name, topic_trusteeDID,registered_offer_interaction,3)
+                        #consumer_thread = threading.Thread(targe =consumer.start_reading())
+                        #consumer_thread.deamon = True
+                        consumer_thread = Process(target=consumer.start_reading())
+                        consumer_thread.start()
 
+                        #start_time_collection = time.time()
+                        print("%%%%%%%%%%%%% Primera Lectura Consumer")
+                        peerTrust.generateHistoryTrustInformation(producer, consumer, trustorDID, trustee, offer,3)
+                        print("%%%%%%%%%%%%% No se bloquea el Consumer")
                         """ Establish two new interactions per each provider"""
                         peerTrust.setTrusteeInteractions(producer, trustee, 1)
 
                         print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
                         """ Retrieve information from trustor and trustee """
-                        data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": full_topic_name}
+                        data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": trustorDID}
                         #print("%s seconds during Cold Start process" % (time.time()-start_time_collection), "\n")
                         response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
                         response = json.loads(response.text)
@@ -147,7 +166,7 @@ class gather_information(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
-        counter_consumer_130 = 0
+        #counter_consumer_130 = 0
 
         trustorDID = parameter["trustorDID"]
         trusteeDID = parameter["trusteeDID"]
@@ -158,8 +177,8 @@ class gather_information(Resource):
         #start_time_gather = time.time()
 
         """Read last value registered in Kafka"""
-        last_trust_value = consumer.readLastTrustValue(topic_name)
-        counter_consumer_130+=1
+        last_trust_value = consumer.readLastTrustValue(trustorDID, trusteeDID, offerDID)
+        #counter_consumer_130+=1
 
         print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
 
@@ -179,7 +198,7 @@ class gather_information(Resource):
 
         response = json.loads(response.text)
 
-        print("Total 130:", counter_consumer_130)
+        #print("Total 130:", counter_consumer_130)
 
         return response
 
@@ -198,7 +217,7 @@ class compute_trust_level(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
-        counter_consumer_130 = 0
+        #counter_consumer_130 = 0
 
         for i in parameter:
 
@@ -243,8 +262,8 @@ class compute_trust_level(Resource):
                 for new_interaction in current_trustee_interactions:
                     #topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
                     topic_name = current_trustee+"-"+new_interaction['trusteeDID']
-                    new_trustee_interaction = consumer.readLastTrustValues(topic_name, last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
-                    counter_consumer_130+=1
+                    new_trustee_interaction = consumer.readLastTrustValues(current_trustee, new_interaction['trusteeDID'], last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
+                    #counter_consumer_130+=1
 
                     for i in new_trustee_interaction:
                         print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
@@ -395,20 +414,21 @@ class compute_trust_level(Resource):
                 print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
                 #registered_offer_interaction = current_trustee.split(":")[2] + "-" + offerDID.split(":")[2]
-                registered_offer_interaction = current_trustee + "-" + offerDID
-                producer.createTopic(registered_offer_interaction)
+                #registered_offer_interaction = current_trustee + "-" + offerDID
+                #producer.createTopic(registered_offer_interaction)
                 #provider_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]
-                provider_topic_name = trustorDID+"-"+current_trustee
-                producer.createTopic(provider_topic_name)
+                #provider_topic_name = trustorDID+"-"+current_trustee
+                #producer.createTopic(provider_topic_name)
                 #full_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]+"-"+offerDID.split(":")[2]
-                full_topic_name = trustorDID+"-"+current_trustee+"-"+offerDID
-                producer.createTopic(full_topic_name)
+                #full_topic_name = trustorDID+"-"+current_trustee+"-"+offerDID
+                #producer.createTopic(full_topic_name)
 
-                message = {"interaction": trustorDID+" has interacted with "+current_trustee}
+                #message = {"interaction": trustorDID+" has interacted with "+current_trustee}
                 #producer.sendMessage(current_trustee.split(":")[2], registered_offer_interaction, message)
-                producer.sendMessage(current_trustee, registered_offer_interaction, message)
-                producer.sendMessage(provider_topic_name, provider_topic_name, information)
-                producer.sendMessage(full_topic_name, full_topic_name, information)
+                #producer.sendMessage(current_trustee, registered_offer_interaction, message)
+                #producer.sendMessage(provider_topic_name, provider_topic_name, information)
+                #producer.sendMessage(full_topic_name, full_topic_name, information)
+                producer.sendMessage(trustorDID, trustorDID, information)
 
 
                 data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
@@ -423,7 +443,7 @@ class compute_trust_level(Resource):
                 #print("%s seconds during the Trust Computation Process" % (time.time()-start_time_compute), "\n")
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
-        print("Total 130:", counter_consumer_130)
+        #print("Total 130:", counter_consumer_130)
 
         return response
 
@@ -450,7 +470,7 @@ class store_trust_level(Resource):
         #for doc in mongoDB.find():
         #pprint.pprint(doc)
 
-        print("Total Peer 130:", peerTrust.counter_consumer_130," Total 170: ", peerTrust.counter_consumer_170, " Total 350: ", peerTrust.counter_consumer_350)
+        #print("Total Peer 130:", peerTrust.counter_consumer_130," Total 170: ", peerTrust.counter_consumer_170, " Total 350: ", peerTrust.counter_consumer_350)
 
         return 200
 
@@ -465,9 +485,11 @@ class update_trust_level(Resource):
         print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
 
         slaBreachPredictor_topic = information["SLABreachPredictor"]
-        topic_key = information["key"]
+        trustorDID = information["trustorDID"]
+        trusteeDID = information["trusteeDID"]
+        offerDID = information["offerDID"]
 
-        notifications = consumer.readSLANotification(slaBreachPredictor_topic, topic_key)
+        notifications = consumer.readSLANotification(slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
 
         positive_notification = "was able to manage the SLA violation successfully"
         negative_notification = "was not able to manage the SLA violation successfully"
@@ -486,8 +508,8 @@ class update_trust_level(Resource):
             likehood = notification["breachPredictionNotification"]["value"]
             #likehood = float(likehood)
 
-            last_trust_score = consumer.readAllInformationTrustValue(topic_key)
-            counter_consumer_130+=1
+            last_trust_score = consumer.readAllInformationTrustValue(trustorDID, trusteeDID, offerDID)
+            #counter_consumer_130+=1
 
             if positive_notification in current_notification:
                 if likehood <= first_range_probability:
@@ -516,7 +538,7 @@ class update_trust_level(Resource):
             print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
             last_trust_score["trust_value"] = round(new_trust_score, 3)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
-            producer.sendMessage(topic_key, topic_key, last_trust_score)
+            producer.sendMessage(trustorDID, trustorDID, last_trust_score)
 
         return 200
 

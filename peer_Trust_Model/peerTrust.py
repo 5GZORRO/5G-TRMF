@@ -5,7 +5,6 @@ import random
 import time
 import ast
 import math
-import consumer
 import os.path
 import csv
 import rstr
@@ -36,6 +35,8 @@ class PeerTrust():
     max_previous_providers_interactions_DLT = 3
     max_previous_interactions_DLT = max_previous_providers_DLT * max_previous_providers_interactions_DLT
     max_different_interactions = max_previous_providers_DLT * 2
+
+    consumer = None
 
     def find_by_column(self, filename, column, value):
         list = []
@@ -87,7 +88,7 @@ class PeerTrust():
 
         return information
 
-    def minimumTrustValuesDLT(self, producer, dict_product_offers):
+    def minimumTrustValuesDLT(self, producer, trustor, dict_product_offers):
         """ This method establishes multiple trust relationships from domain 5 to domain 8 in order to start the trust
          model with a set of minimum relationships. In addition, it also simulates the registration of such interactions
          in the DLT """
@@ -212,22 +213,25 @@ class PeerTrust():
             #registered_interaction = interaction["trusteeDID"].split(":")[2]
             registered_offer_interaction = interaction["trusteeDID"] + "-" + interaction["offerDID"]
             registered_interaction = interaction["trusteeDID"]
-            producer.createTopic(registered_interaction)
+            #producer.createTopic(registered_interaction)
 
             #provider_topic_name = interaction["trustorDID"].split(":")[2] + "-" + interaction["trusteeDID"].split(":")[2]
-            provider_topic_name = interaction["trustorDID"] + "-" + interaction["trusteeDID"]
-            result = producer.createTopic(provider_topic_name)
+            #provider_topic_name = interaction["trustorDID"] + "-" + interaction["trusteeDID"]
+            #result = producer.createTopic(provider_topic_name)
             #full_topic_name = interaction["trustorDID"].split(":")[2] + "-" + interaction["trusteeDID"].split(":")[2] + "-" + interaction["offerDID"].split(":")[2]
-            full_topic_name = interaction["trustorDID"] + "-" + interaction["trusteeDID"] + "-" + interaction["offerDID"]
-            result = producer.createTopic(full_topic_name)
-            if result == 1:
+            #full_topic_name = interaction["trustorDID"] + "-" + interaction["trusteeDID"] + "-" + interaction["offerDID"]
+            #result = producer.createTopic(full_topic_name)
+            #if result == 1:
 
-                message = {"interaction": interaction["trustorDID"]+" has interacted with "+interaction["trusteeDID"]}
-                producer.sendMessage(registered_interaction, registered_offer_interaction, message)
-                for i in range(random.randint(0, 1)):
-                    producer.sendMessage(registered_interaction, registered_offer_interaction, message)
-                producer.sendMessage(provider_topic_name, provider_topic_name, trust_informartion)
-                producer.sendMessage(full_topic_name, full_topic_name, trust_informartion)
+                #message = {"interaction": interaction["trustorDID"]+" has interacted with "+interaction["trusteeDID"]}
+                #producer.sendMessage(registered_interaction, registered_offer_interaction, message)
+                #for i in range(random.randint(0, 1)):
+                    #producer.sendMessage(registered_interaction, registered_offer_interaction, message)
+                #producer.sendMessage(provider_topic_name, provider_topic_name, trust_informartion)
+                #producer.sendMessage(full_topic_name, full_topic_name, trust_informartion)
+
+            """ The minimum interactions are also registered in the Trustor Kafka Topic but they must be deleted when cold start is not used """
+            producer.sendMessage(trustor, trustor, trust_informartion)
 
         return data
 
@@ -355,7 +359,7 @@ class PeerTrust():
 
         recommender_topic = trustor+"-"+trustee
 
-        trust_information = consumer.readLastTrustValue(recommender_topic)
+        trust_information = self.consumer.readLastTrustValue(trustor, trustee)
         self.counter_consumer_130+=1
         last_truste_value = trust_information["trust_value"]
 
@@ -375,7 +379,7 @@ class PeerTrust():
 
         recommender_topic = trustor+"-"+trustee+"-"+offer
 
-        trust_information = consumer.readLastTrustValue(recommender_topic)
+        trust_information = self.consumer.readLastTrustValue(trustor, trustee, offer)
         self.counter_consumer_130+=1
         last_truste_value = trust_information["trust_value"]
 
@@ -394,11 +398,13 @@ class PeerTrust():
         return round(general_satisfaction/counter, 3)
 
 
-    def generateHistoryTrustInformation(self, producer, trustorDID, trusteeDID, offerDID, provider_topic_name, full_topic_name, topic_trusteeDID, registered_offer_interaction, previous_interaction_number):
+    def generateHistoryTrustInformation(self, producer, consumer, trustorDID, trusteeDID, offerDID, previous_interaction_number):
         """ This method generates trust information that will be sent to trustor Kafka Topic. In particular,
         it is adding _n_ previous interactions (history) to be contemplated in future assessments"""
 
         list_interactions = []
+
+        self.consumer = consumer
 
         if previous_interaction_number != 0:
             trustInformationTemplate = TrustInformationTemplate()
@@ -426,11 +432,13 @@ class PeerTrust():
             information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
 
-            message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
-            producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
+            #message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
+            #producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
 
-            result = producer.sendMessage(provider_topic_name, provider_topic_name, information)
-            result = producer.sendMessage(full_topic_name, full_topic_name, information)
+            #result = producer.sendMessage(provider_topic_name, provider_topic_name, information)
+            #result = producer.sendMessage(full_topic_name, full_topic_name, information)
+
+            producer.sendMessage(trustorDID, trustorDID, information)
 
             #data = "}\\n{\\\"trustorDID\\\": \\\""+trustorDID+"\\\", \\\"trusteeDID\\\": \\\""+trusteeDID+"\\\", \\\"offerDID\\\": \\\""+offerDID+"\\\",\\\"userSatisfaction\\\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information["currentInteractionNumber"])+"}\""
             data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
@@ -446,7 +454,7 @@ class PeerTrust():
 
             for i in range(previous_interaction_number-1):
                 interaction_number = self.getInteractionNumber(trustorDID, trusteeDID)
-                trust_data = consumer.readLastTrustInterationValues(full_topic_name, interaction_number)
+                trust_data = self.consumer.readLastTrustInterationValues(trustorDID, trusteeDID, offerDID, interaction_number)
                 self.counter_consumer_350 +=1
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
@@ -469,10 +477,11 @@ class PeerTrust():
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-                message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
-                producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
-                result = producer.sendMessage(provider_topic_name, provider_topic_name, information)
-                result = producer.sendMessage(full_topic_name, full_topic_name, information)
+                #message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
+                #producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
+                #result = producer.sendMessage(provider_topic_name, provider_topic_name, information)
+                #result = producer.sendMessage(full_topic_name, full_topic_name, information)
+                producer.sendMessage(trustorDID, trustorDID, information)
 
                 #data = "}\\n{\\\"trustorDID\\\": \\\""+trustorDID+"\\\", \\\"trusteeDID\\\": \\\""+trusteeDID+"\\\", \\\"offerDID\\\": \\\""+offerDID+"\\\",\\\"userSatisfaction\\\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information["currentInteractionNumber"])+"}\""
                 data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
@@ -611,19 +620,21 @@ class PeerTrust():
         topic_trusteeDID = trusteeDID
         topic_offerDID = offerDID
 
-        registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
-        producer.createTopic(topic_trusteeDID)
+        #registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
+        #producer.createTopic(topic_trusteeDID)
 
-        provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
-        result = producer.createTopic(provider_topic_name)
-        full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
-        result = producer.createTopic(full_topic_name)
+        #provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
+        #result = producer.createTopic(provider_topic_name)
+        #full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
+        #result = producer.createTopic(full_topic_name)
 
-        if result == 1:
-            message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
-            producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
-            producer.sendMessage(provider_topic_name, provider_topic_name, information)
-            producer.sendMessage(full_topic_name, full_topic_name, information)
+        #if result == 1:
+            #message = {"interaction": trustorDID+" has interacted with "+trusteeDID}
+            #producer.sendMessage(topic_trusteeDID, registered_offer_interaction, message)
+            #producer.sendMessage(provider_topic_name, provider_topic_name, information)
+            #producer.sendMessage(full_topic_name, full_topic_name, information)
+
+        producer.sendMessage(trustorDID, trustorDID, information)
 
         #data = "}\\n{\\\"trustorDID\\\": \\\""+trustorDID+"\\\", \\\"trusteeDID\\\": \\\""+trusteeDID+"\\\", \\\"offerDID\\\": \\\""+offerDID+"\\\",\\\"userSatisfaction\\\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \\\"interactionNumber\\\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \\\"totalInteractionNumber\\\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \\\"currentInteractionNumber\\\": "+str(information["currentInteractionNumber"])+"}\""
         data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
@@ -672,7 +683,7 @@ class PeerTrust():
 
         recommender_topic = trustorDID+"-"+trusteeDID
 
-        trust_information = consumer.readLastTrustValue(recommender_topic)
+        trust_information = self.consumer.readLastTrustValue(trustorDID, trusteeDID)
         self.counter_consumer_130+=1
 
         if bool(trust_information):
@@ -695,7 +706,7 @@ class PeerTrust():
 
         recommender_topic = trustorDID+"-"+trusteeDID+"-"+offerDID
 
-        trust_information = consumer.readLastTrustValue(recommender_topic)
+        trust_information = self.consumer.readLastTrustValue(trustorDID, trusteeDID, offerDID)
         self.counter_consumer_130+=1
 
         if bool(trust_information):
@@ -747,7 +758,7 @@ class PeerTrust():
         #topic_name = trustorDID.split(":")[2]+"-"+trusteeDID.split(":")[2]
         topic_name = trustorDID+"-"+trusteeDID
 
-        trust_information = consumer.readLastTrustValue(topic_name)
+        trust_information = self.consumer.readLastTrustValue(trustorDID, trusteeDID)
         self.counter_consumer_130+=1
 
         if bool(trust_information):
@@ -845,9 +856,9 @@ class PeerTrust():
                 trustor_topic = trusteeDID+"-"+interaction
                 common_interaction_topic = common_interaction[0]+"-"+interaction
                 #time_read = time.time()
-                trustor_satisfaction_summation = consumer.readSatisfactionSummation(trustor_topic)
+                trustor_satisfaction_summation = self.consumer.readSatisfactionSummation(trusteeDID, interaction)
                 self.counter_consumer_170+=1
-                common_interaction_satisfaction_summation = consumer.readSatisfactionSummation(common_interaction_topic)
+                common_interaction_satisfaction_summation = self.consumer.readSatisfactionSummation(common_interaction[0], interaction)
                 self.counter_consumer_170+=1
                 #print("$$$$$$ %s seconds during Reading Satisfaction Calculos Similarity" % (time.time()-time_read))
                 satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
@@ -868,7 +879,7 @@ class PeerTrust():
         #topic_trusteeDID = trusteeDID.split(":")[2]
         #total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
 
-        total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(trusteeDID)
         self.counter_consumer_170+=1
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
@@ -900,7 +911,7 @@ class PeerTrust():
         #topic_trusteeDID = trusteeDID.split(":")[2]
         #total_registered_trustee_interaction = consumer.readTrusteeInteractions(topic_trusteeDID)
 
-        total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(trusteeDID)
         self.counter_consumer_170+=1
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
@@ -934,9 +945,9 @@ class PeerTrust():
 
         offer_trustee = trusteeDID+ "-" +offerDID
 
-        total_registered_trustee_interaction = consumer.readTrusteeInteractions(trusteeDID)
+        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(trusteeDID)
         self.counter_consumer_170+=1
-        total_registered_offer_interactions = consumer.readOfferTrusteeInteractions(trusteeDID, offer_trustee)
+        total_registered_offer_interactions = self.consumer.readOfferTrusteeInteractions(trusteeDID, offer_trustee)
         self.counter_consumer_130+=1
 
         number_offer_trustee_feedbacks_DLT = self.getOfferFeedbackNumberDLT(trusteeDID, offerDID)

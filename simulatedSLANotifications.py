@@ -43,7 +43,7 @@ def simulatedSLANotifications():
         #message = {"uuid": trusteeDID.split(":")[2], "resourceId": offerDID.split(":")[2], "value": 0.93, "notification": "The "+offerDID.split(":")[2]+" was able to manage the SLA violation successfully."}
         producer.sendMessage(topic_name, key, message)
 
-        data = {"SLABreachPredictor": topic_name, "key": key}
+        data = {"SLABreachPredictor": topic_name, "trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID}
         requests.post("http://localhost:5002/update_trust_level", data=json.dumps(data).encode("utf-8"))
 
 simulatedSLANotifications()
