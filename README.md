@@ -1,4 +1,4 @@
-# Trust-management-framework
+# 5G-enabled Trust and Reputation Management Framework (5G-TRMF)
 5GZORRO's trust management component manages the computation of trust values among different stakeholders based on previous experiences and the trust chain with other intermediary entities involved in the trust link. By means of this framework, end-to-end trustworthiness relationships can be established.
 
 ## Trust Management Framework REST API
