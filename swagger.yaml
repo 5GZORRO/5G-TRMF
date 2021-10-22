@@ -12,7 +12,7 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 #basePath: "/v2"
 tags:
-- name: "5G-enabled Trust and Reputation Management Framework"
+- name: "5G-TRMF"
   description: "Methods related with the trust establisment across domains"
   externalDocs:
     description: "Find out more"
@@ -24,7 +24,7 @@ paths:
   /start_data_collection:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Activates the process of collecting trust information about a stakeholder."
       description: "This method is responsible for starting a continuous collection data from Data Lake."
       operationId: "startDataCollection"
@@ -57,7 +57,7 @@ paths:
   /stop_data_collection:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Disables the process of collecting trust information about a stakeholder."
       description: "This method is responsible for stoping a continous collection data from Data Lake."
       operationId: "disconnetVPN"
@@ -84,7 +84,7 @@ paths:
   /request_trust_scores:
    post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Sends a list of offers from the Smart Resource and Service Discovery application."
       description: "This method is employed by the Smart Service and Resource Discovery application in order to evaluate trust scores of a list of pre-classified offers."
       produces:
@@ -106,7 +106,7 @@ paths:
   /notify_final_selection:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Final resource or service/slice determined by ISSM-WFM."
       description: "This method is employed by the ISSM-WFM to notify the Trust Management Framework the final resource or service/slice selected and on which the startDataCollection method will be launched internally."
       produces:
@@ -124,7 +124,7 @@ paths:
   /gather_information:
     get:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Gets the trust information from the Data Lake platform"
       description: "This method is responsible for acquiring trust information (previously collected), from Data Lake Platform, which will be used to derive trust parameters."
       operationId: "gatherInformation"
@@ -143,7 +143,7 @@ paths:
   /compute_trust_level:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Calculates a stakeholder's trust score"
       description: "This method allows calculating a trust level score from previous data collected. Then, this value will be used to determine the most feasible stakeholder with which to establish a connection."
       operationId: "computeTrustLevel"
@@ -173,7 +173,7 @@ paths:
   /store_trust_level:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Stores current trust information for future interactions"
       description: "This method allows the storage of trustworthy information in any of the available destinations (Data Lake platform and/or PostgreSQL)."
       operationId: "storeTrustLevel"
@@ -203,7 +203,7 @@ paths:
   /query_trust_level:
     post:
       tags:
-      - "Trust Management Framework"
+      - "5G-TRMF"
       summary: "Retrieve the last trust score of a stakeholder."
       description: "This method requests the last trust score of a particular stakeholder, if there is no previous value or it was calculated too much time ago, it triggers the trust level assessment process."
       operationId: "queryTrustLevel"
