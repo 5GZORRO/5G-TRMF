@@ -1,10 +1,9 @@
 ---
 swagger: "2.0"
 info:
-  description: "This is the swager server for the trust management framework.  This software is developed\
-    \ under EU H2020 [http://5gzorro.eu](5GZORRO) project. The Trust Management Framework repository can be found at https://github.com/5GZORRO/Trust-management-framework ."
+  description: "This is the swager server for the 5G-enabled Trust and Reputation Management Framework (5G-TRMF).This software is developed under EU H2020 [http://5gzorro.eu](5GZORRO) project. The 5G-TRMF repository can be found at https://5gzorro.github.io/5G-TRMF/ ."
   version: "1.0"
-  title: "Trust Management Framework"
+  title: "5G-enabled Trust and Reputation Management Framework"
   #termsOfService: "http://swagger.io/terms/"
   contact:
     email: "josemaria.jorquera@um.es"
@@ -14,7 +13,7 @@ info:
 #host: "petstore.swagger.io"
 #basePath: "/v2"
 tags:
-- name: "Trust Management Framework"
+- name: "5G-enabled Trust and Reputation Management Framework"
   description: "Methods related with the trust establisment across domains"
   externalDocs:
     description: "Find out more"
