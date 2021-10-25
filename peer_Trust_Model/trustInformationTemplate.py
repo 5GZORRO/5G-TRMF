@@ -140,3 +140,77 @@ class TrustInformationTemplate():
         }
 
         return general_JSON
+
+    def trustTemplate3(self):
+        """This methods introduces the general Trust template that will be used in order to generate a dataset,
+    and also to compute new trust scores and provide recomendations """
+        general_JSON = {
+            "trustor": {
+                "trustorDID": 1,
+                "trusteeDID": 1,
+                "credibility": 1,
+                "transactionFactor": 1,
+                "communityFactor": 1,
+                "trust_propagation": 1,
+                "trust_update": 1,
+                "trust_evaluation": 1,
+                "direct_parameters": {
+                    "direct_weighting": 1,
+                    "userSatisfaction": 1,
+                    "providerSatisfaction": 1,
+                    "PSWeighting": 1,
+                    "offerSatisfaction": 1,
+                    "OSWeighting": 1,
+                    "providerReputation": 1,
+                    "offerReputation": 1,
+                    "availableAssets": 1,
+                    "totalAssets": 1,
+                    "availableAssetLocation": 1,
+                    "totalAssetLocation": 1,
+                    "managedViolations": 1,
+                    "predictedViolations": 1,
+                    "executedViolations": 1,
+                    "nonPredictedViolations": 1,
+                    "consideredOffers": 1,
+                    "totalOffers": 1,
+                    "consideredOfferLocation": 1,
+                    "totalOfferLocation": 1,
+                    "managedOfferViolations": 1,
+                    "predictedOfferViolations": 1,
+                    "executedOfferViolations": 1,
+                    "nonPredictedOfferViolations": 1,
+                    "interactionNumber": 1,
+                    "totalInteractionNumber": 1,
+                    "feedbackNumber": 1,
+                    "feedbackOfferNumber": 1,
+                    "location": 1,
+                    "validFor": 1
+                },
+                "indirect_parameters": {
+                    "recommendation_weighting": 1,
+                    "recommendations": 1
+                },
+                "offerDID": {
+                    "type": 1
+                }
+            },
+            "trustee": {
+                "trusteeDID": 1,
+                "recommendation": {
+                    "recommender": 1,
+                    "trust_level": 1,
+                    "location": 1
+                },
+                "offerDID": {
+                    "type": 1
+                },
+                "trusteeSatisfaction": 1
+            },
+            "trust_value": 1,
+            "currentInteractionNumber": 1,
+            "evaluation_criteria": 1,
+            "initEvaluationPeriod": 1,
+            "endEvaluationPeriod": 1
+        }
+
+        return general_JSON

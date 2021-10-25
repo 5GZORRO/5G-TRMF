@@ -49,22 +49,22 @@ class PeerTrust():
     d = manager.dict()
 
     def find_by_column(self, filename, column, value):
-        list = []
+        list_object = []
         with open(filename) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item[column] == value:
-                    list.append(item)
-        return list
+                    list_object.append(item)
+        return list(list_object)
 
     def find_by_two_column(self, filename, column1, value1, colum2, value2):
-        list = []
+        list_object = []
         with open(filename) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item[column1] == value1 and item[colum2] == value2:
-                    list.append(item)
-        return list
+                    list_object.append(item)
+        return list(list_object)
 
     def minimumTrustTemplate(self, trustorDID, trusteeDID, offerDID):
         """ This method initialises a set of minimum trust parameters to ensure that the system does not start from
@@ -304,7 +304,8 @@ class PeerTrust():
                 #producer.sendMessage(provider_topic_name, provider_topic_name, trust_informartion)
                 #producer.sendMessage(full_topic_name, full_topic_name, trust_informartion)
 
-        self.historical = interactions
+        for i in interactions:
+            self.historical.append(i)
 
         return data
 
@@ -1078,7 +1079,6 @@ class PeerTrust():
 
         """ Only one recommendation is currently contemplated"""
         last_interaction = self.getRecommenderDLT(trustorDID, trusteeDID)
-        #print("providerSatisfaction: ", last_interaction)
 
         provider_recommendation = self.getLastRecommendationValue(last_interaction)
 

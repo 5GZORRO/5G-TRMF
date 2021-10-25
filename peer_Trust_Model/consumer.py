@@ -262,7 +262,6 @@ class Consumer():
         satisfactionsummation = 0.0
         iterations = 0
 
-        print(len(historical), trustor, trustee)
         for interactions in reversed(historical):
             iterations+=1
             if interactions["trustor"]["trustorDID"] == trustor and \

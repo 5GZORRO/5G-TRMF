@@ -1,6 +1,6 @@
 version: '3.5'
 services:
-  tmf:
+  trmf:
    build: .
    ports:
      - "5000:5000"
@@ -12,7 +12,7 @@ services:
      - "kafka"
   mongodb:
     image: mongo:4.0.8
-    container_name: "mongodb-tmf"
+    container_name: "mongodb-trmf"
     environment:
       MONGO_INITDB_ROOT_USERNAME: 5gzorro
       MONGO_INITDB_ROOT_PASSWORD: password

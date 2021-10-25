@@ -34,8 +34,9 @@ producer = Producer()
 consumer = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
+trustInformationTemplate = TrustInformationTemplate()
 
-client = MongoClient(host='mongodb-tmf', port=27017, username='5gzorro', password='password')
+client = MongoClient(host='mongodb-trmf', port=27017, username='5gzorro', password='password')
 db = client.rptutorials
 mongoDB = db.tutorial
 
@@ -46,6 +47,8 @@ provider_list = []
 consumer_instance = None
 
 history = {}
+trustor_acquired = False
+trustorDID = ""
 
 
 def find_by_column(filename, column, value):
@@ -73,12 +76,10 @@ class start_data_collection(Resource):
      After creating the Kafka Topics the gatherInformation method will be instantiated """
 
     def post(self):
+        global trustor_acquired
         req = request.data.decode("utf-8")
         dict_product_offers = json.loads(req)
 
-        """ Retrieve the Trustor DID """
-        trustor_acquired = False
-        trustorDID = ""
 
         if not os.path.exists(dlt_file_name):
             with open(dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
@@ -87,92 +88,83 @@ class start_data_collection(Resource):
 
         trust_scores = []
         result = 0
+        first_iteration = False
+        added_historical_information = False
+
+        if trustor_acquired == True:
+
+            for trustee in dict_product_offers:
+                if first_iteration == False:
+                    new_domains_without_interactions = {}
+
+                    trustorDID = dict_product_offers[trustee]
+                    new_domains_without_interactions['trustorDID'] = trustorDID
+                    first_iteration = True
+
+                else:
+                    for offer in dict_product_offers[trustee]:
+
+                        previous_interaction = mongoDB.find({'trustee.offerDID': offer})
+
+                        #for i in previous_interaction:
+                            #print("Interaccion", i)
+                            #mongoDB.delete_one({'evaluation_criteria': 'Inter-domain'})
+
+                        if previous_interaction is not None:
+                            for interaction in previous_interaction:
+                                del interaction['_id']
+                                if interaction['trustor']['trusteeDID'] == trustee and \
+                                        interaction['trustor']['offerDID'] == offer:
+                                    if interaction not in peerTrust.historical:
+                                        peerTrust.historical.append(interaction)
+                                    else:
+                                        print("Object already registered in historical")
+                                else:
+                                    if trustee in new_domains_without_interactions:
+                                        new_domains_without_interactions[trustee].append(offer)
+                                    else:
+                                        new_domains_without_interactions[trustee] = [offer]
+                            else:
+                                if trustee in new_domains_without_interactions:
+                                    new_domains_without_interactions[trustee].append(offer)
+                                else:
+                                    new_domains_without_interactions[trustee] = [offer]
+
+            if len(new_domains_without_interactions) > 1:
+                minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, new_domains_without_interactions)
+                write_data_to_csv(dlt_file_name, minimum_data)
+
 
         for trustee in dict_product_offers:
             if trustor_acquired == False:
-                trustorDID = next(iter(dict_product_offers.values()))
-                #topic_trustorDID = trustorDID.split(":")[2]
-                topic_trustorDID = trustorDID
+                trustorDID = dict_product_offers[trustee]
                 trustor_acquired = True
 
-                #producer.createTopic(trustorDID)
                 """ Adding a set of minimum interactions between entities that compose the trust model """
                 minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, dict_product_offers)
                 write_data_to_csv(dlt_file_name, minimum_data)
-                #print("Primeros datos: ", len(peerTrust.historical))
-                minimum_data = peerTrust.historical
 
-            else:
+
+            elif first_iteration == False:
                 for offer in dict_product_offers[trustee]:
-                    """ Retrieve last part of DIDs to generate a unique kafka topic """
-                    #topic_offerDID = offer.split(":")[2]
-                    #topic_trusteeDID = trustee.split(":")[2]
-                    topic_offerDID = offer
-                    topic_trusteeDID = trustee
 
-                    previous_interaction = mongoDB.find_one(trustee)
-                    if previous_interaction is not None:
-                        for interaction in previous_interaction[trustee]:
-                            peerTrust.historical.append(interaction)
-                    else:
-                        #print("No está en la BD")
-                        peerTrust.historical = minimum_data
+                    if added_historical_information == False:
+                        previous_interaction = mongoDB.find({'trustee.offerDID': offer})
+                        if previous_interaction is not None:
+                            for interaction in previous_interaction:
+                                del interaction['_id']
+                                if interaction['trustor']['trusteeDID'] == trustee and \
+                                        interaction['trustor']['offerDID'] == offer:
+                                    if interaction not in peerTrust.historical:
+                                        peerTrust.historical.append(interaction)
 
-                    #print("Segundos datos: ", len(peerTrust.historical))
 
-                    provider_list.append(trustee)
-
-                    """ Generating kafka topic where all interactions with a trustee are registered """
-                    #registered_offer_interaction = topic_trusteeDID + "-" + topic_offerDID
-                    #producer.createTopic(topic_trusteeDID)
-                    """ Generating kafka topic where all trustor's interactions with a trustee are registered """
-                    #provider_topic_name = topic_trustorDID+"-"+topic_trusteeDID
-                    #print("\nIf it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and "+trustee)
-                    #print("\tKafka Topic name --->", provider_topic_name, "\n")
-                    #result = producer.createTopic(provider_topic_name)
-                    """ Generating kafka topic where all trustor's interactions with a trustee and 
-                    an particular offer are registered """
-                    #full_topic_name = topic_trustorDID+"-"+topic_trusteeDID+"-"+topic_offerDID
-                    #print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+" and a particular product offer ("+offer+")")
-                    #print("\tKafka Topic name --->", full_topic_name, "\n")
-                    #result = producer.createTopic(full_topic_name)
-
-                    #print("If it does not exist, a Kafka topic will be generated to retrieve and register trust information between "+trustorDID+", "+trustee+" and a particular product offer ("+offer+")")
-                    #print("\tKafka Topic name --->", trustorDID, "\n")
-
-                    #consumer_instance = consumer.start()
-                    #if consumer_instance is not None:
-                        #topics = []
-                        #topics.append(topic_trustorDID)
-                        #result = consumer.subscribe(topics)
-
-                    #if result == 1:
-
-                        #cola = queue.Queue()
-                        #manager = Manager()
-
-                        #d = manager.dict()
-                        #d[1] = '1'
-
-                        #consumer_thread = Process(target=consumer.start_reading, args=(data_lock, d))
-                        #consumer_thread.deamon = True
-                        #consumer_thread.start()
-                        #peerTrust.launchConsumer()
+                    if trustee+"$"+offer not in provider_list:
+                        provider_list.append(trustee+"$"+offer)
 
                     """ we generated initial trust information to avoid the cold start"""
                     print("$$$$$$$$$$$$$$ Starting cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
-                        #while len(consumer.historical) == 0:
-                            #print("Waiting...", len(consumer.historical))
-                            #pass
-
-                    #print("COOOOOLD", peerTrust.d)
-
-                        #print(cola.get(False))
-                        #history["hola"] = ["hola"]
-                        #print(peerTrust.historical)
-
-                    #start_time_collection = time.time()
                     peerTrust.generateHistoryTrustInformation(producer, consumer, trustorDID, trustee, offer,3)
                     """ Establish two new interactions per each provider"""
                     peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
@@ -181,12 +173,14 @@ class start_data_collection(Resource):
 
                     """ Retrieve information from trustor and trustee """
                     data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": trustorDID}
-                    #print("%s seconds during Cold Start process" % (time.time()-start_time_collection), "\n")
+
                     response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
                     response = json.loads(response.text)
                     trust_scores.append(response)
-                    #else:
-                        #logging.info("Error generating a Kafka topic")
+
+            else:
+                first_iteration = False
+
         client.close()
         return json.dumps(trust_scores)
 
@@ -202,7 +196,6 @@ class gather_information(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
-        #counter_consumer_130 = 0
 
         trustorDID = parameter["trustorDID"]
         trusteeDID = parameter["trusteeDID"]
@@ -210,11 +203,9 @@ class gather_information(Resource):
         topic_name = parameter["topicName"]
 
         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
-        #start_time_gather = time.time()
 
         """Read last value registered in Kafka"""
         last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, trusteeDID, offerDID)
-        #counter_consumer_130+=1
 
         print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
 
@@ -223,7 +214,6 @@ class gather_information(Resource):
         print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
 
         print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
-        #print("%s seconds during Gather Information process" % (time.time()-start_time_gather), "\n")
 
         """ Retrieve information from trustor and trustee """
         trust_information = []
@@ -234,14 +224,13 @@ class gather_information(Resource):
 
         response = json.loads(response.text)
 
-        #print("Total 130:", counter_consumer_130)
 
         return response
 
     def getInteractionTrustee(self, trusteeDID):
         """ This method retrieves all interactions related to a Trustee"""
 
-        return find_by_column(dlt_file_name, "trustorDID", trusteeDID)
+        return list(find_by_column(dlt_file_name, "trustorDID", trusteeDID))
 
 class compute_trust_level(Resource):
     def post(self):
@@ -253,12 +242,10 @@ class compute_trust_level(Resource):
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
 
-        #counter_consumer_130 = 0
-
         for i in parameter:
 
             print("$$$$$$$$$$$$$$ Starting trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
-            #start_time_compute = time.time()
+
             current_trustee = i['trusteeDID']
             trustorDID = i['trustorDID']
             offerDID = i['offerDID']
@@ -296,10 +283,8 @@ class compute_trust_level(Resource):
                 print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
 
                 for new_interaction in current_trustee_interactions:
-                    #topic_name = current_trustee.split(":")[2]+"-"+new_interaction['trusteeDID'].split(":")[2]
                     topic_name = current_trustee+"-"+new_interaction['trusteeDID']
                     new_trustee_interaction = consumer.readLastTrustValues(peerTrust.historical, current_trustee, new_interaction['trusteeDID'], last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
-                    #counter_consumer_130+=1
 
                     for i in new_trustee_interaction:
                         print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
@@ -322,8 +307,7 @@ class compute_trust_level(Resource):
                 new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 3)
                 new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 3)
 
-                trustInformationTemplate = TrustInformationTemplate()
-                information = trustInformationTemplate.trustTemplate2()
+                information = trustInformationTemplate.trustTemplate()
                 information["trustee"]["trusteeDID"] = current_trustee
                 information["trustee"]["offerDID"] = offerDID
                 information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 3)
@@ -347,82 +331,57 @@ class compute_trust_level(Resource):
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 """ These values should be requested from other 5GZORRO components in future releases"""
-                if provider_list[0] in current_trustee:
-                    provider_reputation = peerTrust.providerReputation(3, 5, 3, 3, 22, 24, 1, 1)
-                    information["trustor"]["direct_parameters"]["availableAssets"] = 3
-                    information["trustor"]["direct_parameters"]["totalAssets"] = 5
-                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 3
-                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 3
-                    information["trustor"]["direct_parameters"]["managedViolations"] = 22
-                    information["trustor"]["direct_parameters"]["predictedViolations"] = 24
-                    information["trustor"]["direct_parameters"]["executedViolations"] = 1
-                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 1
-                    offer_reputation = peerTrust.offerReputation(5, 6, 2, 4, 7, 8, 1, 0)
-                    information["trustor"]["direct_parameters"]["consideredOffers"] = 5
-                    information["trustor"]["direct_parameters"]["totalOffers"] = 6
-                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 2
-                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 4
-                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 7
-                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
-                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif provider_list[1] in current_trustee:
-                    provider_reputation = peerTrust.providerReputation(2, 4, 1, 1, 10, 14, 1, 2)
-                    information["trustor"]["direct_parameters"]["availableAssets"] = 2
-                    information["trustor"]["direct_parameters"]["totalAssets"] = 4
-                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 1
-                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 1
-                    information["trustor"]["direct_parameters"]["managedViolations"] = 10
-                    information["trustor"]["direct_parameters"]["predictedViolations"] = 14
-                    information["trustor"]["direct_parameters"]["executedViolations"] = 2
-                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 2
-                    offer_reputation = peerTrust.offerReputation(2, 5, 1, 1, 5, 5, 0, 0)
-                    information["trustor"]["direct_parameters"]["consideredOffers"] = 2
-                    information["trustor"]["direct_parameters"]["totalOffers"] = 5
-                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 1
-                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 1
-                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 5
-                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 5
-                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 0
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 0
-                elif provider_list[2] in current_trustee:
-                    provider_reputation = peerTrust.providerReputation(4, 4, 2, 2, 10, 18, 6, 2)
-                    information["trustor"]["direct_parameters"]["availableAssets"] = 4
-                    information["trustor"]["direct_parameters"]["totalAssets"] = 4
-                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 2
-                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 2
-                    information["trustor"]["direct_parameters"]["managedViolations"] = 10
-                    information["trustor"]["direct_parameters"]["predictedViolations"] = 18
-                    information["trustor"]["direct_parameters"]["executedViolations"] = 6
-                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 2
-                    offer_reputation = peerTrust.offerReputation(7, 8, 3, 4, 4, 8, 4, 4)
-                    information["trustor"]["direct_parameters"]["consideredOffers"] = 7
-                    information["trustor"]["direct_parameters"]["totalOffers"] = 8
-                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 3
-                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 4
-                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 4
-                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 8
-                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 4
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 4
-                elif provider_list[3] in current_trustee:
-                    provider_reputation = peerTrust.providerReputation(6, 8, 4, 5, 19, 19, 0, 0)
-                    information["trustor"]["direct_parameters"]["availableAssets"] = 6
-                    information["trustor"]["direct_parameters"]["totalAssets"] = 8
-                    information["trustor"]["direct_parameters"]["availableAssetLocation"] = 4
-                    information["trustor"]["direct_parameters"]["totalAssetLocation"] = 5
-                    information["trustor"]["direct_parameters"]["managedViolations"] = 19
-                    information["trustor"]["direct_parameters"]["predictedViolations"] = 19
-                    information["trustor"]["direct_parameters"]["executedViolations"] = 0
-                    information["trustor"]["direct_parameters"]["nonPredictedViolations"] = 0
-                    offer_reputation = peerTrust.offerReputation(3, 4, 1, 1, 4, 6, 1, 1)
-                    information["trustor"]["direct_parameters"]["consideredOffers"] = 3
-                    information["trustor"]["direct_parameters"]["totalOffers"] = 4
-                    information["trustor"]["direct_parameters"]["consideredOfferLocation"] = 1
-                    information["trustor"]["direct_parameters"]["totalOfferLocation"] = 1
-                    information["trustor"]["direct_parameters"]["managedOfferViolations"] = 4
-                    information["trustor"]["direct_parameters"]["predictedOfferViolations"] = 6
-                    information["trustor"]["direct_parameters"]["executedOfferViolations"] = 1
-                    information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = 1
+                for interaction in provider_list:
+                    trustee = interaction.split("$")[0]
+                    offer = interaction.split("$")[1]
+
+                    if current_trustee == trustee and offer == offerDID:
+                        availableAssets = random.randint(2,7)
+                        totalAssets = availableAssets + random.randint(0,3)
+                        availableAssetLocation = random.randint(1,5)
+                        totalAssetLocation = availableAssetLocation + random.randint(0,2)
+                        managedViolations = random.randint(1,20)
+                        predictedOfferViolations = managedViolations + random.randint(0,5)
+                        executedViolations = random.randint(0,6)
+                        nonPredictedViolations = random.randint(0,2)
+
+                        provider_reputation = peerTrust.providerReputation(availableAssets, totalAssets,
+                                                                           availableAssetLocation, totalAssetLocation,
+                                                                           managedViolations, predictedOfferViolations,
+                                                                           executedViolations, nonPredictedViolations)
+
+                        information["trustor"]["direct_parameters"]["availableAssets"] = availableAssets
+                        information["trustor"]["direct_parameters"]["totalAssets"] = totalAssets
+                        information["trustor"]["direct_parameters"]["availableAssetLocation"] = availableAssetLocation
+                        information["trustor"]["direct_parameters"]["totalAssetLocation"] = totalAssetLocation
+                        information["trustor"]["direct_parameters"]["managedViolations"] = managedViolations
+                        information["trustor"]["direct_parameters"]["predictedViolations"] = predictedOfferViolations
+                        information["trustor"]["direct_parameters"]["executedViolations"] = executedViolations
+                        information["trustor"]["direct_parameters"]["nonPredictedViolations"] = nonPredictedViolations
+
+                        consideredOffers = random.randint(2,7)
+                        totalOffers = consideredOffers + random.randint(0,3)
+                        consideredOfferLocation = random.randint(1,3)
+                        totalOfferLocation = consideredOfferLocation + random.randint(0,2)
+                        managedOfferViolations = random.randint(4,22)
+                        predictedOfferViolations = managedOfferViolations + random.randint(0,8)
+                        executedOfferViolations = random.randint(0,4)
+                        nonPredictedOfferViolations = random.randint(0,3)
+
+                        offer_reputation = peerTrust.offerReputation(consideredOffers, totalOffers, consideredOfferLocation,
+                                                                     totalOfferLocation, managedOfferViolations,
+                                                                     predictedOfferViolations, executedOfferViolations,
+                                                                     nonPredictedOfferViolations)
+
+                        information["trustor"]["direct_parameters"]["consideredOffers"] = consideredOffers
+                        information["trustor"]["direct_parameters"]["totalOffers"] = totalOffers
+                        information["trustor"]["direct_parameters"]["consideredOfferLocation"] = consideredOfferLocation
+                        information["trustor"]["direct_parameters"]["totalOfferLocation"] = totalOfferLocation
+                        information["trustor"]["direct_parameters"]["managedOfferViolations"] = managedOfferViolations
+                        information["trustor"]["direct_parameters"]["predictedOfferViolations"] = predictedOfferViolations
+                        information["trustor"]["direct_parameters"]["executedOfferViolations"] = executedOfferViolations
+                        information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = nonPredictedOfferViolations
+
 
                 provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
                 offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
@@ -449,22 +408,6 @@ class compute_trust_level(Resource):
 
                 print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
-                #registered_offer_interaction = current_trustee.split(":")[2] + "-" + offerDID.split(":")[2]
-                #registered_offer_interaction = current_trustee + "-" + offerDID
-                #producer.createTopic(registered_offer_interaction)
-                #provider_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]
-                #provider_topic_name = trustorDID+"-"+current_trustee
-                #producer.createTopic(provider_topic_name)
-                #full_topic_name = trustorDID.split(":")[2]+"-"+current_trustee.split(":")[2]+"-"+offerDID.split(":")[2]
-                #full_topic_name = trustorDID+"-"+current_trustee+"-"+offerDID
-                #producer.createTopic(full_topic_name)
-
-                #message = {"interaction": trustorDID+" has interacted with "+current_trustee}
-                #producer.sendMessage(current_trustee.split(":")[2], registered_offer_interaction, message)
-                #producer.sendMessage(current_trustee, registered_offer_interaction, message)
-                #producer.sendMessage(provider_topic_name, provider_topic_name, information)
-                #producer.sendMessage(full_topic_name, full_topic_name, information)
-                #producer.sendMessage(trustorDID, trustorDID, information)
                 peerTrust.historical.append(information)
 
 
@@ -477,7 +420,7 @@ class compute_trust_level(Resource):
                 write_only_row_to_csv(dlt_file_name, data)
 
                 print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
-                #print("%s seconds during the Trust Computation Process" % (time.time()-start_time_compute), "\n")
+
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         #print("Total 130:", counter_consumer_130)
@@ -491,7 +434,7 @@ class store_trust_level(Resource):
         information = json.loads(req)
 
         print("$$$$$$$$$$$$$$ Starting trust information storage process $$$$$$$$$$$$$$\n")
-        #start_time_store = time.time()
+
         print("Registering a new trust interaction between two domains in the DLT\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
         print(data,"\n")
@@ -500,24 +443,21 @@ class store_trust_level(Resource):
         print("\nStoring new trust information in our internal MongoDB database\n")
 
         print("\n$$$$$$$$$$$$$$ Ending trust information storage process $$$$$$$$$$$$$$\n")
-        #print("%s seconds during the Store Process " % (time.time()-start_time_store), "\n")
 
-        list_trustee_interactions = {}
+        """list_trustee_interactions = {}
         query = mongoDB.find_one(information["trustee"]["trusteeDID"])
         if query is not None:
             list_trustee_interactions[information["trustee"]["trusteeDID"]].append(information)
             mongoDB.update_one(query, list_trustee_interactions)
         else:
             list_trustee_interactions[information["trustee"]["trusteeDID"]] = [information]
-            mongoDB.insert_one(list_trustee_interactions)
+            mongoDB.insert_one(list_trustee_interactions)"""
 
-        #mongoDB.insert_one(information)
+        mongoDB.insert_one(information)
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
         #mongoDB.insert_many([tutorial2, tutorial1])
         #for doc in mongoDB.find():
         #pprint.pprint(doc)
-
-        #print("Total Peer 130:", peerTrust.counter_consumer_130," Total 170: ", peerTrust.counter_consumer_170, " Total 350: ", peerTrust.counter_consumer_350)
 
         return 200
 
