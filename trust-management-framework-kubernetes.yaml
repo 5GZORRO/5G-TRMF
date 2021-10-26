@@ -216,7 +216,7 @@ items:
                   value: password
                 - name: MONGO_INITDB_ROOT_USERNAME
                   value: 5gzorro
-              image: mongo:4.0.8
+              image: ghcr.io/5gzorro/5g-trmf/mongo:latest
               name: mongodb-trmf
               ports:
                 - containerPort: 27017
@@ -297,7 +297,7 @@ items:
               resources: {}
           restartPolicy: Always
           imagePullSecrets:
-          - name: regcred
+          - name: regcred-trmf
     status: {}
   - apiVersion: apps/v1
     kind: Deployment
