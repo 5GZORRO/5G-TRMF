@@ -142,8 +142,8 @@ class TrustInformationTemplate():
         return general_JSON
 
     def trustTemplate3(self):
-        """This methods introduces the general Trust template that will be used in order to generate a dataset,
-    and also to compute new trust scores and provide recomendations """
+        """This methods introduces the general Trust template that will be used for MongoDB in order to retrieve objects
+         with the fields ordered """
         general_JSON = {
             "trustor": {
                 "trustorDID": 1,

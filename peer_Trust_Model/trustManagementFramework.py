@@ -52,6 +52,7 @@ trustorDID = ""
 
 
 def find_by_column(filename, column, value):
+    """ This method discovers interactions registered in the DLT looking at one specific value"""
     list = []
     with open(filename) as f:
         reader = csv.DictReader(f)
@@ -72,8 +73,8 @@ def write_only_row_to_csv(filename, row):
         writer.writerow(row)
 
 class start_data_collection(Resource):
-    """ This method is responsible for creating a kafka topic for each offer.
-     After creating the Kafka Topics the gatherInformation method will be instantiated """
+    """ This method is responsible for creating the minimum information in the 5G-TRMF framework
+    to avoid the cold start """
 
     def post(self):
         global trustor_acquired
@@ -87,10 +88,11 @@ class start_data_collection(Resource):
                 writer.writeheader()
 
         trust_scores = []
-        result = 0
         first_iteration = False
         added_historical_information = False
 
+        """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
+        in case of such an information is not already loaded in the historical parameter """
         if trustor_acquired == True:
 
             for trustee in dict_product_offers:
@@ -103,13 +105,15 @@ class start_data_collection(Resource):
 
                 else:
                     for offer in dict_product_offers[trustee]:
-
+                        """ Retrieve information, if exits, related to the trustee from MongoDB"""
                         previous_interaction = mongoDB.find({'trustee.offerDID': offer})
 
+                        """ These actions will delete all information from MongoDB"""
                         #for i in previous_interaction:
                             #print("Interaccion", i)
                             #mongoDB.delete_one({'evaluation_criteria': 'Inter-domain'})
 
+                        """ Adding previous interactions to the historical """
                         if previous_interaction is not None:
                             for interaction in previous_interaction:
                                 del interaction['_id']
@@ -131,6 +135,8 @@ class start_data_collection(Resource):
                                     new_domains_without_interactions[trustee] = [offer]
 
             if len(new_domains_without_interactions) > 1:
+                """ Avoid to add previous interactions deleted from the current historical variable but already 
+                registered in the DLT """
                 minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, new_domains_without_interactions)
                 write_data_to_csv(dlt_file_name, minimum_data)
 
@@ -147,16 +153,17 @@ class start_data_collection(Resource):
 
             elif first_iteration == False:
                 for offer in dict_product_offers[trustee]:
+                    """ In case of first time the 5G-TRMF is executed, we should retrieve information from MongoDB and
+                    check if it is already or not in the historical"""
 
-                    if added_historical_information == False:
-                        previous_interaction = mongoDB.find({'trustee.offerDID': offer})
-                        if previous_interaction is not None:
-                            for interaction in previous_interaction:
-                                del interaction['_id']
-                                if interaction['trustor']['trusteeDID'] == trustee and \
-                                        interaction['trustor']['offerDID'] == offer:
-                                    if interaction not in peerTrust.historical:
-                                        peerTrust.historical.append(interaction)
+                    previous_interaction = mongoDB.find({'trustee.offerDID': offer})
+                    if previous_interaction is not None:
+                        for interaction in previous_interaction:
+                            del interaction['_id']
+                            if interaction['trustor']['trusteeDID'] == trustee and \
+                                    interaction['trustor']['offerDID'] == offer:
+                                if interaction not in peerTrust.historical:
+                                    peerTrust.historical.append(interaction)
 
 
                     if trustee+"$"+offer not in provider_list:
@@ -187,10 +194,10 @@ class start_data_collection(Resource):
 
 class gather_information(Resource):
     def post(self):
-        """ This method will retrieve information from the DataLake (kafka topic direct trust) +
+        """ This method will retrieve information from the historical (MongoDB)+
         search for supplier/offer interactions in the simulated DLT to retrieve recommendations from
-        other kafka topics (indirect trust). Currently there is no interaction with DataLake, we generate our
-        internal Kafka topics """
+        other 5G-TRMFs. Currently there is no interaction with other 5G-TRMFs, we generate our
+        internal information """
 
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
@@ -204,7 +211,7 @@ class gather_information(Resource):
 
         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
 
-        """Read last value registered in Kafka"""
+        """Read last value registered in the historical"""
         last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, trusteeDID, offerDID)
 
         print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
@@ -283,7 +290,7 @@ class compute_trust_level(Resource):
                 print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
 
                 for new_interaction in current_trustee_interactions:
-                    topic_name = current_trustee+"-"+new_interaction['trusteeDID']
+
                     new_trustee_interaction = consumer.readLastTrustValues(peerTrust.historical, current_trustee, new_interaction['trusteeDID'], last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
 
                     for i in new_trustee_interaction:
@@ -330,7 +337,8 @@ class compute_trust_level(Resource):
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-                """ These values should be requested from other 5GZORRO components in future releases"""
+                """ These values should be requested from other 5GZORRO components in future releases, in particular, 
+                from the Calatog and SLA Breach Predictor"""
                 for interaction in provider_list:
                     trustee = interaction.split("$")[0]
                     offer = interaction.split("$")[1]
@@ -423,8 +431,6 @@ class compute_trust_level(Resource):
 
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
-        #print("Total 130:", counter_consumer_130)
-
         return response
 
 class store_trust_level(Resource):
@@ -438,7 +444,7 @@ class store_trust_level(Resource):
         print("Registering a new trust interaction between two domains in the DLT\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
         print(data,"\n")
-        print("Sending new trust information in the Kafka topic generated by the Trust Management Framework \n")
+        print("Sending new trust information in the historical generated by the Trust Management Framework \n")
         print(information)
         print("\nStoring new trust information in our internal MongoDB database\n")
 
@@ -493,10 +499,8 @@ class update_trust_level(Resource):
             current_notification = notification["notification"]
             print("\t-", current_notification,"\n")
             likehood = notification["breachPredictionNotification"]["value"]
-            #likehood = float(likehood)
 
             last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
-            #counter_consumer_130+=1
 
             if positive_notification in current_notification:
                 if likehood <= first_range_probability:
@@ -525,7 +529,7 @@ class update_trust_level(Resource):
             print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
             last_trust_score["trust_value"] = round(new_trust_score, 3)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
-            #producer.sendMessage(trustorDID, trustorDID, last_trust_score)
+            
             peerTrust.historical.append(last_trust_score)
 
         return 200

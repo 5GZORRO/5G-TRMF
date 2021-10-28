@@ -18,7 +18,7 @@ class request_trust_scores(Resource):
         req = request.data.decode("utf-8")
         product_offers = json.loads(req)
 
-        """Read a list of product offers and Trustor' DID """
+        """Read the Trustor' DID and a list of product offers """
         list_product_offers = {}
         trustor_acquired = False
 
@@ -28,9 +28,6 @@ class request_trust_scores(Resource):
                 trustor_acquired = True
             else:
                 """ Acquire both provider's DID and offer's DID """
-                #did_provider = i['productSpecification']['relatedParty'][0]['href']
-                #did_resource = i['productSpecification']['resourceSpecification'][0]['href']
-                """ The current JSONs does not provide the DID in the href field but the ID field"""
                 did_provider = i['productSpecification']['relatedParty'][0]['extendedInfo']
                 did_resource = i['did']
 
