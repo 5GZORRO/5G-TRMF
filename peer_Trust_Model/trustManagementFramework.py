@@ -50,6 +50,15 @@ history = {}
 trustor_acquired = False
 trustorDID = ""
 
+gather_time = 0
+compute_time = 0
+storage_time = 0
+update_time = 0
+satisfaction = 0
+credibility = 0
+TF = 0
+CF = 0
+
 
 def find_by_column(filename, column, value):
     """ This method discovers interactions registered in the DLT looking at one specific value"""
@@ -78,8 +87,24 @@ class start_data_collection(Resource):
 
     def post(self):
         global trustor_acquired
+        global gather_time
+        global compute_time
+        global storage_time
+        global update_time
+        global satisfaction
+        global credibility
+        global TF
+        global CF
+
+        gather_time, compute_time, storage_time, update_time, satisfaction, credibility, TF, CF = 0, 0, 0, 0, 0, 0, 0, 0
+
+        time_file_name = 'tests/time.csv'
+        time_headers = ["start_timestamp","end_timestamp","total_time", "total_without_cold", "cold_time", "gather_time", "compute_time",
+                   "storage_time", "update_time","satisfaction","credibility","TF", "CF", "offers"]
+
         req = request.data.decode("utf-8")
         dict_product_offers = json.loads(req)
+        initial_timestamp = time.time()
 
 
         if not os.path.exists(dlt_file_name):
@@ -93,6 +118,7 @@ class start_data_collection(Resource):
 
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
+
         if trustor_acquired == True:
 
             for trustee in dict_product_offers:
@@ -188,6 +214,31 @@ class start_data_collection(Resource):
             else:
                 first_iteration = False
 
+        if not os.path.exists("tests"):
+            os.makedirs("tests")
+
+        if not os.path.exists(time_file_name):
+            with open(time_file_name, 'w', encoding='UTF8', newline='') as time_data:
+                writer = csv.DictWriter(time_data, fieldnames=time_headers)
+                writer.writeheader()
+                data = {"start_timestamp": initial_timestamp,"end_timestamp": time.time(), "total_time": time.time()-initial_timestamp,
+                        "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
+                            time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
+                        "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
+                        "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
+                        "TF": TF, "CF": CF, "offers": 1000}
+                writer.writerow(data)
+        else:
+            with open(time_file_name, 'a', encoding='UTF8', newline='') as time_data:
+                writer = csv.DictWriter(time_data, fieldnames=time_headers)
+                data = {"start_timestamp": initial_timestamp,"end_timestamp": time.time(), "total_time": time.time()-initial_timestamp,
+                        "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
+                            time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
+                        "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
+                        "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
+                        "TF": TF, "CF": CF, "offers": 1000}
+                writer.writerow(data)
+
         client.close()
         return json.dumps(trust_scores)
 
@@ -198,6 +249,8 @@ class gather_information(Resource):
         search for supplier/offer interactions in the simulated DLT to retrieve recommendations from
         other 5G-TRMFs. Currently there is no interaction with other 5G-TRMFs, we generate our
         internal information """
+
+        global gather_time
 
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
@@ -211,6 +264,8 @@ class gather_information(Resource):
 
         print("$$$$$$$$$$$$$$ Starting data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
 
+        start_time = time.time()
+
         """Read last value registered in the historical"""
         last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, trusteeDID, offerDID)
 
@@ -221,6 +276,9 @@ class gather_information(Resource):
         print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
 
         print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
+
+        gather_time = gather_time + (time.time()-start_time)
+        ###print("Gather time: ", gather_time)
 
         """ Retrieve information from trustor and trustee """
         trust_information = []
@@ -245,6 +303,12 @@ class compute_trust_level(Resource):
         It will then do the summation from its last computed value to the recent one by updating it trust value over
         the trustee """
 
+        global compute_time
+        global satisfaction
+        global credibility
+        global TF
+        global CF
+
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
@@ -252,6 +316,8 @@ class compute_trust_level(Resource):
         for i in parameter:
 
             print("$$$$$$$$$$$$$$ Starting trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
+
+            start_time = time.time()
 
             current_trustee = i['trusteeDID']
             trustorDID = i['trustorDID']
@@ -297,15 +363,21 @@ class compute_trust_level(Resource):
                         print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
                         print("\tS(u,i) ---> ", i['trusteeSatisfaction'])
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
+                        start_credibility = time.time()
                         current_credibility = peerTrust.credibility(current_trustee, new_interaction['trusteeDID'])
                         print("\tCr(p(u,i)) ---> ", round(current_credibility, 3))
                         new_credibility = new_credibility + current_credibility
+                        credibility = credibility + (time.time()-start_credibility)
+                        start_TF = time.time()
                         current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
                         print("\tTF(u,i) ---> ", current_transaction_factor)
                         new_transaction_factor = new_transaction_factor + current_transaction_factor
+                        TF = TF + (time.time()-start_TF)
+                        start_CF = time.time()
                         current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
+                        CF = CF + (time.time()-start_CF)
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
@@ -342,6 +414,9 @@ class compute_trust_level(Resource):
                 for interaction in provider_list:
                     trustee = interaction.split("$")[0]
                     offer = interaction.split("$")[1]
+
+                    start_satisfaction = time.time()
+                    #self.productOfferingCatalog()
 
                     if current_trustee == trustee and offer == offerDID:
                         availableAssets = random.randint(2,7)
@@ -389,8 +464,9 @@ class compute_trust_level(Resource):
                         information["trustor"]["direct_parameters"]["predictedOfferViolations"] = predictedOfferViolations
                         information["trustor"]["direct_parameters"]["executedOfferViolations"] = executedOfferViolations
                         information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = nonPredictedOfferViolations
+                        satisfaction = satisfaction + (time.time()-start_satisfaction)
 
-
+                start_satisfaction = time.time()
                 provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
                 offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
@@ -403,6 +479,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 3)
                 information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 3)
                 information["trustor"]["direct_parameters"]["userSatisfaction"] = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 3)
+                satisfaction = satisfaction + (time.time()-start_satisfaction)
 
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
@@ -427,19 +504,66 @@ class compute_trust_level(Resource):
 
                 write_only_row_to_csv(dlt_file_name, data)
 
+                compute_time = compute_time + (time.time()-start_time)
+                ###print("Compute time:", compute_time)
+
                 print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
 
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         return response
 
+    def productOfferingCatalog (self):
+        """Requesting all product offering objects"""
+        response = requests.get("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering")
+
+        response = json.loads(response.text)
+        ###print("Product Offering: ", response)
+
+        if bool(response):
+            for i in response:
+                href = i['productSpecification']['href']
+                id_product_offering = i['id']
+                product_offering_location = i['place'][0]['href']
+
+                """ Obtaining the true product offer specification object"""
+                response = requests.get(href)
+                response = json.loads(response.text)
+                did_provider = response['relatedParty'][0]['extendedInfo']
+                provider_location = response['relatedParty'][0]['href']
+                ###print("\nDID provider: ", did_provider)
+                ###print("\nReal product offer: ", response)
+
+                """ Obtaining the did product offer"""
+                response = requests.get \
+                    ("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+                response = json.loads(response.text)
+                did_offer = response['did']
+                ###print("DID product offering: ", did_offer)
+
+                """ Obtaining the location of the product offering object"""
+                response = requests.get(product_offering_location)
+                response = json.loads(response.text)
+                ###print("\nProduct Offering Location: ", response)
+
+                response = requests.get(provider_location)
+                response = json.loads(response.text)
+                ###print("\nProvider Offering Location: ", response)
+
+
+        #print(response)
+
 class store_trust_level(Resource):
     def post(self):
         """ This method is employed to register direct trust in our internal database """
+        global storage_time
+
         req = request.data.decode("utf-8")
         information = json.loads(req)
 
         print("$$$$$$$$$$$$$$ Starting trust information storage process $$$$$$$$$$$$$$\n")
+
+        start_time = time.time()
 
         print("Registering a new trust interaction between two domains in the DLT\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
@@ -464,6 +588,9 @@ class store_trust_level(Resource):
         #mongoDB.insert_many([tutorial2, tutorial1])
         #for doc in mongoDB.find():
         #pprint.pprint(doc)
+
+        storage_time = storage_time + (time.time()-start_time)
+        ###print("Storage time:", storage_time)
 
         return 200
 

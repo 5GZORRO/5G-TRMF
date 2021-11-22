@@ -28,8 +28,10 @@ class request_trust_scores(Resource):
                 trustor_acquired = True
             else:
                 """ Acquire both provider's DID and offer's DID """
-                did_provider = i['productSpecification']['relatedParty'][0]['extendedInfo']
-                did_resource = i['did']
+                #did_provider = i['productSpecification']['relatedParty'][0]['extendedInfo']
+                #did_resource = i['did']
+                did_provider = i['offer_object']['productSpecification']['relatedParty'][0]['extendedInfo']
+                did_resource = i['offer_did']
 
                 """ If the provider already exits, a list of offers will be added to the same key """
                 if did_provider in list_product_offers:
