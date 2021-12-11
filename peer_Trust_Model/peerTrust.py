@@ -11,7 +11,7 @@ import rstr
 import copy
 
 
-from producer import *
+#from producer import *
 from trustInformationTemplate import *
 from consumer import *
 from datetime import datetime

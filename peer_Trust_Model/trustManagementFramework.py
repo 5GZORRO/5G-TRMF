@@ -16,7 +16,7 @@ import threading
 from threading import Lock
 
 from peerTrust import *
-from producer import *
+#from producer import *
 from consumer import *
 from trustInformationTemplate import *
 from datetime import datetime
@@ -30,7 +30,7 @@ monkey.patch_all()
 app = Flask(__name__)
 api = Api(app)
 
-producer = Producer()
+producer = "Producer()"
 consumer = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
@@ -515,10 +515,14 @@ class compute_trust_level(Resource):
 
     def productOfferingCatalog (self):
         """Requesting all product offering objects"""
+        "5GBarcelona"
         response = requests.get("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering")
 
+        "5TONIC"
+        #response = requests.get("http://10.4.2.126:31100/tmf-api/productCatalogManagement/v4/productOffering")
+
         response = json.loads(response.text)
-        ###print("Product Offering: ", response)
+        print("Product Offering: ", response)
 
         if bool(response):
             for i in response:
@@ -531,24 +535,29 @@ class compute_trust_level(Resource):
                 response = json.loads(response.text)
                 did_provider = response['relatedParty'][0]['extendedInfo']
                 provider_location = response['relatedParty'][0]['href']
-                ###print("\nDID provider: ", did_provider)
-                ###print("\nReal product offer: ", response)
+                print("\nDID provider: ", did_provider)
+                print("\nReal product offer: ", response)
 
                 """ Obtaining the did product offer"""
+                "5GBarcelona"
                 response = requests.get \
                     ("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+
+                "5TONIC"
+                #response = requests.get \
+                    #("http://10.4.2.126:31100/tmf-api/productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
                 response = json.loads(response.text)
                 did_offer = response['did']
-                ###print("DID product offering: ", did_offer)
+                print("DID product offering: ", did_offer)
 
                 """ Obtaining the location of the product offering object"""
                 response = requests.get(product_offering_location)
                 response = json.loads(response.text)
-                ###print("\nProduct Offering Location: ", response)
+                print("\nProduct Offering Location: ", response)
 
                 response = requests.get(provider_location)
                 response = json.loads(response.text)
-                ###print("\nProvider Offering Location: ", response)
+                print("\nProvider Offering Location: ", response)
 
 
         #print(response)

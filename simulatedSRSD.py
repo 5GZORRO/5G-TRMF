@@ -12,8 +12,8 @@ Currently, we have employed the RAN product offer template available in Confluen
 change based on decisions taken in the SRSD. """
 
 #Load JSON files to simulate SRSD information regarding to product offers
-list_product_offers = sorted(glob.glob('./product_offer_examples/100_POs/RAN*.json'))
-#list_product_offers = sorted(glob.glob('./product_offer_examples/new_product_offer/*.json'))
+#list_product_offers = sorted(glob.glob('./product_offer_examples/100_POs/RAN*.json'))
+list_product_offers = sorted(glob.glob('./product_offer_examples/new_product_offer/*.json'))
 ran_offers = []
 
 #trustor_DID = {"trustorDID": rstr.xeger("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}")}
@@ -31,7 +31,11 @@ print("The Smart Resource and Service Discovery application needs to identify th
 #print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n\t- did:5gzorro:domain-C-RAN-2\n\t- did:5gzorro:domain-D-RAN-1\n\t- did:5gzorro:domain-E-RAN-1")
 
 start_time = time.time()
+"5GBarcelona"
 response = requests.post("http://172.28.3.126:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
+
+"5TONIC"
+#response = requests.post("http://10.4.2.110:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 #response = requests.post("http://localhost:5001/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 if response.status_code == 200:

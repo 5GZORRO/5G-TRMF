@@ -1,0 +1,179 @@
+{
+	"offer_did" : "8qZg5To9T1TV3xrdrPyekp",
+        "trust_value" : 0.787,
+	"offer_object" : {
+		"agreement" : [ ],
+		"attachment" : [ ],
+		"bundledProductOffering" : [ ],
+		"category" : [
+			{
+				"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/category/b88ff6b2-ecdb-4531-bdc3-05bac8b60cf3",
+				"id" : "b88ff6b2-ecdb-4531-bdc3-05bac8b60cf3",
+				"name" : "Cloud"
+			}
+		],
+		"channel" : [ ],
+		"description" : "Cloud sample offer",
+		"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering/f605173b-d700-4dcc-a7d8-9d5067cc361b",
+		"id" : "f605173b-d700-4dcc-a7d8-9d5067cc361b",
+		"lastUpdate" : "2021-11-16T14:16:42.849Z",
+		"lifecycleStatus" : "Active",
+		"marketSegment" : [ ],
+		"name" : "Cloud sample offer",
+		"place" : [
+			{
+				"id" : "90afc0f6-34fb-4c09-a3c0-f880078b6e76",
+				"href" : "http://172.28.3.126:31080/tmf-api/geographicAddressManagement/v4/geographicAddress/90afc0f6-34fb-4c09-a3c0-f880078b6e76",
+				"geographicLocation" : {
+					"id" : "19466d64-3221-43cc-82b3-8f44c9f9243a",
+					"name" : "My office",
+					"geometryType" : "string",
+					"geometry" : [ ]
+				}
+			}
+		],
+		"prodSpecCharValueUse" : [ ],
+		"productOfferingPrice" : [
+			{
+				"bundledPopRelationship" : [ ],
+				"constraint" : [ ],
+				"description" : "asd",
+				"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOfferingPrice/f7515de9-203a-4719-a386-6512e77b01bf",
+				"id" : "f7515de9-203a-4719-a386-6512e77b01bf",
+				"lastUpdate" : "2021-11-02T17:23:12.206Z",
+				"lifecycleStatus" : "",
+				"name" : "test",
+				"place" : [ ],
+				"popRelationship" : [ ],
+				"price" : {
+					"unit" : "asd",
+					"value" : 123
+				},
+				"priceType" : "oneTime",
+				"pricingLogicAlgorithm" : [ ],
+				"prodSpecCharValueUse" : [
+					{
+						"description" : "Type of logic applied to the productOfferingPrice",
+						"name" : "PriceLogic",
+						"productSpecCharacteristicValue" : [
+							{
+								"isDefault" : true,
+								"value" : {
+									"value" : "SIMPLE"
+								},
+								"valueType" : "string"
+							}
+						],
+						"valueType" : "string"
+					}
+				],
+				"productOfferingTerm" : [ ],
+				"recurringChargePeriodLength" : 0,
+				"recurringChargePeriodType" : "",
+				"tax" : [ ],
+				"unitOfMeasure" : {
+					"amount" : 0
+				},
+				"validFor" : {
+					"endDateTime" : "2021-11-19T12:00:00.000Z",
+					"startDateTime" : "2021-11-17T12:00:00.000Z"
+				}
+			}
+		],
+		"productOfferingTerm" : [ ],
+		"productSpecification" : {
+			"attachment" : [ ],
+			"bundledProductSpecification" : [ ],
+			"description" : "",
+			"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productSpecification/c37beee8-b2ee-47dc-be16-f34a718c058b",
+			"id" : "c37beee8-b2ee-47dc-be16-f34a718c058b",
+			"lastUpdate" : "2021-11-16T14:16:42.762Z",
+			"name" : "Cloud sample offer",
+			"productSpecCharacteristic" : [ ],
+			"productSpecificationRelationship" : [ ],
+			"relatedParty" : [
+				{
+					"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
+					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
+				}
+			],
+			"resourceSpecification" : [
+				{
+					"attachment" : [ ],
+					"description" : "Cloud radical",
+					"feature" : [ ],
+					"href" : "http://172.28.3.126:31080/tmf-api/resourceCatalogManagement/v2/resourceSpecification/6c5c5966-c296-42b5-9cea-035396a0d58f",
+					"id" : "6c5c5966-c296-42b5-9cea-035396a0d58f",
+					"lastUpdate" : "2021-11-16T14:13:00.120Z",
+					"lifecycleStatus" : "Active",
+					"name" : "Cloud radical",
+					"relatedParty" : [
+						{
+							"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
+							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
+						}
+					],
+					"resourceSpecCharacteristic" : [
+						{
+							"name" : "cpu",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"value" : "17"
+									}
+								}
+							]
+						},
+						{
+							"name" : "memory",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"unitOfMeasure" : "MB",
+									"value" : {
+										"value" : "29866"
+									}
+								}
+							]
+						},
+						{
+							"name" : "storage",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"unitOfMeasure" : "GB",
+									"value" : {
+										"value" : "1299"
+									}
+								}
+							]
+						}
+					],
+					"resourceSpecRelationship" : [ ],
+					"version" : "v1"
+				}
+			],
+			"serviceSpecification" : [ ]
+		},
+		"serviceLevelAgreement" : {
+			"description" : "This Service Level Agreement ('SLA') is a policy governing the use of **resource XYZ**.",
+			"id" : "5d46f005-c263-489b-b474-bdd59abf998f",
+			"name" : "Availability SLA",
+			"validFor" : {
+				"endDateTime" : "2013-04-21T00:00:00.000Z",
+				"startDateTime" : "2013-04-19T00:00:00.000Z"
+			},
+			"version" : "0.0.1"
+		},
+		"validFor" : {
+			"endDateTime" : "2021-11-30T11:00:00.000Z",
+			"startDateTime" : "2021-11-16T11:00:00.000Z"
+		},
+		"did" : "8qZg5To9T1TV3xrdrPyekp"
+	},
+	"offer_category" : "cloud",
+	"predicted_cluster" : 1
+}

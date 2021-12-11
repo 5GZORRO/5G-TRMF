@@ -1,0 +1,166 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongodb-trmf
+        domain: operator-a
+      name: mongodb-trmf
+      namespace: domain-operator-a
+    spec:
+      ports:
+        - name: "27017"
+          port: 27017
+          targetPort: 27017
+      selector:
+        io.kompose.service: mongodb-trmf
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: trmf
+        domain: operator-a
+      name: trmf
+      namespace: domain-operator-a
+    spec:
+      type: NodePort
+      ports:
+        - name: "5001"
+          port: 5001
+          targetPort: 5001
+          nodePort: 31113
+      selector:
+        io.kompose.service: trmf
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongodb-trmf
+        domain: operator-a
+      name: mongodb-trmf
+      namespace: domain-operator-a
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: mongodb-trmf
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: mongodb-trmf
+            domain: operator-a
+        spec:
+          containers:
+            - env:
+                - name: MONGO_INITDB_ROOT_PASSWORD
+                  value: password
+                - name: MONGO_INITDB_ROOT_USERNAME
+                  value: 5gzorro
+              image: ghcr.io/5gzorro/5g-trmf/mongo:latest
+              name: mongodb-trmf
+              ports:
+                - containerPort: 27017
+              resources: {}
+              volumeMounts:
+                - mountPath: /data/db
+                  name: trust-mongodbdata
+          restartPolicy: Always
+          volumes:
+            - name: trust-mongodbdata
+              persistentVolumeClaim:
+                claimName: trust-mongodbdata
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: trust-mongodbdata
+        domain: operator-a
+      name: trust-mongodbdata
+      namespace: domain-operator-a
+    spec:
+      storageClassName: trustmongodbdata
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+  - apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: trust-mongodbdata-pv-a
+      labels:
+        type: local
+    spec:
+      storageClassName: trustmongodbdata
+      capacity:
+        storage: 100Mi
+      accessModes:
+        - ReadWriteOnce
+      hostPath:
+        path: "/mnt/data"
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: trmf
+        domain: operator-a
+      name: trmf
+      namespace: domain-operator-a
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          io.kompose.service: trmf
+      strategy: {}
+      template:
+        metadata:
+          annotations:
+            kompose.cmd: kompose convert -f docker-compose.yml -o trust-management-framework-kubernetes.yaml
+            kompose.version: 1.22.0 (955b78124)
+          creationTimestamp: null
+          labels:
+            io.kompose.service: trmf
+            domain: operator-a
+        spec:
+          containers:
+            - image: ghcr.io/5gzorro/5g-trmf-5tonic/5g-trmf-5tonic:latest
+              name: trmf
+              ports:
+                - containerPort: 5001
+              resources: {}
+          restartPolicy: Always
+          imagePullSecrets:
+          - name: regcred-trmf
+    status: {}
+kind: List
+metadata: {}

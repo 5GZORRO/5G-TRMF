@@ -1,0 +1,261 @@
+{
+	"offer_did" : "CimN4QVFrk3pZ2aXjRMee6",
+        "trust_value" : 0.787,
+	"offer_object" : {
+		"agreement" : [ ],
+		"attachment" : [ ],
+		"bundledProductOffering" : [ ],
+		"category" : [
+			{
+				"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/category/773f8fe0-6545-421c-900d-2ac56716fbc6",
+				"id" : "773f8fe0-6545-421c-900d-2ac56716fbc6",
+				"name" : "VNF"
+			}
+		],
+		"channel" : [ ],
+		"description" : "VNF Offer",
+		"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering/b25936f0-a109-4b91-8294-65ab111146e9",
+		"id" : "b25936f0-a109-4b91-8294-65ab111146e9",
+		"lastUpdate" : "2021-11-15T13:46:33.923Z",
+		"lifecycleStatus" : "Active",
+		"marketSegment" : [ ],
+		"name" : "VNF Offer",
+		"place" : [
+			{
+				"id" : "90afc0f6-34fb-4c09-a3c0-f880078b6e76",
+				"href" : "http://172.28.3.126:31080/tmf-api/geographicAddressManagement/v4/geographicAddress/90afc0f6-34fb-4c09-a3c0-f880078b6e76",
+				"geographicLocation" : {
+					"id" : "19466d64-3221-43cc-82b3-8f44c9f9243a",
+					"name" : "My office",
+					"geometryType" : "string",
+					"geometry" : [ ]
+				}
+			}
+		],
+		"prodSpecCharValueUse" : [ ],
+		"productOfferingPrice" : [
+			{
+				"bundledPopRelationship" : [ ],
+				"constraint" : [ ],
+				"description" : "asd",
+				"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOfferingPrice/f7515de9-203a-4719-a386-6512e77b01bf",
+				"id" : "f7515de9-203a-4719-a386-6512e77b01bf",
+				"lastUpdate" : "2021-11-02T17:23:12.206Z",
+				"lifecycleStatus" : "",
+				"name" : "test",
+				"place" : [ ],
+				"popRelationship" : [ ],
+				"price" : {
+					"unit" : "asd",
+					"value" : 123
+				},
+				"priceType" : "oneTime",
+				"pricingLogicAlgorithm" : [ ],
+				"prodSpecCharValueUse" : [
+					{
+						"description" : "Type of logic applied to the productOfferingPrice",
+						"name" : "PriceLogic",
+						"productSpecCharacteristicValue" : [
+							{
+								"isDefault" : true,
+								"value" : {
+									"value" : "SIMPLE"
+								},
+								"valueType" : "string"
+							}
+						],
+						"valueType" : "string"
+					}
+				],
+				"productOfferingTerm" : [ ],
+				"recurringChargePeriodLength" : 0,
+				"recurringChargePeriodType" : "",
+				"tax" : [ ],
+				"unitOfMeasure" : {
+					"amount" : 0
+				},
+				"validFor" : {
+					"endDateTime" : "2021-11-19T12:00:00.000Z",
+					"startDateTime" : "2021-11-17T12:00:00.000Z"
+				}
+			}
+		],
+		"productOfferingTerm" : [ ],
+		"productSpecification" : {
+			"attachment" : [ ],
+			"bundledProductSpecification" : [ ],
+			"description" : "",
+			"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productSpecification/ea6b5c14-8b2d-4988-bf8b-4b82c4a751de",
+			"id" : "ea6b5c14-8b2d-4988-bf8b-4b82c4a751de",
+			"lastUpdate" : "2021-11-15T13:46:33.862Z",
+			"name" : "VNF Offer",
+			"productSpecCharacteristic" : [ ],
+			"productSpecificationRelationship" : [ ],
+			"relatedParty" : [
+				{
+					"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
+					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
+				}
+			],
+			"resourceSpecification" : [
+				{
+					"attachment" : [ ],
+					"description" : "edge_cache_vnfd version 1.0 by NXW",
+					"feature" : [ ],
+					"href" : "http://172.28.3.126:31080/tmf-api/resourceCatalogManagement/v2/resourceSpecification/27e02ca2-92ea-40c1-ae81-94ab4ca76ce0",
+					"id" : "27e02ca2-92ea-40c1-ae81-94ab4ca76ce0",
+					"lastUpdate" : "2021-11-02T17:22:53.903Z",
+					"lifecycleStatus" : "Active",
+					"name" : "edge_cache_vnfd",
+					"relatedParty" : [
+						{
+							"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
+							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
+						}
+					],
+					"resourceSpecCharacteristic" : [
+						{
+							"description" : "ID of the VNF descriptor",
+							"name" : "vnfdId",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"alias" : "vnfdId",
+										"value" : "5d14868f-4603-4fd9-a540-ec9939d340e3"
+									}
+								}
+							]
+						},
+						{
+							"description" : "vdu edge_cache_vnfd-VM",
+							"name" : "edge_cache_vnfd-VM",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"unitOfMeasure" : "MB",
+									"value" : {
+										"alias" : "virtual-memory",
+										"value" : "2048.0"
+									}
+								},
+								{
+									"unitOfMeasure" : "num_cpu * GHz",
+									"value" : {
+										"alias" : "virtual-cpu",
+										"value" : "2 vCPU"
+									}
+								},
+								{
+									"value" : {
+										"alias" : "type-of-storage 0",
+										"value" : "root-storage"
+									}
+								},
+								{
+									"unitOfMeasure" : "GB",
+									"value" : {
+										"alias" : "size-of-storage 0",
+										"value" : "28"
+									}
+								},
+								{
+									"value" : {
+										"alias" : "sw-image",
+										"value" : "icom_hostgw"
+									}
+								}
+							]
+						},
+						{
+							"description" : "Number of external connection points.",
+							"name" : "nExtCpd",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"alias" : "number of external connection points",
+										"value" : "2"
+									}
+								}
+							]
+						},
+						{
+							"description" : "upf-net",
+							"name" : "External Connection Point ens3",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"alias" : "layer-protocol",
+										"value" : "[ipv4]"
+									}
+								}
+							]
+						},
+						{
+							"description" : "cdn-net",
+							"name" : "External Connection Point ens7",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"alias" : "layer-protocol",
+										"value" : "[ipv4]"
+									}
+								}
+							]
+						},
+						{
+							"description" : "df default_df",
+							"name" : "default_df",
+							"resourceSpecCharRelationship" : [ ],
+							"resourceSpecCharacteristicValue" : [
+								{
+									"value" : {
+										"alias" : "vdu-profile edge_cache_vnfd-VM",
+										"value" : "min-number-of-instances: 1, max-number-of-instances: 1"
+									}
+								},
+								{
+									"value" : {
+										"alias" : "instantiation-level il-1",
+										"value" : "[(vdu-id: edge_cache_vnfd-VM, number-of-instances: 1)]"
+									}
+								},
+								{
+									"value" : {
+										"alias" : "default-instantiation-level",
+										"value" : "il-1"
+									}
+								}
+							]
+						}
+					],
+					"resourceSpecRelationship" : [ ],
+					"version" : "1.0"
+				}
+			],
+			"serviceSpecification" : [ ]
+		},
+		"serviceLevelAgreement" : {
+			"description" : "This Service Level Agreement ('SLA') is a policy governing the use of **resource XYZ**.",
+			"id" : "5d46f005-c263-489b-b474-bdd59abf998f",
+			"name" : "Availability SLA",
+			"validFor" : {
+				"endDateTime" : "2013-04-21T00:00:00.000Z",
+				"startDateTime" : "2013-04-19T00:00:00.000Z"
+			},
+			"version" : "0.0.1"
+		},
+		"validFor" : {
+			"endDateTime" : "2021-11-30T11:00:00.000Z",
+			"startDateTime" : "2021-11-15T11:00:00.000Z"
+		},
+		"did" : "CimN4QVFrk3pZ2aXjRMee6"
+	},
+	"offer_category" : "vnf",
+	"predicted_cluster" : 0
+}
