@@ -8,9 +8,9 @@ items:
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
-        io.kompose.service: mongodb-trmf-c
+        io.kompose.service: mongodb-trmf
         domain: operator-c
-      name: mongodb-trmf-c
+      name: mongodb-trmf
       namespace: domain-operator-c
     spec:
       ports:
@@ -18,7 +18,7 @@ items:
           port: 27017
           targetPort: 27017
       selector:
-        io.kompose.service: mongodb-trmf-c
+        io.kompose.service: mongodb-trmf
     status:
       loadBalancer: {}
   - apiVersion: v1
@@ -52,15 +52,15 @@ items:
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
-        io.kompose.service: mongodb-trmf-c
+        io.kompose.service: mongodb-trmf
         domain: operator-c
-      name: mongodb-trmf-c
+      name: mongodb-trmf
       namespace: domain-operator-c
     spec:
       replicas: 1
       selector:
         matchLabels:
-          io.kompose.service: mongodb-trmf-c
+          io.kompose.service: mongodb-trmf
       strategy:
         type: Recreate
       template:
@@ -70,7 +70,7 @@ items:
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
-            io.kompose.service: mongodb-trmf-c
+            io.kompose.service: mongodb-trmf
             domain: operator-c
         spec:
           containers:
@@ -80,12 +80,12 @@ items:
                 - name: MONGO_INITDB_ROOT_USERNAME
                   value: 5gzorro
               image: ghcr.io/5gzorro/5g-trmf/mongo:latest
-              name: mongodb-trmf-c
+              name: mongodb-trmf
               ports:
                 - containerPort: 27017
               resources: {}
               volumeMounts:
-                - mountPath: /data/db
+                - mountPath: /data/db-c
                   name: trust-mongodbdata-c
           restartPolicy: Always
           volumes:
