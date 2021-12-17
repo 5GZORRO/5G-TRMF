@@ -10,4 +10,5 @@ threaded
 pandas
 matplotlib
 seaborn
+python-dotenv
 

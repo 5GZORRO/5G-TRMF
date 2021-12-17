@@ -865,13 +865,25 @@ class PeerTrust():
     def providerReputation(self, availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations):
         """ Currently, only one time-window is contemplated"""
 
-        assets_percentage = availableAssets / totalAssets
+        try:
+            assets_percentage = availableAssets / totalAssets
+        except ZeroDivisionError:
+            assets_percentage = 0
 
-        assets_location_percentage = availableAssetLocation / totalAssetLocation
+        try:
+            assets_location_percentage = availableAssetLocation / totalAssetLocation
+        except ZeroDivisionError:
+            assets_location_percentage = 0
 
-        managed_violations_percentage = managedViolations / predictedViolations
+        try:
+            managed_violations_percentage = managedViolations / predictedViolations
+        except ZeroDivisionError:
+            managed_violations_percentage = 0
 
-        violations_percentage = (executedViolations + nonPredictedViolations) / predictedViolations
+        try:
+            violations_percentage = (executedViolations + nonPredictedViolations) / predictedViolations
+        except ZeroDivisionError:
+            violations_percentage = 0
 
         reputation = ((assets_percentage + assets_location_percentage + (2 * managed_violations_percentage) - (2 * violations_percentage)) + 2) / 6
 
@@ -894,14 +906,23 @@ class PeerTrust():
 
     def offerReputation(self, consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations):
         """ Currently, only one time-window is contemplated"""
+        try:
+            assets_percentage = consideredOffers / totalOffers
+        except ZeroDivisionError:
+            assets_percentage = 0
+        try:
+            assets_location_percentage = consideredOfferLocation / totalOfferLocation
+        except ZeroDivisionError:
+            assets_location_percentage = 0
+        try:
+            managed_violations_percentage = managedOfferViolations / predictedOfferViolations
+        except ZeroDivisionError:
+            managed_violations_percentage = 0
+        try:
+            violations_percentage = (executedOfferViolations + nonPredictedOfferViolations) / predictedOfferViolations
+        except ZeroDivisionError:
+            violations_percentage = 0
 
-        assets_percentage = consideredOffers / totalOffers
-
-        assets_location_percentage = consideredOfferLocation / totalOfferLocation
-
-        managed_violations_percentage = managedOfferViolations / predictedOfferViolations
-
-        violations_percentage = (executedOfferViolations + nonPredictedOfferViolations) / predictedOfferViolations
 
         reputation = ((assets_percentage + assets_location_percentage + (2 * managed_violations_percentage) - (2 * violations_percentage)) + 2) / 6
 

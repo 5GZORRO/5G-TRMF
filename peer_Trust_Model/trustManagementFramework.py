@@ -14,7 +14,7 @@ import pprint
 import csv
 import threading
 from threading import Lock
-
+from dotenv import load_dotenv
 from peerTrust import *
 #from producer import *
 from consumer import *
@@ -44,6 +44,7 @@ dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","intera
 dlt_file_name = 'DLT.csv'
 
 provider_list = []
+considered_offer_list = []
 consumer_instance = None
 
 history = {}
@@ -58,6 +59,7 @@ satisfaction = 0
 credibility = 0
 TF = 0
 CF = 0
+type_offer = {}
 
 
 def find_by_column(filename, column, value):
@@ -81,6 +83,17 @@ def write_only_row_to_csv(filename, row):
         writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
         writer.writerow(row)
 
+class initialise_type_offer(Resource):
+    def post(self):
+        global type_offer
+
+        req = request.data.decode("utf-8")
+        type_offer = json.loads(req)
+        #type_offer = specific_offer["type_offer"]
+
+        return 200
+
+
 class start_data_collection(Resource):
     """ This method is responsible for creating the minimum information in the 5G-TRMF framework
     to avoid the cold start """
@@ -95,6 +108,7 @@ class start_data_collection(Resource):
         global credibility
         global TF
         global CF
+        global considered_offer_list
 
         gather_time, compute_time, storage_time, update_time, satisfaction, credibility, TF, CF = 0, 0, 0, 0, 0, 0, 0, 0
 
@@ -179,6 +193,9 @@ class start_data_collection(Resource):
 
             elif first_iteration == False:
                 for offer in dict_product_offers[trustee]:
+
+                    considered_offer_list.append({"trusteeDID": trustee, "offerDID": offer})
+
                     """ In case of first time the 5G-TRMF is executed, we should retrieve information from MongoDB and
                     check if it is already or not in the historical"""
 
@@ -308,6 +325,16 @@ class compute_trust_level(Resource):
         global credibility
         global TF
         global CF
+        global type_offer
+        global considered_offer_list
+        global availableAssets
+        global totalAssets
+        global availableAssetLocation
+        global totalAssetLocation
+        global consideredOffers
+        global totalOffers
+        global consideredOfferLocation
+        global totalOfferLocation
 
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
@@ -416,21 +443,115 @@ class compute_trust_level(Resource):
                     offer = interaction.split("$")[1]
 
                     start_satisfaction = time.time()
-                    #self.productOfferingCatalog()
 
                     if current_trustee == trustee and offer == offerDID:
-                        availableAssets = random.randint(2,7)
-                        totalAssets = availableAssets + random.randint(0,3)
-                        availableAssetLocation = random.randint(1,5)
-                        totalAssetLocation = availableAssetLocation + random.randint(0,2)
-                        managedViolations = random.randint(1,20)
-                        predictedOfferViolations = managedViolations + random.randint(0,5)
-                        executedViolations = random.randint(0,6)
-                        nonPredictedViolations = random.randint(0,2)
+                        print(type_offer,"\n", offerDID)
+                        print("$$$$$$$$$$$$$$$$ TYPE OFFER: ", type_offer[offerDID])
+                        availableAssets = 0
+                        totalAssets = 0
+                        availableAssetLocation = 0
+                        totalAssetLocation = 0
+                        consideredOffers = 0
+                        totalOffers= 0
+                        consideredOfferLocation = 0
+                        totalOfferLocation = 0
+
+                        "5GBarcelona"
+                        load_dotenv()
+                        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
+
+                        "5TONIC"
+                        #madrid_address = os.getenv('5TONIC_CATALOG_A')
+                        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
+
+                        response = json.loads(response.text)
+
+                        place = response['place'][0]['href']
+                        response = requests.get(place)
+                        response = json.loads(response.text)
+                        city = response['city']
+                        country = response['country']
+                        locality = response['locality']
+                        x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                        y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                        z_coordinate = response['geographicLocation']['geometry'][0]['z']
+
+
+                        result = self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
+                                                    availableAssetLocation, totalAssetLocation, totalOffers,
+                                                             totalOfferLocation, city, country, locality, x_coordinate,
+                                                             y_coordinate, z_coordinate)
+
+                        """Calculate the statistical parameters with respect to the considered offers"""
+                        for offer in considered_offer_list:
+                            if offer['trusteeDID'] == trustee:
+                                consideredOffers+=1
+
+                                "5GBarcelona"
+                                load_dotenv()
+                                barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                                response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
+
+                                #madrid_address = os.getenv('5TONIC_CATALOG_A')
+                                #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
+
+                                response = json.loads(response.text)
+
+                                current_offer_place = response['place'][0]['href']
+                                response = requests.get(current_offer_place)
+                                response = json.loads(response.text)
+                                current_offer_city = response['city']
+                                current_offer_country = response['country']
+                                current_offer_locality = response['locality']
+                                current_offer_x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                                current_offer_y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                                current_offer_z_coordinate = response['geographicLocation']['geometry'][0]['z']
+
+                                if city == current_offer_city and country == current_offer_country and locality == \
+                                        current_offer_locality and x_coordinate == current_offer_x_coordinate and \
+                                        y_coordinate == current_offer_y_coordinate and z_coordinate \
+                                        == current_offer_z_coordinate:
+                                    consideredOfferLocation+=1
+
+                        print("$$$$$$$$$$$$$$$$\n",availableAssets, totalAssets, availableAssetLocation, totalAssetLocation)
+                        print(consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation)
+
+                        if result == False:
+                            print("$$$$$$$$$$$$$$$$ No Offers in Catalogue")
+                            availableAssets = random.randint(2,7)
+                            totalAssets = availableAssets + random.randint(0,3)
+                            availableAssetLocation = random.randint(1,5)
+                            totalAssetLocation = availableAssetLocation + random.randint(0,2)
+                            managedViolations = random.randint(1,20)
+                            predictedViolations = managedViolations + random.randint(0,5)
+                            executedViolations = random.randint(0,6)
+                            nonPredictedViolations = random.randint(0,2)
+
+                            consideredOffers = random.randint(2,7)
+                            totalOffers = consideredOffers + random.randint(0,3)
+                            consideredOfferLocation = random.randint(1,3)
+                            totalOfferLocation = consideredOfferLocation + random.randint(0,2)
+                            managedOfferViolations = random.randint(4,22)
+                            predictedOfferViolations = managedOfferViolations + random.randint(0,8)
+                            executedOfferViolations = random.randint(0,4)
+                            nonPredictedOfferViolations = random.randint(0,3)
+
+                        else:
+                            print("$$$$$$$$$$$$$$$$ Offers in Catalogue")
+                            managedViolations = random.randint(1,20)
+                            predictedViolations = managedViolations + random.randint(0,5)
+                            executedViolations = random.randint(0,6)
+                            nonPredictedViolations = random.randint(0,2)
+
+                            managedOfferViolations = random.randint(4,22)
+                            predictedOfferViolations = managedOfferViolations + random.randint(0,8)
+                            executedOfferViolations = random.randint(0,4)
+                            nonPredictedOfferViolations = random.randint(0,3)
 
                         provider_reputation = peerTrust.providerReputation(availableAssets, totalAssets,
                                                                            availableAssetLocation, totalAssetLocation,
-                                                                           managedViolations, predictedOfferViolations,
+                                                                           managedViolations, predictedViolations,
                                                                            executedViolations, nonPredictedViolations)
 
                         information["trustor"]["direct_parameters"]["availableAssets"] = availableAssets
@@ -441,15 +562,6 @@ class compute_trust_level(Resource):
                         information["trustor"]["direct_parameters"]["predictedViolations"] = predictedOfferViolations
                         information["trustor"]["direct_parameters"]["executedViolations"] = executedViolations
                         information["trustor"]["direct_parameters"]["nonPredictedViolations"] = nonPredictedViolations
-
-                        consideredOffers = random.randint(2,7)
-                        totalOffers = consideredOffers + random.randint(0,3)
-                        consideredOfferLocation = random.randint(1,3)
-                        totalOfferLocation = consideredOfferLocation + random.randint(0,2)
-                        managedOfferViolations = random.randint(4,22)
-                        predictedOfferViolations = managedOfferViolations + random.randint(0,8)
-                        executedOfferViolations = random.randint(0,4)
-                        nonPredictedOfferViolations = random.randint(0,3)
 
                         offer_reputation = peerTrust.offerReputation(consideredOffers, totalOffers, consideredOfferLocation,
                                                                      totalOfferLocation, managedOfferViolations,
@@ -495,7 +607,6 @@ class compute_trust_level(Resource):
 
                 peerTrust.historical.append(information)
 
-
                 data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
                         "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
                         "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
@@ -513,13 +624,28 @@ class compute_trust_level(Resource):
 
         return response
 
-    def productOfferingCatalog (self):
+    def productOfferingCatalog (self, trustee, offer, type_offer, current_availableAssets, current_totalAssets,
+                                current_availableAssetLocation, current_totalAssetLocation, current_totalOffers,
+                                current_totalOfferLocation, current_city_offer, current_country_offer,
+                                current_locality_offer, current_x_coordinate_offer, current_y_coordinate_offer,
+                                current_z_coordinate_offer):
+        """ This method collects statistical parameters from the Catalog which will be used by the PeerTrust"""
+        global availableAssets
+        global totalAssets
+        global availableAssetLocation
+        global totalAssetLocation
+        global totalOffers
+        global totalOfferLocation
+
         """Requesting all product offering objects"""
         "5GBarcelona"
-        response = requests.get("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering")
+        load_dotenv()
+        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
 
         "5TONIC"
-        #response = requests.get("http://10.4.2.126:31100/tmf-api/productCatalogManagement/v4/productOffering")
+        #madrid_address = os.getenv('5TONIC_CATALOG_A')
+        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
 
         response = json.loads(response.text)
         print("Product Offering: ", response)
@@ -529,38 +655,95 @@ class compute_trust_level(Resource):
                 href = i['productSpecification']['href']
                 id_product_offering = i['id']
                 product_offering_location = i['place'][0]['href']
+                category = i['category'][0]['name']
 
                 """ Obtaining the true product offer specification object"""
                 response = requests.get(href)
                 response = json.loads(response.text)
                 did_provider = response['relatedParty'][0]['extendedInfo']
-                provider_location = response['relatedParty'][0]['href']
-                print("\nDID provider: ", did_provider)
+
                 print("\nReal product offer: ", response)
-
-                """ Obtaining the did product offer"""
-                "5GBarcelona"
-                response = requests.get \
-                    ("http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-
-                "5TONIC"
-                #response = requests.get \
-                    #("http://10.4.2.126:31100/tmf-api/productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-                response = json.loads(response.text)
-                did_offer = response['did']
-                print("DID product offering: ", did_offer)
+                print("\nDID provider: ", did_provider)
 
                 """ Obtaining the location of the product offering object"""
                 response = requests.get(product_offering_location)
                 response = json.loads(response.text)
                 print("\nProduct Offering Location: ", response)
 
-                response = requests.get(provider_location)
-                response = json.loads(response.text)
-                print("\nProvider Offering Location: ", response)
+                "Check whether the POs have location information"
+
+                if "city" and "country" and "locality" in response:
+                    city = response['city']
+                    country = response['country']
+                    locality = response['locality']
+                    x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                    y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                    z_coordinate = response['geographicLocation']['geometry'][0]['z']
+
+                    print("City: ", city, "\nCountry: ", country, "\nlocality: ", locality, "\nX: ", x_coordinate, "\nY: ",
+                          y_coordinate, "\nZ: ",z_coordinate)
+
+                    if did_provider == trustee:
+                        current_totalAssets += 1
+                        if city == current_city_offer and country == current_country_offer and locality == \
+                                current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
+                                current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
+                            current_totalAssetLocation+=1
+
+                        if i['lifecycleStatus'] == 'Active':
+                            current_availableAssets+=1
+                            if city == current_city_offer and country == current_country_offer and locality == \
+                                    current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
+                                    current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
+                                current_availableAssetLocation+=1
 
 
-        #print(response)
+                        """if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
+                            consideredOffers+=1
+                            if city == city_offer and country == country_offer and locality == locality_offer and x_coordinate \
+                                    == x_coordinate_offer and y_coordinate == y_coordinate_offer and z_coordinate \
+                                    == z_coordinate_offer:
+                             consideredOfferLocation+=1"""
+
+                        print("%%%%%%%%%%% ",category, type_offer)
+                        if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
+                            current_totalOffers+=1
+                            if city == current_city_offer and country == current_country_offer and locality == \
+                                    current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
+                                    current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
+                                current_totalOfferLocation+=1
+
+                        """ Obtaining the did product offer"""
+                        "5GBarcelona"
+                        load_dotenv()
+                        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                        response = requests.get \
+                            (barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+
+                        "5TONIC"
+                        madrid_address = os.getenv('5TONIC_CATALOG_A')
+                        #response = requests.get \
+                            #(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+                        response = json.loads(response.text)
+                        did_offer = response['did']
+                        print("DID product offering: ", did_offer)
+
+                        if did_offer == offer:
+                            print("")
+
+            availableAssets = current_availableAssets
+            totalAssets = current_totalAssets
+            availableAssetLocation = current_availableAssetLocation
+            totalAssetLocation = current_totalAssetLocation
+            totalOffers = current_totalOffers
+            totalOfferLocation = current_totalOfferLocation
+
+            print("$$$$$$$$$$$$$$$$\n",availableAssets, totalAssets, availableAssetLocation, totalAssetLocation)
+            print(totalOffers, totalOfferLocation)
+
+            return True
+
+        return False
 
 class store_trust_level(Resource):
     def post(self):
@@ -671,6 +854,7 @@ class update_trust_level(Resource):
         return 200
 
 def launch_server_REST(port):
+    api.add_resource(initialise_type_offer, '/initialise_type_offer')
     api.add_resource(start_data_collection, '/start_data_collection')
     api.add_resource(gather_information, '/gather_information')
     api.add_resource(compute_trust_level, '/compute_trust_level')
