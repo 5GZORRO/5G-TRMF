@@ -445,8 +445,7 @@ class compute_trust_level(Resource):
                     start_satisfaction = time.time()
 
                     if current_trustee == trustee and offer == offerDID:
-                        print(type_offer,"\n", offerDID)
-                        print("$$$$$$$$$$$$$$$$ TYPE OFFER: ", type_offer[offerDID])
+
                         availableAssets = 0
                         totalAssets = 0
                         availableAssetLocation = 0
@@ -478,7 +477,7 @@ class compute_trust_level(Resource):
                         z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
 
-                        result = self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
+                        self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
                                                     availableAssetLocation, totalAssetLocation, totalOffers,
                                                              totalOfferLocation, city, country, locality, x_coordinate,
                                                              y_coordinate, z_coordinate)
@@ -501,53 +500,34 @@ class compute_trust_level(Resource):
                                 current_offer_place = response['place'][0]['href']
                                 response = requests.get(current_offer_place)
                                 response = json.loads(response.text)
-                                current_offer_city = response['city']
-                                current_offer_country = response['country']
-                                current_offer_locality = response['locality']
-                                current_offer_x_coordinate = response['geographicLocation']['geometry'][0]['x']
-                                current_offer_y_coordinate = response['geographicLocation']['geometry'][0]['y']
-                                current_offer_z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
-                                if city == current_offer_city and country == current_offer_country and locality == \
-                                        current_offer_locality and x_coordinate == current_offer_x_coordinate and \
-                                        y_coordinate == current_offer_y_coordinate and z_coordinate \
-                                        == current_offer_z_coordinate:
-                                    consideredOfferLocation+=1
+                                "Check whether the POs have location information"
+                                if "city" and "country" and "locality" in response:
+                                    current_offer_city = response['city']
+                                    current_offer_country = response['country']
+                                    current_offer_locality = response['locality']
+                                    current_offer_x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                                    current_offer_y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                                    current_offer_z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
-                        print("$$$$$$$$$$$$$$$$\n",availableAssets, totalAssets, availableAssetLocation, totalAssetLocation)
-                        print(consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation)
+                                    if city == current_offer_city and country == current_offer_country and locality == \
+                                            current_offer_locality and x_coordinate == current_offer_x_coordinate and \
+                                            y_coordinate == current_offer_y_coordinate and z_coordinate \
+                                            == current_offer_z_coordinate:
+                                        consideredOfferLocation+=1
+                                else:
+                                    print("Product Offering without location information")
 
-                        if result == False:
-                            print("$$$$$$$$$$$$$$$$ No Offers in Catalogue")
-                            availableAssets = random.randint(2,7)
-                            totalAssets = availableAssets + random.randint(0,3)
-                            availableAssetLocation = random.randint(1,5)
-                            totalAssetLocation = availableAssetLocation + random.randint(0,2)
-                            managedViolations = random.randint(1,20)
-                            predictedViolations = managedViolations + random.randint(0,5)
-                            executedViolations = random.randint(0,6)
-                            nonPredictedViolations = random.randint(0,2)
+                        "These parameter should be collected from SLA Breach Predictor in the future"
+                        managedViolations = random.randint(1,20)
+                        predictedViolations = managedViolations + random.randint(0,5)
+                        executedViolations = random.randint(0,6)
+                        nonPredictedViolations = random.randint(0,2)
 
-                            consideredOffers = random.randint(2,7)
-                            totalOffers = consideredOffers + random.randint(0,3)
-                            consideredOfferLocation = random.randint(1,3)
-                            totalOfferLocation = consideredOfferLocation + random.randint(0,2)
-                            managedOfferViolations = random.randint(4,22)
-                            predictedOfferViolations = managedOfferViolations + random.randint(0,8)
-                            executedOfferViolations = random.randint(0,4)
-                            nonPredictedOfferViolations = random.randint(0,3)
-
-                        else:
-                            print("$$$$$$$$$$$$$$$$ Offers in Catalogue")
-                            managedViolations = random.randint(1,20)
-                            predictedViolations = managedViolations + random.randint(0,5)
-                            executedViolations = random.randint(0,6)
-                            nonPredictedViolations = random.randint(0,2)
-
-                            managedOfferViolations = random.randint(4,22)
-                            predictedOfferViolations = managedOfferViolations + random.randint(0,8)
-                            executedOfferViolations = random.randint(0,4)
-                            nonPredictedOfferViolations = random.randint(0,3)
+                        managedOfferViolations = random.randint(4,22)
+                        predictedOfferViolations = managedOfferViolations + random.randint(0,8)
+                        executedOfferViolations = random.randint(0,4)
+                        nonPredictedOfferViolations = random.randint(0,3)
 
                         provider_reputation = peerTrust.providerReputation(availableAssets, totalAssets,
                                                                            availableAssetLocation, totalAssetLocation,
@@ -648,7 +628,6 @@ class compute_trust_level(Resource):
         #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
 
         response = json.loads(response.text)
-        print("Product Offering: ", response)
 
         if bool(response):
             for i in response:
@@ -657,21 +636,16 @@ class compute_trust_level(Resource):
                 product_offering_location = i['place'][0]['href']
                 category = i['category'][0]['name']
 
-                """ Obtaining the true product offer specification object"""
+                """ Obtaining the real product offer specification object"""
                 response = requests.get(href)
                 response = json.loads(response.text)
                 did_provider = response['relatedParty'][0]['extendedInfo']
 
-                print("\nReal product offer: ", response)
-                print("\nDID provider: ", did_provider)
-
                 """ Obtaining the location of the product offering object"""
                 response = requests.get(product_offering_location)
                 response = json.loads(response.text)
-                print("\nProduct Offering Location: ", response)
 
                 "Check whether the POs have location information"
-
                 if "city" and "country" and "locality" in response:
                     city = response['city']
                     country = response['country']
@@ -680,9 +654,7 @@ class compute_trust_level(Resource):
                     y_coordinate = response['geographicLocation']['geometry'][0]['y']
                     z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
-                    print("City: ", city, "\nCountry: ", country, "\nlocality: ", locality, "\nX: ", x_coordinate, "\nY: ",
-                          y_coordinate, "\nZ: ",z_coordinate)
-
+                    "Getting statictical parameters from the Catalog"
                     if did_provider == trustee:
                         current_totalAssets += 1
                         if city == current_city_offer and country == current_country_offer and locality == \
@@ -697,15 +669,6 @@ class compute_trust_level(Resource):
                                     current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
                                 current_availableAssetLocation+=1
 
-
-                        """if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
-                            consideredOffers+=1
-                            if city == city_offer and country == country_offer and locality == locality_offer and x_coordinate \
-                                    == x_coordinate_offer and y_coordinate == y_coordinate_offer and z_coordinate \
-                                    == z_coordinate_offer:
-                             consideredOfferLocation+=1"""
-
-                        print("%%%%%%%%%%% ",category, type_offer)
                         if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
                             current_totalOffers+=1
                             if city == current_city_offer and country == current_country_offer and locality == \
@@ -726,11 +689,8 @@ class compute_trust_level(Resource):
                             #(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
                         response = json.loads(response.text)
                         did_offer = response['did']
-                        print("DID product offering: ", did_offer)
 
-                        if did_offer == offer:
-                            print("")
-
+            "Updating global variables"
             availableAssets = current_availableAssets
             totalAssets = current_totalAssets
             availableAssetLocation = current_availableAssetLocation
@@ -738,12 +698,6 @@ class compute_trust_level(Resource):
             totalOffers = current_totalOffers
             totalOfferLocation = current_totalOfferLocation
 
-            print("$$$$$$$$$$$$$$$$\n",availableAssets, totalAssets, availableAssetLocation, totalAssetLocation)
-            print(totalOffers, totalOfferLocation)
-
-            return True
-
-        return False
 
 class store_trust_level(Resource):
     def post(self):
