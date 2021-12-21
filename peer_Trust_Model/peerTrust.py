@@ -38,6 +38,8 @@ class PeerTrust():
     max_previous_providers_interactions_DLT = 3
     max_previous_interactions_DLT = max_previous_providers_DLT * max_previous_providers_interactions_DLT
     max_different_interactions = max_previous_providers_DLT * 2
+    dlt_file_name = 'DLT.csv'
+    dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","interactionNumber","totalInteractionNumber", "currentInteractionNumber"]
 
     historical = []
     consumer = None
@@ -229,21 +231,47 @@ class PeerTrust():
         print(data, "\n")
 
         interactions = []
-        for interaction in data:
-            trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
-            trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = interaction["userSatisfaction"]
-            trust_informartion["trustor"]["direct_parameters"]["interactionNumber"] = interaction["interactionNumber"]
-            trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
-            trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
+        "If DLT.csv file doesn't exist, we add new interactions related to the POs and minimum interactions between providers"
+        if not os.path.exists(self.dlt_file_name):
+            if not os.path.exists(self.dlt_file_name):
+                with open(self.dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
+                    writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
+                    writer.writeheader()
 
-            """ The minimum interactions are also registered in the Trustor's historical but 
-            they must be deleted when cold start is not used """
-            interactions.append(trust_informartion)
+            for interaction in data:
+                trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
+                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = interaction["userSatisfaction"]
+                trust_informartion["trustor"]["direct_parameters"]["interactionNumber"] = interaction["interactionNumber"]
+                trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
+                trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
-        for i in interactions:
-            self.historical.append(i)
+                """ The minimum interactions are also registered in the Trustor's historical but 
+                they must be deleted when cold start is not used """
+                interactions.append(trust_informartion)
 
-        return data
+            for i in interactions:
+                self.historical.append(i)
+
+            return data
+        else:
+            "We only add new interactions related to the POs"
+            for interaction in aux_new_interactions:
+                trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
+                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = interaction["userSatisfaction"]
+                trust_informartion["trustor"]["direct_parameters"]["interactionNumber"] = interaction["interactionNumber"]
+                trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
+                trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
+
+                """ The minimum interactions are also registered in the Trustor's historical but 
+                they must be deleted when cold start is not used """
+                interactions.append(trust_informartion)
+
+            for i in interactions:
+                self.historical.append(i)
+
+            return aux_new_interactions
+
+        #return data
 
     def stringToDictionaryList(self):
         """Convert string to a list of dictionaries"""

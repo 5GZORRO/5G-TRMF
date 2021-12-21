@@ -50,6 +50,7 @@ consumer_instance = None
 history = {}
 trustor_acquired = False
 trustorDID = ""
+new_request = True
 
 gather_time = 0
 compute_time = 0
@@ -60,6 +61,7 @@ credibility = 0
 TF = 0
 CF = 0
 type_offer = {}
+product_offering = []
 
 
 def find_by_column(filename, column, value):
@@ -109,8 +111,12 @@ class start_data_collection(Resource):
         global TF
         global CF
         global considered_offer_list
+        global new_request
 
         gather_time, compute_time, storage_time, update_time, satisfaction, credibility, TF, CF = 0, 0, 0, 0, 0, 0, 0, 0
+        trustor_acquired = False
+        max_trust_score = 0
+        max_trust_score_offerDID = ""
 
         time_file_name = 'tests/time.csv'
         time_headers = ["start_timestamp","end_timestamp","total_time", "total_without_cold", "cold_time", "gather_time", "compute_time",
@@ -120,86 +126,29 @@ class start_data_collection(Resource):
         dict_product_offers = json.loads(req)
         initial_timestamp = time.time()
 
-
-        if not os.path.exists(dlt_file_name):
+        """if not os.path.exists(dlt_file_name):
             with open(dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
                 writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
-                writer.writeheader()
+                writer.writeheader()"""
 
         trust_scores = []
-        first_iteration = False
-        added_historical_information = False
+        list_product_offers = {}
 
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
 
-        if trustor_acquired == True:
-
-            for trustee in dict_product_offers:
-                if first_iteration == False:
-                    new_domains_without_interactions = {}
-
-                    trustorDID = dict_product_offers[trustee]
-                    new_domains_without_interactions['trustorDID'] = trustorDID
-                    first_iteration = True
-
-                else:
-                    for offer in dict_product_offers[trustee]:
-                        """ Retrieve information, if exits, related to the trustee from MongoDB"""
-                        previous_interaction = mongoDB.find({'trustee.offerDID': offer})
-
-                        """ These actions will delete all information from MongoDB"""
-                        #for i in previous_interaction:
-                            #print("Interaccion", i)
-                            #mongoDB.delete_one({'evaluation_criteria': 'Inter-domain'})
-
-                        """ Adding previous interactions to the historical """
-                        if previous_interaction is not None:
-                            for interaction in previous_interaction:
-                                del interaction['_id']
-                                if interaction['trustor']['trusteeDID'] == trustee and \
-                                        interaction['trustor']['offerDID'] == offer:
-                                    if interaction not in peerTrust.historical:
-                                        peerTrust.historical.append(interaction)
-                                    else:
-                                        print("Object already registered in historical")
-                                else:
-                                    if trustee in new_domains_without_interactions:
-                                        new_domains_without_interactions[trustee].append(offer)
-                                    else:
-                                        new_domains_without_interactions[trustee] = [offer]
-                            else:
-                                if trustee in new_domains_without_interactions:
-                                    new_domains_without_interactions[trustee].append(offer)
-                                else:
-                                    new_domains_without_interactions[trustee] = [offer]
-
-            if len(new_domains_without_interactions) > 1:
-                """ Avoid to add previous interactions deleted from the current historical variable but already 
-                registered in the DLT """
-                minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, new_domains_without_interactions)
-                write_data_to_csv(dlt_file_name, minimum_data)
-
-
         for trustee in dict_product_offers:
             if trustor_acquired == False:
                 trustorDID = dict_product_offers[trustee]
+                list_product_offers['trustorDID'] = trustorDID
                 trustor_acquired = True
 
-                """ Adding a set of minimum interactions between entities that compose the trust model """
-                minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, dict_product_offers)
-                write_data_to_csv(dlt_file_name, minimum_data)
-
-
-            elif first_iteration == False:
+            else:
                 for offer in dict_product_offers[trustee]:
-
-                    considered_offer_list.append({"trusteeDID": trustee, "offerDID": offer})
-
                     """ In case of first time the 5G-TRMF is executed, we should retrieve information from MongoDB and
                     check if it is already or not in the historical"""
-
                     previous_interaction = mongoDB.find({'trustee.offerDID': offer})
+                    offer_found = False
                     if previous_interaction is not None:
                         for interaction in previous_interaction:
                             del interaction['_id']
@@ -207,17 +156,43 @@ class start_data_collection(Resource):
                                     interaction['trustor']['offerDID'] == offer:
                                 if interaction not in peerTrust.historical:
                                     peerTrust.historical.append(interaction)
+                                offer_found = True
 
+                    if not offer_found:
+                        print("$$$$ New interaction")
+                        if trustee in list_product_offers:
+                            list_product_offers[trustee].append(offer)
+                        else:
+                            list_product_offers[trustee] = [offer]
+
+        """ Adding a set of minimum interactions between entities that compose the trust model """
+        if len(list_product_offers)>1:
+            minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, list_product_offers)
+            write_data_to_csv(dlt_file_name, minimum_data)
+
+        trustor_acquired = False
+
+        for trustee in dict_product_offers:
+            if trustor_acquired == False:
+                trustor_acquired = True
+
+            else:
+                for offer in dict_product_offers[trustee]:
 
                     if trustee+"$"+offer not in provider_list:
                         provider_list.append(trustee+"$"+offer)
 
                     """ we generated initial trust information to avoid the cold start"""
                     print("$$$$$$$$$$$$$$ Starting cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
+                    for key, value in list_product_offers.items():
+                        if offer in value:
+                            peerTrust.generateHistoryTrustInformation(producer, consumer, trustorDID, trustee, offer, 3)
+                            """ Establish two new interactions per each provider"""
+                            peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
 
-                    peerTrust.generateHistoryTrustInformation(producer, consumer, trustorDID, trustee, offer,3)
-                    """ Establish two new interactions per each provider"""
-                    peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
+                    #if trustee in list_product_offers:
+                        #print("New Interactions")
+                        #peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
 
                     print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
@@ -226,10 +201,23 @@ class start_data_collection(Resource):
 
                     response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
                     response = json.loads(response.text)
+                    if response["trust_value"] > max_trust_score:
+                        max_trust_score = response["trust_value"]
+                        max_trust_score_offerDID = response["trusteeDID"]["offerDID"]
                     trust_scores.append(response)
 
-            else:
-                first_iteration = False
+        "We are currently registering as a new interaction the offer with the highest trust score"
+        for interaction in reversed(peerTrust.historical):
+            if interaction["trust_value"] == max_trust_score and \
+                    interaction["trustor"]["offerDID"] == max_trust_score_offerDID:
+                data = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
+                        "userSatisfaction": interaction["trustor"]["direct_parameters"]["userSatisfaction"],
+                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
+                        "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                        "currentInteractionNumber": interaction["currentInteractionNumber"]}
+
+                write_only_row_to_csv(dlt_file_name, data)
+
 
         if not os.path.exists("tests"):
             os.makedirs("tests")
@@ -239,24 +227,25 @@ class start_data_collection(Resource):
                 writer = csv.DictWriter(time_data, fieldnames=time_headers)
                 writer.writeheader()
                 data = {"start_timestamp": initial_timestamp,"end_timestamp": time.time(), "total_time": time.time()-initial_timestamp,
-                        "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
-                            time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
-                        "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
-                        "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
-                        "TF": TF, "CF": CF, "offers": 1000}
+                                "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
+                                    time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
+                                "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
+                                "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
+                                "TF": TF, "CF": CF, "offers": 1000}
                 writer.writerow(data)
         else:
             with open(time_file_name, 'a', encoding='UTF8', newline='') as time_data:
                 writer = csv.DictWriter(time_data, fieldnames=time_headers)
                 data = {"start_timestamp": initial_timestamp,"end_timestamp": time.time(), "total_time": time.time()-initial_timestamp,
-                        "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
-                            time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
-                        "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
-                        "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
-                        "TF": TF, "CF": CF, "offers": 1000}
+                                "total_without_cold": gather_time+compute_time+storage_time+update_time,"cold_time":
+                                    time.time()-initial_timestamp-gather_time-compute_time-storage_time-update_time,
+                                "gather_time": gather_time, "compute_time": compute_time, "storage_time": storage_time,
+                                "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
+                                "TF": TF, "CF": CF, "offers": 1000}
                 writer.writerow(data)
 
-        client.close()
+        #client.close()
+        new_request = False
         return json.dumps(trust_scores)
 
 
@@ -335,6 +324,7 @@ class compute_trust_level(Resource):
         global totalOffers
         global consideredOfferLocation
         global totalOfferLocation
+        global new_request
 
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
@@ -480,7 +470,8 @@ class compute_trust_level(Resource):
                         self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
                                                     availableAssetLocation, totalAssetLocation, totalOffers,
                                                              totalOfferLocation, city, country, locality, x_coordinate,
-                                                             y_coordinate, z_coordinate)
+                                                             y_coordinate, z_coordinate, new_request)
+                        new_request = False
 
                         """Calculate the statistical parameters with respect to the considered offers"""
                         for offer in considered_offer_list:
@@ -587,13 +578,13 @@ class compute_trust_level(Resource):
 
                 peerTrust.historical.append(information)
 
-                data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
-                        "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
-                        "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
-                        "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": information["currentInteractionNumber"]}
+                #data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
+                        #"userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
+                        #"interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
+                        #"totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                        #"currentInteractionNumber": information["currentInteractionNumber"]}
 
-                write_only_row_to_csv(dlt_file_name, data)
+                #write_only_row_to_csv(dlt_file_name, data)
 
                 compute_time = compute_time + (time.time()-start_time)
                 ###print("Compute time:", compute_time)
@@ -608,7 +599,7 @@ class compute_trust_level(Resource):
                                 current_availableAssetLocation, current_totalAssetLocation, current_totalOffers,
                                 current_totalOfferLocation, current_city_offer, current_country_offer,
                                 current_locality_offer, current_x_coordinate_offer, current_y_coordinate_offer,
-                                current_z_coordinate_offer):
+                                current_z_coordinate_offer, new_request):
         """ This method collects statistical parameters from the Catalog which will be used by the PeerTrust"""
         global availableAssets
         global totalAssets
@@ -616,21 +607,24 @@ class compute_trust_level(Resource):
         global totalAssetLocation
         global totalOffers
         global totalOfferLocation
+        global product_offering
 
-        """Requesting all product offering objects"""
-        "5GBarcelona"
-        load_dotenv()
-        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
+        "Avoiding request again the product offering objects for an SRSD request with multiple offers to be analyzed"
+        if new_request:
+            """Requesting all product offering objects"""
+            "5GBarcelona"
+            load_dotenv()
+            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+            response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
 
-        "5TONIC"
-        #madrid_address = os.getenv('5TONIC_CATALOG_A')
-        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
+            "5TONIC"
+            #madrid_address = os.getenv('5TONIC_CATALOG_A')
+            #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
 
-        response = json.loads(response.text)
+            product_offering = json.loads(response.text)
 
-        if bool(response):
-            for i in response:
+        if bool(product_offering):
+            for i in product_offering:
                 href = i['productSpecification']['href']
                 id_product_offering = i['id']
                 product_offering_location = i['place'][0]['href']
@@ -678,17 +672,15 @@ class compute_trust_level(Resource):
 
                         """ Obtaining the did product offer"""
                         "5GBarcelona"
-                        load_dotenv()
-                        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-                        response = requests.get \
-                            (barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+                        #load_dotenv()
+                        #barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                        #response = requests.get(barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
 
                         "5TONIC"
-                        madrid_address = os.getenv('5TONIC_CATALOG_A')
-                        #response = requests.get \
-                            #(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-                        response = json.loads(response.text)
-                        did_offer = response['did']
+                        #madrid_address = os.getenv('5TONIC_CATALOG_A')
+                        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+                        #response = json.loads(response.text)
+                        #did_offer = response['did']
 
             "Updating global variables"
             availableAssets = current_availableAssets
