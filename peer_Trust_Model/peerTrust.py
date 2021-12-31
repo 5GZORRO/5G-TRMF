@@ -38,8 +38,6 @@ class PeerTrust():
     max_previous_providers_interactions_DLT = 3
     max_previous_interactions_DLT = max_previous_providers_DLT * max_previous_providers_interactions_DLT
     max_different_interactions = max_previous_providers_DLT * 2
-    dlt_file_name = 'DLT.csv'
-    dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","interactionNumber","totalInteractionNumber", "currentInteractionNumber"]
 
     historical = []
     consumer = None
