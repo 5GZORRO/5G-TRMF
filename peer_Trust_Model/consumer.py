@@ -203,7 +203,7 @@ class Consumer():
             if interactions["trustor"]["trustorDID"] == trustor and \
                         interactions["trustor"]["trusteeDID"] == trustee and \
                         interactions["trustor"]["offerDID"] == offer:
-                data = {"trustorDID": interactions["trustor"]["trustorDID"],
+                """data = {"trustorDID": interactions["trustor"]["trustorDID"],
                             "trusteeDID": interactions["trustor"]["trusteeDID"],
                             "offerDID": interactions["trustor"]["offerDID"],
                             "trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
@@ -216,8 +216,8 @@ class Consumer():
                             "trust_value": interactions["trust_value"],
                             "initEvaluationPeriod": interactions["initEvaluationPeriod"],
                             "endEvaluationPeriod": interactions["endEvaluationPeriod"]
-                        }
-                return data
+                        }"""
+                return interactions
 
         return data
 

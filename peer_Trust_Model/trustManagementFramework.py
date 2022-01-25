@@ -382,7 +382,7 @@ class compute_trust_level(Resource):
                         new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
                         start_credibility = time.time()
                         current_credibility = peerTrust.credibility(current_trustee, new_interaction['trusteeDID'])
-                        print("\tCr(p(u,i)) ---> ", round(current_credibility, 3))
+                        print("\tCr(p(u,i)) ---> ", round(current_credibility, 4))
                         new_credibility = new_credibility + current_credibility
                         credibility = credibility + (time.time()-start_credibility)
                         start_TF = time.time()
@@ -398,30 +398,30 @@ class compute_trust_level(Resource):
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
-                new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 3)
-                new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 3)
-                new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 3)
-                new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 3)
+                new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 4)
+                new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 4)
+                new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 4)
+                new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 4)
 
                 information = trustInformationTemplate.trustTemplate()
                 information["trustee"]["trusteeDID"] = current_trustee
                 information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 3)
+                information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 4)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = current_trustee
                 information["trustor"]["offerDID"] = offerDID
-                information["trustor"]["credibility"] = round(new_credibility, 3)
-                information["trustor"]["transactionFactor"] = round(new_transaction_factor, 3)
-                information["trustor"]["communityFactor"] = round(new_community_factor, 3)
+                information["trustor"]["credibility"] = round(new_credibility, 4)
+                information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
+                information["trustor"]["communityFactor"] = round(new_community_factor, 4)
                 #information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
-                information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 3)
+                information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
                 information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
                 information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
                 information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
                 information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
-                information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,3)
+                information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,4)
                 information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
@@ -553,15 +553,15 @@ class compute_trust_level(Resource):
                 provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
                 offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
-                information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 3)
+                information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
                 information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
-                information["trustor"]["direct_parameters"]["offerSatisfaction"] = round(offer_satisfaction, 3)
+                information["trustor"]["direct_parameters"]["offerSatisfaction"] = round(offer_satisfaction, 4)
                 os_weighting = 1-ps_weighting
                 information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
-                information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 3)
-                information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 3)
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 3)
+                information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 4)
+                information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 4)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
                 satisfaction = satisfaction + (time.time()-start_satisfaction)
 
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
@@ -742,62 +742,352 @@ class update_trust_level(Resource):
 
         print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
 
-        slaBreachPredictor_topic = information["SLABreachPredictor"]
+        #slaBreachPredictor_topic = information["SLABreachPredictor"]
         trustorDID = information["trustorDID"]
         trusteeDID = information["trusteeDID"]
         offerDID = information["offerDID"]
 
-        notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
+        " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
 
-        positive_notification = "was able to manage the SLA violation successfully"
-        negative_notification = "was not able to manage the SLA violation successfully"
-        first_range_probability = 0.25
-        second_range_probability = 0.50
-        third_range_probability = 0.75
-        fourth_range_probability = 1.0
+        reward_and_punishment = self.reward_and_punishment_based_on_security(trustorDID, trusteeDID, offerDID)
+        last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
 
-        new_trust_score = 0.0
+        if reward_and_punishment >= 0.5:
+            n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+            new_trust_score = min(n_ts, 1)
+        elif reward_and_punishment < 0.5:
+            "The lower value the higher punishment"
+            reward_and_punishment = 0.5 - reward_and_punishment
+            n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+            new_trust_score = max(0, n_ts)
 
-        for notification in notifications:
-            print("Notification received from the SLA Breach Predictor about", notification["breachPredictionNotification"],":\n")
+        print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 4), "\n")
+        last_trust_score["trust_value"] = round(new_trust_score, 4)
+        last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-            current_notification = notification["notification"]
-            print("\t-", current_notification,"\n")
-            likehood = notification["breachPredictionNotification"]["value"]
+        peerTrust.historical.append(last_trust_score)
+        #mongoDB.insert_one(last_trust_score)
 
-            last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+        #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
 
-            if positive_notification in current_notification:
-                if likehood <= first_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.075
-                elif likehood <= second_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.10
-                elif likehood <= third_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.125
-                elif likehood <= fourth_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.15
-            elif negative_notification in current_notification:
-                if likehood <= first_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.10
-                elif likehood <= second_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.125
-                elif likehood <= third_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.15
-                elif likehood <= fourth_range_probability:
-                    new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.175
+        #positive_notification = "was able to manage the SLA violation successfully"
+        #negative_notification = "was not able to manage the SLA violation successfully"
+        #first_range_probability = 0.25
+        #second_range_probability = 0.50
+        #third_range_probability = 0.75
+        #fourth_range_probability = 1.0
 
-            if new_trust_score > 1.0:
-                new_trust_score = 1.0
-            elif new_trust_score < 0.0:
-                new_trust_score = 0.0
+        #new_trust_score = 0.0
 
-            print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
-            last_trust_score["trust_value"] = round(new_trust_score, 3)
-            last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+        #for notification in notifications:
+            #print("Notification received from the SLA Breach Predictor about", notification["breachPredictionNotification"],":\n")
+
+            #current_notification = notification["notification"]
+            #print("\t-", current_notification,"\n")
+            #likehood = notification["breachPredictionNotification"]["value"]
+
+            #last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+
+            #if positive_notification in current_notification:
+                #if likehood <= first_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.075
+                #elif likehood <= second_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.10
+                #elif likehood <= third_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.125
+                #elif likehood <= fourth_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.15
+            #elif negative_notification in current_notification:
+                #if likehood <= first_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.10
+                #elif likehood <= second_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.125
+                #elif likehood <= third_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.15
+                #elif likehood <= fourth_range_probability:
+                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.175
+
+            #if new_trust_score > 1.0:
+                #new_trust_score = 1.0
+            #elif new_trust_score < 0.0:
+                #new_trust_score = 0.0
+
+            #print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
+            #last_trust_score["trust_value"] = round(new_trust_score, 3)
+            #last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
             
-            peerTrust.historical.append(last_trust_score)
+            #peerTrust.historical.append(last_trust_score)
 
         return 200
+
+    def reward_and_punishment_based_on_security(self, trustorDID, trusteeDID, offerDID):
+
+        "Sliding window weighting"
+        FIRST_SLIDING_WINDOW_WEIGHTING = 0.2
+        SECOND_SLIDING_WINDOW_WEIGHTING = 0.3
+        THIRD_SLIDING_WINDOW_WEIGHTING = 0.5
+
+        "Sliding window definition IN SECONDS"
+        FIRST_TIME_WINDOW = 1800
+        SECOND_TIME_WINDOW = 18000
+        THIRD_TIME_WINDOW = 180000
+
+        "Dimensions weighting"
+        CONN_DIMENSION_WEIGHTING = 0.233
+        NOTICE_DIMENSION_WEIGHTING = 0.3
+        WEIRD_DIMENSION_WEIGHTING = 0.233
+        STATS_DIMENSION_WEIGHTING = 0.233
+
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        NUMBER_SLIDING_WINDOWS = 3
+
+        first_conn_value = self.conn_log(FIRST_TIME_WINDOW)
+        first_notice_value = self.notice_log(FIRST_TIME_WINDOW)
+        first_weird_value = self.weird_log(FIRST_TIME_WINDOW)
+        first_stats_value = self.stats_log(FIRST_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        second_conn_value = self.conn_log(SECOND_TIME_WINDOW)
+        second_notice_value = self.notice_log(SECOND_TIME_WINDOW)
+        second_weird_value = self.weird_log(SECOND_TIME_WINDOW)
+        second_stats_value = self.stats_log(SECOND_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        third_conn_value = self.conn_log(THIRD_TIME_WINDOW)
+        third_notice_value = self.notice_log(THIRD_TIME_WINDOW)
+        third_weird_value = self.weird_log(THIRD_TIME_WINDOW)
+        third_stats_value = self.stats_log(THIRD_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        first_summation = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+                          + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+        second_summation = CONN_DIMENSION_WEIGHTING * second_conn_value + NOTICE_DIMENSION_WEIGHTING * second_notice_value \
+                           + WEIRD_DIMENSION_WEIGHTING * second_weird_value + STATS_DIMENSION_WEIGHTING * second_stats_value
+        third_summation = CONN_DIMENSION_WEIGHTING * third_conn_value + NOTICE_DIMENSION_WEIGHTING * third_notice_value \
+                           + WEIRD_DIMENSION_WEIGHTING * third_weird_value + STATS_DIMENSION_WEIGHTING * third_stats_value
+
+        final_security_reward_and_punishment = (FIRST_SLIDING_WINDOW_WEIGHTING * first_summation + \
+                                               SECOND_SLIDING_WINDOW_WEIGHTING * second_summation + \
+                                               THIRD_SLIDING_WINDOW_WEIGHTING * third_summation) / NUMBER_SLIDING_WINDOWS
+
+
+        return final_security_reward_and_punishment
+
+    def conn_log(self, time_window):
+        """ This function will compute the security level of an ongoing trust relationship between two operators from the
+        percentage of network packages correctly sent """
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Weight definition"
+        ICMP = 0.3
+        TCP = 0.3
+        UDP = 0.4
+
+        "Variable definition"
+        icmp_orig_pkts = 0
+        tcp_orig_pkts = 0
+        udp_orig_pkts = 0
+        icmp_resp_pkts = 0
+        tcp_resp_pkts = 0
+        udp_resp_pkts = 0
+
+        timestamp = time.time()
+        timestamp_limit = timestamp - time_window
+
+        filebeat_index = "XXXXX"
+        "Change the direction for the IP in which the service is listening"
+        response = requests.get("elasticsearch:9200/"+filebeat_index)
+        response = json.loads(response.text)
+
+        for log in response:
+            if log["ts"] >= timestamp_limit and log["id"] == filebeat_index:
+                if log["proto"] == "icmp":
+                    icmp_orig_pkts += icmp_orig_pkts + int(log["orig_pkts"])
+                    icmp_resp_pkts += icmp_resp_pkts + int(log["resp_pkts"])
+                elif log["proto"] == "tcp":
+                    tcp_orig_pkts += tcp_orig_pkts + int(log["orig_pkts"])
+                    tcp_resp_pkts += tcp_resp_pkts + int(log["resp_pkts"])
+                elif log["proto"] == "udp":
+                    udp_orig_pkts += udp_orig_pkts + int(log["orig_pkts"])
+                    udp_resp_pkts += udp_orig_pkts + int(log["resp_pkts"])
+
+        icmp_packet_hit_rate = icmp_resp_pkts/icmp_orig_pkts
+        tcp_packet_hit_rate = tcp_resp_pkts/tcp_orig_pkts
+        udp_packet_hit_rate = udp_resp_pkts/udp_orig_pkts
+
+        final_conn_value = ICMP * icmp_packet_hit_rate + TCP * tcp_packet_hit_rate + UDP * udp_packet_hit_rate
+
+        return final_conn_value
+
+    def notice_log(self, time_window):
+        """ This function will compute the security level of an ongoing trust relationship between two operators from
+         critical security events detected by the Zeek """
+
+        "Label definition"
+        TO_MUCH_LOSS = "CaptureLoss::Too_Much_Loss"
+        WEIRD_ACTIVITY = "Weird::Activity"
+        PACKET_FILTER = "PacketFilter::Dropped_Packets"
+        SOFTWARE_VULNERABLE = "Software::Vulnerable_Version"
+        PORT_SCAN = "Scan::Port_Scan"
+        SQL_INJECTION_ATTACKER = "HTTP::SQL_Injection_Attacker"
+        SQL_INJECTION_VICTIM = "HTTP::SQL_Injection_Victim"
+        PASSWORD_GUESSING = "SSH::Password_Guessing"
+        SSL_HEARTBEAT_ATTACK = "Heartbleed::SSL_Heartbeat_Attack"
+        SSL_WEAK_KEY = "SSL::Weak_Key"
+        SSL_OLD_VERSION = "SSL::Old_Version"
+        SSL_WEAK_CIPHER = "SSL::Weak_Cipher"
+
+        "By default notice.log file is gathered after 15 minutes"
+        TIME_MONITORING_EVENT = 900
+        LAST_FIVE_TIME_MONITORING_EVENT = 4500
+
+        "List of labels"
+        events_to_monitor = []
+        events_to_monitor.append(TO_MUCH_LOSS)
+        events_to_monitor.append(WEIRD_ACTIVITY)
+        events_to_monitor.append(PACKET_FILTER)
+        events_to_monitor.append(SOFTWARE_VULNERABLE)
+        events_to_monitor.append(PORT_SCAN)
+        events_to_monitor.append(SQL_INJECTION_ATTACKER)
+        events_to_monitor.append(SQL_INJECTION_VICTIM)
+        events_to_monitor.append(PASSWORD_GUESSING)
+        events_to_monitor.append(SSL_HEARTBEAT_ATTACK)
+        events_to_monitor.append(SSL_WEAK_KEY)
+        events_to_monitor.append(SSL_OLD_VERSION)
+        events_to_monitor.append(SSL_WEAK_CIPHER)
+
+        "Variable definition"
+        actual_event_number = 0
+        previous_monitoring_window_event_number = 0
+        last_five_monitoring_window_event_number = 0
+
+        timestamp = time.time()
+        timestamp_limit = timestamp - time_window
+
+        previous_event_monitoring_timestamp = timestamp - TIME_MONITORING_EVENT
+        last_five_event_monitoring_timestamp = timestamp - LAST_FIVE_TIME_MONITORING_EVENT
+
+        filebeat_index = "XXXXX"
+        "Change the direction for the IP in which the service is listening"
+        response = requests.get("elasticsearch:9200/"+filebeat_index)
+        response = json.loads(response.text)
+
+        for log in response:
+            if log["note"] in events_to_monitor and log["ts"] >= timestamp_limit:
+                actual_event_number += 1
+            elif log["note"] in events_to_monitor and log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_event_number += 1
+                last_five_monitoring_window_event_number += 1
+            elif log["note"] in events_to_monitor and log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_event_number += 1
+
+        final_notice_value = 1 - ((actual_event_number/(previous_monitoring_window_event_number + actual_event_number) +
+                                   (actual_event_number / actual_event_number + (actual_event_number + last_five_monitoring_window_event_number / 6))) / 2)
+
+
+        return final_notice_value
+
+    def weird_log(self, time_window):
+        """ This function will compute the security level of an ongoing trust relationship between two operators from
+         weird events detected by the Zeek """
+
+        "Label definition"
+        DNS_UNMTATCHED_REPLY = "dns_unmatched_reply"
+        ACTIVE_CONNECTION_REUSE = "active_connection_reuse"
+
+        "List of labels"
+        weird_event_list = []
+        weird_event_list.apppend(DNS_UNMTATCHED_REPLY)
+        weird_event_list.apppend(ACTIVE_CONNECTION_REUSE)
+
+        "Variable definition"
+        actual_weird_event_number = 0
+        previous_monitoring_window_weird_event_number = 0
+        last_five_monitoring_window_weird_event_number = 0
+
+        "By default weird.log file is gathered after 15 minutes, VERIFY!"
+        TIME_MONITORING_WEIRD_EVENT = 900
+        LAST_FIVE_TIME_MONITORING_WEIRD_EVENT = 4500
+
+        timestamp = time.time()
+        timestamp_limit = timestamp - time_window
+
+        previous_event_monitoring_timestamp = timestamp - TIME_MONITORING_WEIRD_EVENT
+        last_five_event_monitoring_timestamp = timestamp - LAST_FIVE_TIME_MONITORING_WEIRD_EVENT
+
+        filebeat_index = "XXXXX"
+        "Change the direction for the IP in which the service is listening"
+        response = requests.get("elasticsearch:9200/"+filebeat_index)
+        response = json.loads(response.text)
+
+        for log in response:
+            if log["name"] in weird_event_list and log["ts"] >= timestamp_limit:
+                actual_weird_event_number += 1
+            elif log["name"] in weird_event_list and log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_weird_event_number += 1
+                last_five_monitoring_window_weird_event_number += 1
+            elif log["name"] in weird_event_list and log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_weird_event_number += 1
+
+        final_weird_value = 1 - ((actual_weird_event_number/(previous_monitoring_window_weird_event_number + actual_weird_event_number) +
+                                   (actual_weird_event_number / actual_weird_event_number + (actual_weird_event_number + last_five_monitoring_window_weird_event_number / 6))) / 2)
+
+        return final_weird_value
+
+    def stats_log(self, time_window, icmp_sent_pkts, tcp_sent_pkts, udp_sent_pkts):
+        """ This function will compute the security level of an ongoing trust relationship between two operators from the
+        percentage of network packages sent and the packets finally analyzed by Zeek"""
+
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Weight definition"
+        ICMP = 0.3
+        TCP = 0.3
+        UDP = 0.4
+
+        "Variable definition"
+        icmp_orig_pkts = icmp_sent_pkts
+        tcp_orig_pkts = tcp_sent_pkts
+        udp_orig_pkts = udp_sent_pkts
+        icmp_pkts_analyzed_by_zeek = 0
+        tcp_pkts_analyzed_by_zeek = 0
+        udp_pkts_analyzed_by_zeek = 0
+
+        timestamp = time.time()
+        timestamp_limit = timestamp - time_window
+
+        filebeat_index = "XXXXX"
+        "Change the direction for the IP in which the service is listening"
+        response = requests.get("elasticsearch:9200/"+filebeat_index)
+        response = json.loads(response.text)
+
+        for log in response:
+            if log["ts"] >= timestamp_limit and log["id"] == filebeat_index:
+                if log["proto"] == "icmp":
+                    icmp_orig_pkts += icmp_orig_pkts + int(log["orig_pkts"])
+                    icmp_pkts_analyzed_by_zeek += icmp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
+                elif log["proto"] == "tcp":
+                    tcp_orig_pkts += tcp_orig_pkts + int(log["orig_pkts"])
+                    tcp_pkts_analyzed_by_zeek += tcp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
+                elif log["proto"] == "udp":
+                    udp_orig_pkts += udp_orig_pkts + int(log["orig_pkts"])
+                    udp_pkts_analyzed_by_zeek += udp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
+
+        icmp_packet_rate_analyzed_by_zeek = icmp_pkts_analyzed_by_zeek/icmp_orig_pkts
+        tcp_packet_rate_analyzed_by_zeek = tcp_pkts_analyzed_by_zeek/tcp_orig_pkts
+        udp_packet_rate_analyzed_by_zeek = udp_pkts_analyzed_by_zeek/udp_orig_pkts
+
+        final_stats_value = ICMP * icmp_packet_rate_analyzed_by_zeek + TCP * tcp_packet_rate_analyzed_by_zeek + UDP * \
+                            udp_packet_rate_analyzed_by_zeek
+
+        return final_stats_value
+
 
 def launch_server_REST(port):
     api.add_resource(initialise_type_offer, '/initialise_type_offer')

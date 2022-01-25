@@ -75,20 +75,20 @@ class PeerTrust():
         information["trustee"]["trusteeDID"] = trusteeDID
         information["trustee"]["offerDID"] = offerDID
         #information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
-        information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95),3)
+        information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95),4)
         information["trustor"]["trustorDID"] = trustorDID
         information["trustor"]["trusteeDID"] = trusteeDID
         information["trustor"]["offerDID"] = offerDID
-        information["trustor"]["credibility"] = round(random.uniform(0.75, 0.9),3)
-        information["trustor"]["transactionFactor"] = round(random.uniform(0.8, 0.9),3)
-        information["trustor"]["communityFactor"] = round(random.uniform(0.85, 0.9),3)
-        information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9),3)
+        information["trustor"]["credibility"] = round(random.uniform(0.75, 0.9),4)
+        information["trustor"]["transactionFactor"] = round(random.uniform(0.8, 0.9),4)
+        information["trustor"]["communityFactor"] = round(random.uniform(0.85, 0.9),4)
+        information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9),4)
         direct_weighting = round(random.uniform(0.6, 0.7),2)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
         information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID)
         information["trustor"]["direct_parameters"]["totalInteractionNumber"] = self.getLastTotalInteractionNumber(trusteeDID)
-        information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
+        information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
         information["currentInteractionNumber"] = self.getCurrentInteractionNumber(trustorDID)
         information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
         information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
@@ -177,7 +177,7 @@ class PeerTrust():
 
 
                 new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID":  new_trustee,
-                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.80, 0.99), 3),
+                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.80, 0.99), 4),
                                    "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
 
                 """ Adjusting the parameters based on previous interactions """
@@ -206,7 +206,7 @@ class PeerTrust():
             else:
                 for offer in dict_product_offers[trustee]:
                     new_interaction = {"trustorDID": "did:5gzorro:domain-Z", "trusteeDID":  trustee, "offerDID": offer,
-                                       "userSatisfaction": round(random.uniform(0.80, 0.99), 3), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
+                                       "userSatisfaction": round(random.uniform(0.80, 0.99), 4), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
                     aux_new_interactions.append(new_interaction)
 
         """ Adjusting the parameters based on previous interactions"""
@@ -422,7 +422,7 @@ class PeerTrust():
             general_satisfaction = general_satisfaction + float(interaction['userSatisfaction'])
             counter = counter + 1
 
-        return round(general_satisfaction/counter, 3)
+        return round(general_satisfaction/counter, 4)
 
     def generateHistoryTrustInformation(self, producer, consumer_instance, trustorDID, trusteeDID, offerDID, previous_interaction_number):
         """ This method generates trust information that will be sent to trustor Kafka Topic. In particular,
@@ -440,20 +440,20 @@ class PeerTrust():
             """ Adding information related to the specific request """
             information["trustee"]["trusteeDID"] = trusteeDID
             information["trustee"]["offerDID"] = offerDID
-            information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95), 3)
+            information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.95), 4)
             information["trustor"]["trustorDID"] = trustorDID
             information["trustor"]["trusteeDID"] = trusteeDID
             information["trustor"]["offerDID"] = offerDID
             information["trustor"]["credibility"] = 0.913
             information["trustor"]["transactionFactor"] = 0.856
             information["trustor"]["communityFactor"] = 0.865
-            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.95),3)
+            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.95),4)
             direct_weighting = round(random.uniform(0.6, 0.7),2)
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
             information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
             information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID)
             information["trustor"]["direct_parameters"]["totalInteractionNumber"] = self.getLastTotalInteractionNumber(trusteeDID)
-            information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
+            information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
             information["currentInteractionNumber"] = self.getCurrentInteractionNumber(trustorDID)
             information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
             information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
@@ -478,21 +478,21 @@ class PeerTrust():
 
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 3)
+                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 4)
                 #information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.9), 3)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = trusteeDID
                 information["trustor"]["offerDID"] = offerDID
-                information["trustor"]["credibility"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["credibility"])/2, 3)
-                information["trustor"]["transactionFactor"] = round((round(random.uniform(0.75, 0.95), 3) + trust_data["transactionFactor"])/2, 3)
-                information["trustor"]["communityFactor"] = round((round(random.uniform(0.75, 0.9), 3) + trust_data["communityFactor"])/2, 3)
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.9),3)
+                information["trustor"]["credibility"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["credibility"])/2, 4)
+                information["trustor"]["transactionFactor"] = round((round(random.uniform(0.75, 0.95), 3) + trust_data["transactionFactor"])/2, 4)
+                information["trustor"]["communityFactor"] = round((round(random.uniform(0.75, 0.9), 3) + trust_data["communityFactor"])/2, 4)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.9),4)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
                 information["trustor"]["direct_parameters"]["interactionNumber"] = interaction_number
                 information["trustor"]["direct_parameters"]["totalInteractionNumber"] = self.getLastTotalInteractionNumber(trusteeDID)
-                information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
+                information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
                 information["currentInteractionNumber"] = self.getCurrentInteractionNumber(trustorDID)
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
@@ -591,7 +591,7 @@ class PeerTrust():
         information["trustee"]["offerDID"] = offerDID
         information["trustee"]["trusteeSatisfaction"] = self.getTrusteeSatisfactionDLT(trusteeDID)
         information["trustor"]["direct_parameters"]["userSatisfaction"] = self.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction)
-        information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],3)
+        information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
 
         if information not in self.historical:
             self.historical.append(information)
@@ -758,7 +758,7 @@ class PeerTrust():
         if credibility > 1.0:
             credibility = (similarity_summation/summation_counter)/trustee_similarity
 
-        return round(credibility, 3)
+        return round(credibility, 4)
 
     def similarity(self, trusteeDID):
         """ This method identifies stakeholders who have evaluated one or more entities in common with the trustor
@@ -819,7 +819,7 @@ class PeerTrust():
             summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
 
 
-        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,3)
+        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,4)
 
     def communityContextFactor2(self, trustorDID, trusteeDID):
         """ This method displays the recommender on the screen and we have changed the parameters of the
@@ -847,11 +847,11 @@ class PeerTrust():
             last_value = self.getLastHistoryTrustValue(recommender, trusteeDID)
             print("\tLast trust score of ", recommender, " on ", trusteeDID, " was ---> ",last_value)
             last_credibility = self.getLastCredibility(trustorDID, recommender)
-            print("\tCredibility of ",trustorDID," on the recommender (", recommender, ") --->", round(last_credibility, 3), "\n")
+            print("\tCredibility of ",trustorDID," on the recommender (", recommender, ") --->", round(last_credibility, 4), "\n")
             summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
 
 
-        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,3)
+        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,4)
 
     def transactionContextFactor(self, trustorDID, trusteeDID, offerDID):
         global consumer
@@ -865,7 +865,7 @@ class PeerTrust():
 
         transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
 
-        return round(transactionFactor, 3)
+        return round(transactionFactor, 4)
 
 
     def satisfaction(self, PSWeighting, OSWeighting, providerSatisfaction, offerSatisfaction):
@@ -884,7 +884,7 @@ class PeerTrust():
         """ We obtain our last trust value on the recommender from our Kafka topic """
         last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
 
-        provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 3)
+        provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
@@ -926,7 +926,7 @@ class PeerTrust():
         """ We obtain our last trust value on the offer from our Kafka topic"""
         last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
 
-        provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 3)
+        provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
