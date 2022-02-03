@@ -748,20 +748,21 @@ class update_trust_level(Resource):
         offerDID = information["offerDID"]
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
-
-        reward_and_punishment = self.reward_and_punishment_based_on_security(trustorDID, trusteeDID, offerDID)
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+        new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score)
 
-        if reward_and_punishment >= 0.5:
+        if new_reward_and_punishment >= 0.5:
+            reward_and_punishment = new_reward_and_punishment - 0.5
             n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
             new_trust_score = min(n_ts, 1)
-        elif reward_and_punishment < 0.5:
+        elif new_reward_and_punishment < 0.5:
             "The lower value the higher punishment"
-            reward_and_punishment = 0.5 - reward_and_punishment
+            reward_and_punishment = 0.5 - new_reward_and_punishment
             n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
             new_trust_score = max(0, n_ts)
 
         print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 4), "\n")
+        last_trust_score["trustor"]["reward_and_punishment"] = new_reward_and_punishment
         last_trust_score["trust_value"] = round(new_trust_score, 4)
         last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
@@ -820,17 +821,14 @@ class update_trust_level(Resource):
 
         return 200
 
-    def reward_and_punishment_based_on_security(self, trustorDID, trusteeDID, offerDID):
+    def reward_and_punishment_based_on_security(self, last_trust_score):
 
-        "Sliding window weighting"
-        FIRST_SLIDING_WINDOW_WEIGHTING = 0.2
-        SECOND_SLIDING_WINDOW_WEIGHTING = 0.3
-        THIRD_SLIDING_WINDOW_WEIGHTING = 0.5
+        "Sliding window weighting with respect to the forgetting factor"
+        TOTAL_RW = 0.9
+        NOW_RW = 1 - TOTAL_RW
 
         "Sliding window definition IN SECONDS"
-        FIRST_TIME_WINDOW = 1800
-        SECOND_TIME_WINDOW = 18000
-        THIRD_TIME_WINDOW = 180000
+        CURRENT_TIME_WINDOW = 1800
 
         "Dimensions weighting"
         CONN_DIMENSION_WEIGHTING = 0.233
@@ -843,33 +841,17 @@ class update_trust_level(Resource):
         global tcp_orig_pkts
         global udp_orig_pkts
 
-        NUMBER_SLIDING_WINDOWS = 3
+        total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment"])
 
-        first_conn_value = self.conn_log(FIRST_TIME_WINDOW)
-        first_notice_value = self.notice_log(FIRST_TIME_WINDOW)
-        first_weird_value = self.weird_log(FIRST_TIME_WINDOW)
-        first_stats_value = self.stats_log(FIRST_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
 
-        second_conn_value = self.conn_log(SECOND_TIME_WINDOW)
-        second_notice_value = self.notice_log(SECOND_TIME_WINDOW)
-        second_weird_value = self.weird_log(SECOND_TIME_WINDOW)
-        second_stats_value = self.stats_log(SECOND_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
-
-        third_conn_value = self.conn_log(THIRD_TIME_WINDOW)
-        third_notice_value = self.notice_log(THIRD_TIME_WINDOW)
-        third_weird_value = self.weird_log(THIRD_TIME_WINDOW)
-        third_stats_value = self.stats_log(THIRD_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
-
-        first_summation = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+        current_reward_and_punishment = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                           + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
-        second_summation = CONN_DIMENSION_WEIGHTING * second_conn_value + NOTICE_DIMENSION_WEIGHTING * second_notice_value \
-                           + WEIRD_DIMENSION_WEIGHTING * second_weird_value + STATS_DIMENSION_WEIGHTING * second_stats_value
-        third_summation = CONN_DIMENSION_WEIGHTING * third_conn_value + NOTICE_DIMENSION_WEIGHTING * third_notice_value \
-                           + WEIRD_DIMENSION_WEIGHTING * third_weird_value + STATS_DIMENSION_WEIGHTING * third_stats_value
 
-        final_security_reward_and_punishment = (FIRST_SLIDING_WINDOW_WEIGHTING * first_summation + \
-                                               SECOND_SLIDING_WINDOW_WEIGHTING * second_summation + \
-                                               THIRD_SLIDING_WINDOW_WEIGHTING * third_summation) / NUMBER_SLIDING_WINDOWS
+        final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
 
 
         return final_security_reward_and_punishment
@@ -985,7 +967,7 @@ class update_trust_level(Resource):
                 last_five_monitoring_window_event_number += 1
 
         final_notice_value = 1 - ((actual_event_number/(previous_monitoring_window_event_number + actual_event_number) +
-                                   (actual_event_number / actual_event_number + (actual_event_number + last_five_monitoring_window_event_number / 6))) / 2)
+                                   (actual_event_number / actual_event_number + ( last_five_monitoring_window_event_number / 5))) / 2)
 
 
         return final_notice_value
@@ -1033,7 +1015,7 @@ class update_trust_level(Resource):
                 last_five_monitoring_window_weird_event_number += 1
 
         final_weird_value = 1 - ((actual_weird_event_number/(previous_monitoring_window_weird_event_number + actual_weird_event_number) +
-                                   (actual_weird_event_number / actual_weird_event_number + (actual_weird_event_number + last_five_monitoring_window_weird_event_number / 6))) / 2)
+                                   (actual_weird_event_number / actual_weird_event_number + (last_five_monitoring_window_weird_event_number / 5))) / 2)
 
         return final_weird_value
 

@@ -11,7 +11,7 @@ class TrustInformationTemplate():
                             "transactionFactor": "Unknown Type: double",
                             "communityFactor": "Unknown Type: double",
                             "trust_propagation": True,
-                            "trust_update": "Unknown",
+                            "reward_and_punishment": "Unknown",
                             "trust_evaluation": "PeerTrust",
                             "direct_parameters": {
                                 "direct_weighting": "Unknown Type: double",
