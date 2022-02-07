@@ -326,6 +326,8 @@ class compute_trust_level(Resource):
         global totalOfferLocation
         global new_request
 
+        FORGETTING_FACTOR = 0.2
+
         """ Retrieve parameters from post request"""
         req = request.data.decode("utf-8")
         parameter = json.loads(req)
@@ -398,10 +400,10 @@ class compute_trust_level(Resource):
                         counter_new_interactions += 1
 
                 """ Updating the last value with the summation of new interactions"""
-                new_satisfaction = round(((new_satisfaction/counter_new_interactions) + last_satisfaction)/2, 4)
-                new_credibility = round(((new_credibility/counter_new_interactions) + last_credibility)/2, 4)
-                new_transaction_factor = round(((new_transaction_factor/counter_new_interactions) + last_transaction_factor)/2, 4)
-                new_community_factor = round(((new_community_factor/counter_new_interactions) + last_community_factor)/2, 4)
+                new_satisfaction = round(self.recomputingTrustValue(last_satisfaction, (new_satisfaction/counter_new_interactions), FORGETTING_FACTOR), 4)
+                new_credibility = round(self.recomputingTrustValue(last_credibility, (new_credibility/counter_new_interactions), FORGETTING_FACTOR), 4)
+                new_transaction_factor = round(self.recomputingTrustValue(last_transaction_factor, (new_transaction_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
+                new_community_factor = round(self.recomputingTrustValue(last_community_factor, (new_community_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
 
                 information = trustInformationTemplate.trustTemplate()
                 information["trustee"]["trusteeDID"] = current_trustee
@@ -594,6 +596,10 @@ class compute_trust_level(Resource):
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         return response
+
+    def recomputingTrustValue(self, historical_value, new_value, forgetting_factor):
+
+        return (1-forgetting_factor) * historical_value + forgetting_factor * new_value
 
     def productOfferingCatalog (self, trustee, offer, type_offer, current_availableAssets, current_totalAssets,
                                 current_availableAssetLocation, current_totalAssetLocation, current_totalOffers,
