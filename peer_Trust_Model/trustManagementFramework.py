@@ -416,7 +416,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
                 information["trustor"]["communityFactor"] = round(new_community_factor, 4)
                 #information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
-                direct_weighting = round(random.uniform(0.6, 0.7),2)
+                direct_weighting = round(random.uniform(0.65, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
                 information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
@@ -427,6 +427,8 @@ class compute_trust_level(Resource):
                 information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+
+                """UPDATE THE RECOMMENDATION TRUST HERE"""
 
                 """ These values should be requested from other 5GZORRO components in future releases, in particular, 
                 from the Calatog and SLA Breach Predictor"""

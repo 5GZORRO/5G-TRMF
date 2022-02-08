@@ -47,7 +47,11 @@ class TrustInformationTemplate():
                             },
                             "indirect_parameters": {
                                 "recommendation_weighting": "Unknown Type: double",
-                                "recommendations": "Unknown Type: recommendationlist"
+                                "recommendations": [{
+                                    "recommender": "string",
+                                    "trust_value": "double",
+                                    "recommendation_trust": 0.4
+                                }]
                             },
                             "offerDID": {
                                 "type": "string"
@@ -55,11 +59,6 @@ class TrustInformationTemplate():
                         },
                         "trustee": {
                             "trusteeDID": "string",
-                            "recommendation": {
-                                "recommender": "string",
-                                "trust_level": "Unknown Type: double",
-                                "location": "Unknown Type: geographicalAddress"
-                            },
                             "offerDID": {
                                 "type": "string"
                             },
@@ -120,6 +119,12 @@ class TrustInformationTemplate():
                 },
                 "indirect_parameters": {
                     "recommendation_weighting": "Unknown Type: double",
+                    "recommendation": [{
+                        "recommender": "string",
+                        "trust_value": "double",
+                        "recommendation_trust": 0.4
+                    }],
+
                 },
                 "offerDID": {
                     "type": "string"
@@ -127,6 +132,11 @@ class TrustInformationTemplate():
             },
             "trustee": {
                 "trusteeDID": "string",
+                "recommendation": {
+                    "recommender": "string",
+                    "trust_level": "Unknown Type: double",
+                    "location": "Unknown Type: geographicalAddress"
+                },
                 "offerDID": {
                     "type": "string"
                 },

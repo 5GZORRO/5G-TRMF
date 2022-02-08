@@ -821,6 +821,66 @@ class PeerTrust():
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,4)
 
+    def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID):
+
+        global consumer
+        """ This constant displays the weighting of action trust and recommendation trust """
+        ALPHA_WEIGTHING = 0.5
+        RECOMMENDATION_THRESHOLD = 0.3
+
+        trustworthy_recommender_list = self.list_additional_did_providers[:]
+
+        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, trusteeDID)
+
+        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
+
+        trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
+
+        if trustorDID in trustworthy_recommender_list:
+            trustworthy_recommender_list.remove(trustorDID)
+
+        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trustorDID, trusteeDID, trustworthy_recommender_list)
+
+        summation_trustworthy_recommendations = 0.0
+        average_trust_recommenders = 0.0
+        counter = 0
+
+        for recommender in trustworthy_recommendations:
+            recommendation_trust = self.consumer.readLastRecommendationTrustValue(trustorDID, recommender)
+            if recommendation_trust >= RECOMMENDATION_THRESHOLD:
+                counter +=1
+                average_trust_recommenders = average_trust_recommenders + recommendation_trust
+
+        average_trust_recommenders = average_trust_recommenders / counter
+
+        for recommender in trustworthy_recommendations:
+            recommendation_trust = self.consumer.readLastRecommendationTrustValue(trustorDID, recommender)
+            if recommendation_trust >= 0.3:
+                last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, recommender)
+                action_trust = ALPHA_WEIGTHING * last_trust_score_recommender
+
+                recommendation = self.getLastHistoryTrustValue(recommender, trusteeDID)
+                trust_on_recommender = (1-ALPHA_WEIGTHING) * (recommendation_trust * recommendation)
+
+                recommender_influence = (recommendation_trust * (1/counter)) / average_trust_recommenders
+                summation_trustworthy_recommendations = summation_trustworthy_recommendations + ((action_trust + trust_on_recommender) * recommender_influence)
+
+                trustor_template = self.consumer.readAllTemplateTrustValue(trustorDID, trusteeDID)
+                new_recommender = True
+                for recommendation_list in trustor_template["trustor"]["indirect_parameters"]["recommendations"]:
+                    if recommendation_list["recommender"] == recommender:
+                        new_recommender = False
+
+                if new_recommender:
+                    recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
+                    recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,"recommendation_trust": recommendation_trust})
+                    trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
+                    self.historical.append(trustor_template)
+
+
+
+        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/counter))/2,4)
+
     def communityContextFactor2(self, trustorDID, trusteeDID):
         """ This method displays the recommender on the screen and we have changed the parameters of the
         getLastCredibility, the only difference being  """

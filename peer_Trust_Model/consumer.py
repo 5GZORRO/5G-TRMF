@@ -192,6 +192,21 @@ class Consumer():
 
         return data
 
+    def readLastRecommendationTrustValue(self, historical, trustor, recommender):
+        """ This method obtains the last trust value recorded in the historical for a specific a trustor, trustee and offer.
+        Only specific information is returned """
+
+        data = {}
+
+        for interactions in reversed(historical):
+            if interactions["trustor"]["trustorDID"] == trustor and \
+                    interactions["trustor"]["indirect_parameters"]["recommendation"] > 0:
+                for recommendation in interactions["trustor"]["indirect_parameters"]["recommendation"]:
+                    if recommendation["recommender"] == recommender:
+                        return float(recommendation["recommendation_trust"])
+
+        return data
+
 
     def readAllInformationTrustValue(self, historical, trustor, trustee, offer):
         """ This method obtains the last trust value recorded in Kafka for a specific a trustor, trustee and offer. All
@@ -203,6 +218,33 @@ class Consumer():
             if interactions["trustor"]["trustorDID"] == trustor and \
                         interactions["trustor"]["trusteeDID"] == trustee and \
                         interactions["trustor"]["offerDID"] == offer:
+                """data = {"trustorDID": interactions["trustor"]["trustorDID"],
+                            "trusteeDID": interactions["trustor"]["trusteeDID"],
+                            "offerDID": interactions["trustor"]["offerDID"],
+                            "trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
+                            "credibility": interactions["trustor"]["credibility"],
+                            "transactionFactor": interactions["trustor"]["transactionFactor"],
+                            "communityFactor": interactions["trustor"]["communityFactor"],
+                            "interaction_number": interactions["trustor"]["direct_parameters"]["interactionNumber"],
+                            "totalInteractionNumber": interactions["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                            "userSatisfaction": interactions["trustor"]["direct_parameters"]["userSatisfaction"],
+                            "trust_value": interactions["trust_value"],
+                            "initEvaluationPeriod": interactions["initEvaluationPeriod"],
+                            "endEvaluationPeriod": interactions["endEvaluationPeriod"]
+                        }"""
+                return interactions
+
+        return data
+
+    def readAllTemplateTrustValue(self, historical, trustor, trustee):
+        """ This method obtains the last trust value recorded in Kafka for a specific a trustor and trustee. All
+         previously recorded trust information is returned """
+
+        data = {}
+
+        for interactions in reversed(historical):
+            if interactions["trustor"]["trustorDID"] == trustor and \
+                    interactions["trustor"]["trusteeDID"] == trustee:
                 """data = {"trustorDID": interactions["trustor"]["trustorDID"],
                             "trusteeDID": interactions["trustor"]["trusteeDID"],
                             "offerDID": interactions["trustor"]["offerDID"],
