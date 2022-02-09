@@ -243,6 +243,11 @@ class PeerTrust():
                 trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
+                """ Adding the recommender list so as to have an initial set"""
+                recommender_list = self.setRecommenderList(interaction["trustorDID"], interaction["trusteeDID"])
+                if len(recommender_list)>0:
+                    trust_informartion["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+
                 """ The minimum interactions are also registered in the Trustor's historical but 
                 they must be deleted when cold start is not used """
                 interactions.append(trust_informartion)
@@ -260,6 +265,11 @@ class PeerTrust():
                 trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
+                """ Adding the recommender list so as to have an initial set"""
+                recommender_list = self.setRecommenderList(interaction["trustorDID"], interaction["trusteeDID"])
+                if len(recommender_list)>0:
+                    trust_informartion["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+
                 """ The minimum interactions are also registered in the Trustor's historical but 
                 they must be deleted when cold start is not used """
                 interactions.append(trust_informartion)
@@ -270,6 +280,19 @@ class PeerTrust():
             return aux_new_interactions
 
         #return data
+
+    def setRecommenderList(self, trustorDID, trusteeDID):
+        """ Adding the recommender list so as to have an initial set"""
+        recommender_list = []
+        for aditional_provider in self.list_additional_did_providers:
+            if aditional_provider != trustorDID and aditional_provider != trusteeDID:
+                last_trust_value = self.getLastHistoryTrustValue(aditional_provider, trusteeDID)
+                if last_trust_value != 1:
+                    "1 means there is not an interaction between recommender and trusteeDID  "
+                    recommender_list.append({"recommender": aditional_provider,"trust_value": last_trust_value,
+                                             "recommendation_trust": 0.5})
+        return recommender_list
+
 
     def stringToDictionaryList(self):
         """Convert string to a list of dictionaries"""
@@ -459,6 +482,11 @@ class PeerTrust():
             information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             if information not in self.historical:
+                """ Adding the recommender list so as to have an initial set"""
+                recommender_list = self.setRecommenderList(information["trustorDID"], information["trusteeDID"])
+                if len(recommender_list)>0:
+                    information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+
                 self.historical.append(information)
 
             data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
@@ -498,6 +526,11 @@ class PeerTrust():
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 if information not in self.historical:
+                    """ Adding the recommender list so as to have an initial set"""
+                    recommender_list = self.setRecommenderList(information["trustorDID"], information["trusteeDID"])
+                    if len(recommender_list)>0:
+                        information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+
                     self.historical.append(information)
 
                 data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
@@ -873,7 +906,7 @@ class PeerTrust():
 
                 if new_recommender:
                     recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
-                    recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,"recommendation_trust": recommendation_trust})
+                    recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,"recommendation_trust": 0.5})
                     trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
                     self.historical.append(trustor_template)
 

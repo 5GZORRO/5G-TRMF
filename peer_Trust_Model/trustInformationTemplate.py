@@ -50,7 +50,7 @@ class TrustInformationTemplate():
                                 "recommendations": [{
                                     "recommender": "string",
                                     "trust_value": "double",
-                                    "recommendation_trust": 0.4
+                                    "recommendation_trust": 0.5
                                 }]
                             },
                             "offerDID": {
