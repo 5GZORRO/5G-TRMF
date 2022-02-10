@@ -288,13 +288,10 @@ class PeerTrust():
     def setRecommenderList(self, trustorDID, trusteeDID):
         """ Adding the recommender list so as to have an initial set"""
         recommender_list = []
-        print("$$$$$$$$$ RECOMMENDER METHOD $$$$$$$$$")
         for aditional_provider in self.list_additional_did_providers:
             if aditional_provider != trustorDID and aditional_provider != trusteeDID:
-                print("$$$$$$$$$ RECOMMENDER METHOD CHECKING $$$$$$$$$")
                 last_trust_value = self.getLastHistoryTrustValue(aditional_provider, trusteeDID)
-                if last_trust_value != 1:
-                    print("$$$$$$$$$ RECOMMENDER METHOD APPEND $$$$$$$$$", aditional_provider)
+                if last_trust_value != 0:
                     "1 means there is not an interaction between recommender and trusteeDID  "
                     recommender_list.append({"recommender": aditional_provider,"trust_value": last_trust_value,
                                              "recommendation_trust": 0.5})
@@ -490,7 +487,6 @@ class PeerTrust():
 
             if information not in self.historical:
                 """ Adding the recommender list so as to have an initial set"""
-                print("####### RECOMENDERS FOR TRUSTOR")
                 recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
                 if len(recommender_list)>0:
                     information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
@@ -535,10 +531,8 @@ class PeerTrust():
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-                print("####### DETECTA TRUSTOR INFORMATION", information)
                 if information not in self.historical:
                     """ Adding the recommender list so as to have an initial set"""
-                    print("####### DETECTA TRUSTOR INFORMATION")
                     recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
                     if len(recommender_list)>0:
                         information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
@@ -690,7 +684,7 @@ class PeerTrust():
         else:
             """In this case, Trustor didn't have an interaction with Trustee and 
             the provider recommendation is based on the last interaction registered in the DLT"""
-            return 1
+            return 0
 
     def getLastOfferHistoryTrustValue(self, trustorDID, trusteeDID, offerDID):
         """ This method retrieves the last trust score that a trustor has stored about an offer trustee
@@ -857,14 +851,17 @@ class PeerTrust():
         trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trustorDID, trusteeDID, trustworthy_recommender_list)
 
         summation_trustworthy_recommendations = 0.0
+        recommendation_counter = 0
 
         for recommender in trustworthy_recommendations:
             last_value = self.getLastHistoryTrustValue(recommender, trusteeDID)
-            last_credibility = self.getLastCredibility(trustorDID, recommender)
-            summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
+            if last_value != 0:
+                last_credibility = self.getLastCredibility(trustorDID, recommender)
+                summation_trustworthy_recommendations = summation_trustworthy_recommendations + (last_credibility*last_value)
+                recommendation_counter = recommendation_counter + 1
 
 
-        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,4)
+        return round((trustee_interaction_rate+(summation_trustworthy_recommendations/recommendation_counter))/2,4)
 
     def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID, new_trusteeDID):
 
@@ -892,7 +889,6 @@ class PeerTrust():
 
         for recommender in trustworthy_recommendations:
             recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
-            print(recommendation_trust)
             if bool(recommendation_trust) and recommendation_trust >= RECOMMENDATION_THRESHOLD:
                 counter +=1
                 average_trust_recommenders = average_trust_recommenders + recommendation_trust

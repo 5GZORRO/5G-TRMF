@@ -62,6 +62,8 @@ TF = 0
 CF = 0
 type_offer = {}
 product_offering = []
+old_product_offering = []
+statistic_catalog = []
 
 
 def find_by_column(filename, column, value):
@@ -133,6 +135,7 @@ class start_data_collection(Resource):
 
         trust_scores = []
         list_product_offers = {}
+        considered_offer_list = []
 
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
@@ -145,6 +148,8 @@ class start_data_collection(Resource):
 
             else:
                 for offer in dict_product_offers[trustee]:
+                    considered_offer_list.append({'trusteeDID': trustee, 'offerDID': offer})
+
                     """ In case of first time the 5G-TRMF is executed, we should retrieve information from MongoDB and
                     check if it is already or not in the historical"""
                     previous_interaction = mongoDB.find({'trustee.offerDID': offer})
@@ -159,7 +164,6 @@ class start_data_collection(Resource):
                                 offer_found = True
 
                     if not offer_found:
-                        print("$$$$ New interaction")
                         if trustee in list_product_offers:
                             list_product_offers[trustee].append(offer)
                         else:
@@ -246,7 +250,7 @@ class start_data_collection(Resource):
                 writer.writerow(data)
 
         #client.close()
-        new_request = False
+        #new_request = False
         return json.dumps(trust_scores)
 
 
@@ -461,7 +465,6 @@ class compute_trust_level(Resource):
                         #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
 
                         response = json.loads(response.text)
-                        print("Catalog: ",response)
 
                         place = response['place'][0]['href']
                         response = requests.get(place)
@@ -473,12 +476,12 @@ class compute_trust_level(Resource):
                         y_coordinate = response['geographicLocation']['geometry'][0]['y']
                         z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
-
                         self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
                                                     availableAssetLocation, totalAssetLocation, totalOffers,
                                                              totalOfferLocation, city, country, locality, x_coordinate,
                                                              y_coordinate, z_coordinate, new_request)
-                        new_request = False
+
+                        #new_request = False
 
                         """Calculate the statistical parameters with respect to the considered offers"""
                         for offer in considered_offer_list:
@@ -619,6 +622,8 @@ class compute_trust_level(Resource):
         global totalOffers
         global totalOfferLocation
         global product_offering
+        global old_product_offering
+        global statistic_catalog
 
         "Avoiding request again the product offering objects for an SRSD request with multiple offers to be analyzed"
         if new_request:
@@ -634,7 +639,8 @@ class compute_trust_level(Resource):
 
             product_offering = json.loads(response.text)
 
-        if bool(product_offering):
+        if bool(product_offering) and product_offering != old_product_offering:
+
             for i in product_offering:
                 href = i['productSpecification']['href']
                 id_product_offering = i['id']
@@ -651,6 +657,9 @@ class compute_trust_level(Resource):
                 response = json.loads(response.text)
 
                 "Check whether the POs have location information"
+                new_object = {}
+                location = ""
+
                 if "city" and "country" and "locality" in response:
                     city = response['city']
                     country = response['country']
@@ -658,48 +667,132 @@ class compute_trust_level(Resource):
                     x_coordinate = response['geographicLocation']['geometry'][0]['x']
                     y_coordinate = response['geographicLocation']['geometry'][0]['y']
                     z_coordinate = response['geographicLocation']['geometry'][0]['z']
+                    location = str(x_coordinate)+"_"+str(y_coordinate)+"_"+str(z_coordinate)
 
-                    "Getting statictical parameters from the Catalog"
-                    if did_provider == trustee:
-                        current_totalAssets += 1
+                    new_object["provider"] = did_provider
+                    new_object["n_resource"] = 1
+                    new_object[location] = 1
+
+                    if i['lifecycleStatus'] == 'Active':
+                        new_object["active"] = 1
+                        new_object["active"+"_"+location] = 1
+                        new_object["active"+"_"+category.lower()] = 1
+                        new_object["active"+"_"+category.lower()+"_"+location] = 1
+
+
+                if bool(statistic_catalog):
+                    statistic_catalog.append(new_object)
+                elif bool(new_object):
+                    for product_offer in statistic_catalog:
+                        if product_offer["provider"] == did_provider:
+                            product_offer["n_resource"] = product_offer["n_resource"] + new_object["n_resource"]
+                            if location not in product_offer:
+                                product_offer[location] = new_object[location]
+                            else:
+                                product_offer[location] = product_offer[location] + new_object[location]
+                            if 'active' not in product_offer:
+                                product_offer['active'] = new_object['active']
+                                product_offer["active"+"_"+location] = new_object["active"+"_"+location]
+                                product_offer["active"+"_"+category.lower()] = new_object["active"+"_"+category.lower()]
+                                product_offer["active"+"_"+category.lower()+"_"+location] = new_object["active"+"_"+category.lower()+"_"+location]
+                            else:
+                                product_offer['active'] =  product_offer['Active'] + new_object["active"]
+                                if 'active'+"_"+location not in product_offer:
+                                    product_offer['active'+"_"+location] = new_object["active"+"_"+location]
+                                else:
+                                    product_offer["active"+"_"+location] = product_offer["active"+"_"+location] + new_object["active"+"_"+location]
+
+                                if "active"+"_"+category.lower() not in product_offer:
+                                    product_offer['active'+"_"+category.lower()] = new_object["active"+"_"+category.lower()]
+                                else:
+                                    product_offer["active"+"_"+category.lower()] = product_offer["active"+"_"+category.lower()] + new_object["active"+"_"+category.lower()]
+
+                                if "active"+"_"+category.lower()+"_"+location not in product_offer:
+                                    product_offer['active'+"_"+category.lower()+"_"+location] = new_object["active"+"_"+category.lower()+"_"+location]
+                                else:
+                                    product_offer["active"+"_"+category.lower()+"_"+location] = product_offer["active"+"_"+category.lower()+"_"+location] + new_object["active"+"_"+category.lower()+"_"+location]
+
+                        else:
+                            statistic_catalog.append(new_object)
+
+            old_product_offering = product_offering
+
+        for product_offer in statistic_catalog:
+            if product_offer['provider'] == trustee:
+                current_totalAssets = product_offer['n_resource']
+                location = current_x_coordinate_offer+"_"+current_y_coordinate_offer+"_"+current_z_coordinate_offer
+                current_totalAssetLocation = product_offer[location]
+                current_availableAssets = product_offer['active']
+                current_availableAssetLocation = product_offer['active'+"_"+location]
+                current_totalOffers = product_offer['active'+"_"+type_offer.lower()]
+                current_totalOfferLocation = product_offer['active'+"_"+type_offer.lower()+"_"+location]
+                break
+
+        "Updating global variables"
+        availableAssets = current_availableAssets
+        totalAssets = current_totalAssets
+        availableAssetLocation = current_availableAssetLocation
+        totalAssetLocation = current_totalAssetLocation
+        totalOffers = current_totalOffers
+        totalOfferLocation = current_totalOfferLocation
+
+        """for i in product_offering:
+            href = i['productSpecification']['href']
+            id_product_offering = i['id']
+            product_offering_location = i['place'][0]['href']
+            category = i['category'][0]['name']
+
+            #Obtaining the real product offer specification object
+            response = requests.get(href)
+            response = json.loads(response.text)
+            did_provider = response['relatedParty'][0]['extendedInfo']
+
+            #Obtaining the location of the product offering object
+            response = requests.get(product_offering_location)
+            response = json.loads(response.text)
+
+            #Check whether the POs have location information
+            if "city" and "country" and "locality" in response:
+                city = response['city']
+                country = response['country']
+                locality = response['locality']
+                x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                z_coordinate = response['geographicLocation']['geometry'][0]['z']
+
+                #Getting statictical parameters from the Catalog
+                if did_provider == trustee:
+                    current_totalAssets += 1
+                    if city == current_city_offer and country == current_country_offer and locality == \
+                            current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
+                            current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
+                        current_totalAssetLocation+=1
+
+                    if i['lifecycleStatus'] == 'Active':
+                        current_availableAssets+=1
                         if city == current_city_offer and country == current_country_offer and locality == \
                                 current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
                                 current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                            current_totalAssetLocation+=1
+                            current_availableAssetLocation+=1
 
-                        if i['lifecycleStatus'] == 'Active':
-                            current_availableAssets+=1
-                            if city == current_city_offer and country == current_country_offer and locality == \
-                                    current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
-                                    current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                                current_availableAssetLocation+=1
+                    if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
+                        current_totalOffers+=1
+                        if city == current_city_offer and country == current_country_offer and locality == \
+                                current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
+                                current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
+                            current_totalOfferLocation+=1
 
-                        if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
-                            current_totalOffers+=1
-                            if city == current_city_offer and country == current_country_offer and locality == \
-                                    current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
-                                    current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                                current_totalOfferLocation+=1
+                    #Obtaining the did product offer
+                    #5GBarcelona"
+                    #load_dotenv()
+                    #barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                    #response = requests.get(barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
 
-                        """ Obtaining the did product offer"""
-                        "5GBarcelona"
-                        #load_dotenv()
-                        #barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-                        #response = requests.get(barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-
-                        "5TONIC"
-                        #madrid_address = os.getenv('5TONIC_CATALOG_A')
-                        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-                        #response = json.loads(response.text)
-                        #did_offer = response['did']
-
-            "Updating global variables"
-            availableAssets = current_availableAssets
-            totalAssets = current_totalAssets
-            availableAssetLocation = current_availableAssetLocation
-            totalAssetLocation = current_totalAssetLocation
-            totalOffers = current_totalOffers
-            totalOfferLocation = current_totalOfferLocation
+                    #5TONIC"
+                    #madrid_address = os.getenv('5TONIC_CATALOG_A')
+                    #response = requests.get(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
+                    #response = json.loads(response.text)
+                    #did_offer = response['did']"""
 
 
 class store_trust_level(Resource):
@@ -732,7 +825,7 @@ class store_trust_level(Resource):
             list_trustee_interactions[information["trustee"]["trusteeDID"]] = [information]
             mongoDB.insert_one(list_trustee_interactions)"""
 
-        mongoDB.insert_one(information)
+        #mongoDB.insert_one(information)
 
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
         #mongoDB.insert_many([tutorial2, tutorial1])

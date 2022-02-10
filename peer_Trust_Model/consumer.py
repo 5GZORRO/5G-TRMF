@@ -202,8 +202,6 @@ class Consumer():
             if interactions["trustor"]["trustorDID"] == trustor and interactions["trustor"]["trusteeDID"] == trustee and \
                     len(interactions["trustor"]["indirect_parameters"]["recommendations"]) > 0:
                 for recommendation in interactions["trustor"]["indirect_parameters"]["recommendations"]:
-                    print(historical)
-                    print("RECOMMENDER: ", recommender, "TRUSTOR: ", trustee, "RECOMMENDER PLANTILLA", recommendation)
                     if recommendation["recommender"] == recommender:
                         return float(recommendation["recommendation_trust"])
 
