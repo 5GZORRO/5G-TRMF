@@ -192,16 +192,18 @@ class Consumer():
 
         return data
 
-    def readLastRecommendationTrustValue(self, historical, trustor, recommender):
-        """ This method obtains the last trust value recorded in the historical for a specific a trustor, trustee and offer.
+    def readLastRecommendationTrustValue(self, historical, trustor, trustee, recommender):
+        """ This method obtains the recommendation trust value recorded in the historical for a specific a trustor, trustee.
         Only specific information is returned """
 
         data = {}
 
         for interactions in reversed(historical):
-            if interactions["trustor"]["trustorDID"] == trustor and \
-                    interactions["trustor"]["indirect_parameters"]["recommendation"] > 0:
-                for recommendation in interactions["trustor"]["indirect_parameters"]["recommendation"]:
+            if interactions["trustor"]["trustorDID"] == trustor and interactions["trustor"]["trusteeDID"] == trustee and \
+                    len(interactions["trustor"]["indirect_parameters"]["recommendations"]) > 0:
+                for recommendation in interactions["trustor"]["indirect_parameters"]["recommendations"]:
+                    print(historical)
+                    print("RECOMMENDER: ", recommender, "TRUSTOR: ", trustee, "RECOMMENDER PLANTILLA", recommendation)
                     if recommendation["recommender"] == recommender:
                         return float(recommendation["recommendation_trust"])
 

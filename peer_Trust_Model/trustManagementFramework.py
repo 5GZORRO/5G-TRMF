@@ -167,7 +167,7 @@ class start_data_collection(Resource):
 
         """ Adding a set of minimum interactions between entities that compose the trust model """
         if len(list_product_offers)>1:
-            minimum_data = peerTrust.minimumTrustValuesDLT(producer, trustorDID, list_product_offers)
+            minimum_data = peerTrust.minimumTrustValuesDLT(producer, consumer, trustorDID, list_product_offers)
             write_data_to_csv(dlt_file_name, minimum_data)
 
         trustor_acquired = False
@@ -201,6 +201,7 @@ class start_data_collection(Resource):
 
                     response = requests.post("http://localhost:5002/gather_information", data=json.dumps(data).encode("utf-8"))
                     response = json.loads(response.text)
+
                     if response["trust_value"] > max_trust_score:
                         max_trust_score = response["trust_value"]
                         max_trust_score_offerDID = response["trusteeDID"]["offerDID"]
@@ -393,7 +394,8 @@ class compute_trust_level(Resource):
                         new_transaction_factor = new_transaction_factor + current_transaction_factor
                         TF = TF + (time.time()-start_TF)
                         start_CF = time.time()
-                        current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
+                        #current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
+                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'])
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
                         CF = CF + (time.time()-start_CF)
@@ -459,6 +461,7 @@ class compute_trust_level(Resource):
                         #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
 
                         response = json.loads(response.text)
+                        print("Catalog: ",response)
 
                         place = response['place'][0]['href']
                         response = requests.get(place)
@@ -730,6 +733,7 @@ class store_trust_level(Resource):
             mongoDB.insert_one(list_trustee_interactions)"""
 
         mongoDB.insert_one(information)
+
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
         #mongoDB.insert_many([tutorial2, tutorial1])
         #for doc in mongoDB.find():

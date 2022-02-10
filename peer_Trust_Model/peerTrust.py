@@ -95,10 +95,14 @@ class PeerTrust():
 
         return information
 
-    def minimumTrustValuesDLT(self, producer, trustor, dict_product_offers):
+    def minimumTrustValuesDLT(self, producer, consumer_instance, trustor, dict_product_offers):
         """ This method establishes multiple trust relationships from list of product offers to start the trust
          model with a set of minimum relationships. In addition, it also simulates the registration of such interactions
          in the DLT """
+
+        global consumer
+
+        self.consumer = consumer_instance
 
         print("\n\nSet of previous trust interactions between 5GZORRO domains\n")
         data = []
@@ -244,7 +248,7 @@ class PeerTrust():
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
                 """ Adding the recommender list so as to have an initial set"""
-                recommender_list = self.setRecommenderList(interaction["trustorDID"], interaction["trusteeDID"])
+                recommender_list = self.setRecommenderList(trust_informartion["trustor"]["trustorDID"], trust_informartion["trustor"]["trusteeDID"])
                 if len(recommender_list)>0:
                     trust_informartion["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
@@ -266,7 +270,7 @@ class PeerTrust():
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
                 """ Adding the recommender list so as to have an initial set"""
-                recommender_list = self.setRecommenderList(interaction["trustorDID"], interaction["trusteeDID"])
+                recommender_list = self.setRecommenderList(trust_informartion["trustor"]["trustorDID"], trust_informartion["trustor"]["trusteeDID"])
                 if len(recommender_list)>0:
                     trust_informartion["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
@@ -284,10 +288,13 @@ class PeerTrust():
     def setRecommenderList(self, trustorDID, trusteeDID):
         """ Adding the recommender list so as to have an initial set"""
         recommender_list = []
+        print("$$$$$$$$$ RECOMMENDER METHOD $$$$$$$$$")
         for aditional_provider in self.list_additional_did_providers:
             if aditional_provider != trustorDID and aditional_provider != trusteeDID:
+                print("$$$$$$$$$ RECOMMENDER METHOD CHECKING $$$$$$$$$")
                 last_trust_value = self.getLastHistoryTrustValue(aditional_provider, trusteeDID)
                 if last_trust_value != 1:
+                    print("$$$$$$$$$ RECOMMENDER METHOD APPEND $$$$$$$$$", aditional_provider)
                     "1 means there is not an interaction between recommender and trusteeDID  "
                     recommender_list.append({"recommender": aditional_provider,"trust_value": last_trust_value,
                                              "recommendation_trust": 0.5})
@@ -483,7 +490,8 @@ class PeerTrust():
 
             if information not in self.historical:
                 """ Adding the recommender list so as to have an initial set"""
-                recommender_list = self.setRecommenderList(information["trustorDID"], information["trusteeDID"])
+                print("####### RECOMENDERS FOR TRUSTOR")
+                recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
                 if len(recommender_list)>0:
                     information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
@@ -503,6 +511,8 @@ class PeerTrust():
                 interaction_number = self.getInteractionNumber(trustorDID, trusteeDID)
 
                 trust_data = self.consumer.readLastTrustInterationValues(self.historical, trustorDID, trusteeDID, offerDID, interaction_number)
+
+                information = trustInformationTemplate.trustTemplate()
 
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
@@ -525,9 +535,11 @@ class PeerTrust():
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
+                print("####### DETECTA TRUSTOR INFORMATION", information)
                 if information not in self.historical:
                     """ Adding the recommender list so as to have an initial set"""
-                    recommender_list = self.setRecommenderList(information["trustorDID"], information["trusteeDID"])
+                    print("####### DETECTA TRUSTOR INFORMATION")
+                    recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
                     if len(recommender_list)>0:
                         information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
@@ -854,7 +866,7 @@ class PeerTrust():
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/len(trustworthy_recommendations)))/2,4)
 
-    def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID):
+    def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID, new_trusteeDID):
 
         global consumer
         """ This constant displays the weighting of action trust and recommendation trust """
@@ -863,42 +875,43 @@ class PeerTrust():
 
         trustworthy_recommender_list = self.list_additional_did_providers[:]
 
-        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, trusteeDID)
+        total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, new_trusteeDID)
 
-        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
+        number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(new_trusteeDID)
 
         trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
 
-        if trustorDID in trustworthy_recommender_list:
-            trustworthy_recommender_list.remove(trustorDID)
+        if trusteeDID in trustworthy_recommender_list:
+            trustworthy_recommender_list.remove(trusteeDID)
 
-        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trustorDID, trusteeDID, trustworthy_recommender_list)
+        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trusteeDID, new_trusteeDID, trustworthy_recommender_list)
 
         summation_trustworthy_recommendations = 0.0
         average_trust_recommenders = 0.0
         counter = 0
 
         for recommender in trustworthy_recommendations:
-            recommendation_trust = self.consumer.readLastRecommendationTrustValue(trustorDID, recommender)
-            if recommendation_trust >= RECOMMENDATION_THRESHOLD:
+            recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
+            print(recommendation_trust)
+            if bool(recommendation_trust) and recommendation_trust >= RECOMMENDATION_THRESHOLD:
                 counter +=1
                 average_trust_recommenders = average_trust_recommenders + recommendation_trust
 
         average_trust_recommenders = average_trust_recommenders / counter
 
         for recommender in trustworthy_recommendations:
-            recommendation_trust = self.consumer.readLastRecommendationTrustValue(trustorDID, recommender)
-            if recommendation_trust >= 0.3:
-                last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, recommender)
+            recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
+            if bool(recommendation_trust) and recommendation_trust >= 0.3:
+                last_trust_score_recommender = self.getLastHistoryTrustValue(trusteeDID, recommender)
                 action_trust = ALPHA_WEIGTHING * last_trust_score_recommender
 
-                recommendation = self.getLastHistoryTrustValue(recommender, trusteeDID)
+                recommendation = self.getLastHistoryTrustValue(recommender, new_trusteeDID)
                 trust_on_recommender = (1-ALPHA_WEIGTHING) * (recommendation_trust * recommendation)
 
                 recommender_influence = (recommendation_trust * (1/counter)) / average_trust_recommenders
                 summation_trustworthy_recommendations = summation_trustworthy_recommendations + ((action_trust + trust_on_recommender) * recommender_influence)
 
-                trustor_template = self.consumer.readAllTemplateTrustValue(trustorDID, trusteeDID)
+                trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trusteeDID, new_trusteeDID)
                 new_recommender = True
                 for recommendation_list in trustor_template["trustor"]["indirect_parameters"]["recommendations"]:
                     if recommendation_list["recommender"] == recommender:
