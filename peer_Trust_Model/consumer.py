@@ -207,6 +207,18 @@ class Consumer():
 
         return data
 
+    def readAllRecommenders(self, historical, trustor, trustee):
+        """ This method obtains all recommenders recorded in the historical for a specific a trustor, trustee """
+
+        data = {}
+
+        for interactions in reversed(historical):
+            if interactions["trustor"]["trustorDID"] == trustor and interactions["trustor"]["trusteeDID"] == trustee and \
+                    interactions["trustor"]["indirect_parameters"]["recommendations"][0]["recommender"] != 'string':
+                return interactions["trustor"]["indirect_parameters"]["recommendations"]
+
+        return data
+
 
     def readAllInformationTrustValue(self, historical, trustor, trustee, offer):
         """ This method obtains the last trust value recorded in Kafka for a specific a trustor, trustee and offer. All

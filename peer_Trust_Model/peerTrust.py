@@ -290,11 +290,17 @@ class PeerTrust():
         recommender_list = []
         for aditional_provider in self.list_additional_did_providers:
             if aditional_provider != trustorDID and aditional_provider != trusteeDID:
+                trust_value = self.getLastHistoryTrustValue(trustorDID, trusteeDID)
                 last_trust_value = self.getLastHistoryTrustValue(aditional_provider, trusteeDID)
-                if last_trust_value != 0:
-                    "1 means there is not an interaction between recommender and trusteeDID  "
-                    recommender_list.append({"recommender": aditional_provider,"trust_value": last_trust_value,
-                                             "recommendation_trust": 0.5})
+                previous_recommendations = self.consumer.readAllRecommenders(self.historical, trustorDID, trusteeDID)
+                if last_trust_value != 0 and trust_value!= 0:
+                    "1 means there is not an interaction between recommender and trusteeDID"
+                    if bool(previous_recommendations):
+                        return previous_recommendations
+                    else:
+                        recommender_list.append({"recommender": aditional_provider,"trust_value": trust_value,
+                                             "recommendation_trust": 0.5, "recommendation_total_number": 1,
+                                             "average_recommendations": last_trust_value, "last_recommendation": last_trust_value})
         return recommender_list
 
 
@@ -907,18 +913,25 @@ class PeerTrust():
                 recommender_influence = (recommendation_trust * (1/counter)) / average_trust_recommenders
                 summation_trustworthy_recommendations = summation_trustworthy_recommendations + ((action_trust + trust_on_recommender) * recommender_influence)
 
-                trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trusteeDID, new_trusteeDID)
+                trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
+
                 new_recommender = True
+
                 for recommendation_list in trustor_template["trustor"]["indirect_parameters"]["recommendations"]:
                     if recommendation_list["recommender"] == recommender:
+                        recommendation_list["average_recommendations"] = ((recommendation_list["average_recommendations"] * recommendation_list["recommendation_total_number"]) + recommendation) / (recommendation_list["recommendation_total_number"] + 1)
+                        recommendation_list["recommendation_total_number"] =  recommendation_list["recommendation_total_number"] + 1
+                        recommendation_list["last_recommendation"] = recommendation
                         new_recommender = False
 
                 if new_recommender:
                     recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
-                    recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,"recommendation_trust": 0.5})
+                    recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,
+                                                "recommendation_trust": 0.5, "recommendation_total_number": 1,
+                                                "average_recommendations": recommendation, "last_recommendation": recommendation})
                     trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
-                    self.historical.append(trustor_template)
 
+                self.historical.append(trustor_template)
 
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/counter))/2,4)

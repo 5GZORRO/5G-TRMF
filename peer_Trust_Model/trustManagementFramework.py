@@ -435,6 +435,17 @@ class compute_trust_level(Resource):
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 """UPDATE THE RECOMMENDATION TRUST HERE"""
+                recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
+                new_recommendation_list = []
+
+                for recommendation in recommendation_list:
+                    satisfaction_deviation= last_satisfaction - new_satisfaction
+                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_deviation, recommendation)
+                    recommendation["recommendation_trust"] = new_recommendation_trust
+                    new_recommendation_list.append(recommendation)
+
+                if bool(new_recommendation_list):
+                    information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
 
                 """ These values should be requested from other 5GZORRO components in future releases, in particular, 
                 from the Calatog and SLA Breach Predictor"""
@@ -604,6 +615,34 @@ class compute_trust_level(Resource):
                 requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         return response
+
+    def recomputingRecommendationTrust(self, satisfaction_deviation, recommendation_object):
+
+        mean_deviation = (recommendation_object["average_recommendations"]/recommendation_object["recommendation_total_number"]) - recommendation_object["last_recommendation"]
+
+        if satisfaction_deviation > 0 and mean_deviation > 0:
+            new_recommendation_trust = (1 + satisfaction_deviation)*(mean_deviation/10) + recommendation_object["recommendation_trust"]
+            if new_recommendation_trust > 1.0:
+                new_recommendation_trust = 1.0
+            return new_recommendation_trust
+        elif satisfaction_deviation < 0 and mean_deviation < 0:
+            new_recommendation_trust = (1 + abs(satisfaction_deviation))*(abs(mean_deviation)/10) + recommendation_object["recommendation_trust"]
+            if new_recommendation_trust > 1.0:
+                new_recommendation_trust = 1.0
+            return new_recommendation_trust
+        elif satisfaction_deviation < 0 and mean_deviation > 0:
+            new_recommendation_trust = (1 - satisfaction_deviation)*(mean_deviation/10) - recommendation_object["recommendation_trust"]
+            if new_recommendation_trust < 0:
+                new_recommendation_trust = 0
+            return new_recommendation_trust
+        elif satisfaction_deviation > 0 and mean_deviation < 0:
+            new_recommendation_trust = recommendation_object["recommendation_trust"] - (1 + satisfaction_deviation)*(abs(mean_deviation)/10)
+            if new_recommendation_trust < 0:
+                new_recommendation_trust = 0
+            return new_recommendation_trust
+        elif mean_deviation == 0:
+            return recommendation_object["recommendation_trust"]
+
 
     def recomputingTrustValue(self, historical_value, new_value, forgetting_factor):
 
