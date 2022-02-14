@@ -60,7 +60,7 @@ satisfaction = 0
 credibility = 0
 TF = 0
 CF = 0
-type_offer = {}
+offer_type = {}
 product_offering = []
 old_product_offering = []
 statistic_catalog = []
@@ -87,14 +87,12 @@ def write_only_row_to_csv(filename, row):
         writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
         writer.writerow(row)
 
-class initialise_type_offer(Resource):
+class initialise_offer_type(Resource):
     def post(self):
-        global type_offer
+        global offer_type
 
         req = request.data.decode("utf-8")
-        type_offer = json.loads(req)
-        #type_offer = specific_offer["type_offer"]
-
+        offer_type = json.loads(req)
         return 200
 
 
@@ -319,7 +317,7 @@ class compute_trust_level(Resource):
         global credibility
         global TF
         global CF
-        global type_offer
+        global offer_type
         global considered_offer_list
         global availableAssets
         global totalAssets
@@ -487,7 +485,7 @@ class compute_trust_level(Resource):
                         y_coordinate = response['geographicLocation']['geometry'][0]['y']
                         z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
-                        self.productOfferingCatalog(trustee, offer, type_offer[offerDID], availableAssets, totalAssets,
+                        self.productOfferingCatalog(trustee, offer, offer_type[offerDID], availableAssets, totalAssets,
                                                     availableAssetLocation, totalAssetLocation, totalOffers,
                                                              totalOfferLocation, city, country, locality, x_coordinate,
                                                              y_coordinate, z_coordinate, new_request)
@@ -648,7 +646,7 @@ class compute_trust_level(Resource):
 
         return (1-forgetting_factor) * historical_value + forgetting_factor * new_value
 
-    def productOfferingCatalog (self, trustee, offer, type_offer, current_availableAssets, current_totalAssets,
+    def productOfferingCatalog (self, trustee, offer, offer_type, current_availableAssets, current_totalAssets,
                                 current_availableAssetLocation, current_totalAssetLocation, current_totalOffers,
                                 current_totalOfferLocation, current_city_offer, current_country_offer,
                                 current_locality_offer, current_x_coordinate_offer, current_y_coordinate_offer,
@@ -763,8 +761,8 @@ class compute_trust_level(Resource):
                 current_totalAssetLocation = product_offer[location]
                 current_availableAssets = product_offer['active']
                 current_availableAssetLocation = product_offer['active'+"_"+location]
-                current_totalOffers = product_offer['active'+"_"+type_offer.lower()]
-                current_totalOfferLocation = product_offer['active'+"_"+type_offer.lower()+"_"+location]
+                current_totalOffers = product_offer['active'+"_"+offer_type.lower()]
+                current_totalOfferLocation = product_offer['active'+"_"+offer_type.lower()+"_"+location]
                 break
 
         "Updating global variables"
@@ -880,6 +878,7 @@ class update_trust_level(Resource):
     def post(self):
         """ This method updates a trust score based on certain SLA events. More events need to be considered,
         it is only an initial version"""
+        global offer_type
 
         req = request.data.decode("utf-8")
         information = json.loads(req)
@@ -893,7 +892,7 @@ class update_trust_level(Resource):
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
-        new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score)
+        new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score, offer_type)
 
         if new_reward_and_punishment >= 0.5:
             reward_and_punishment = new_reward_and_punishment - 0.5
@@ -965,7 +964,7 @@ class update_trust_level(Resource):
 
         return 200
 
-    def reward_and_punishment_based_on_security(self, last_trust_score):
+    def reward_and_punishment_based_on_security(self, last_trust_score, offer_type):
 
         "Sliding window weighting with respect to the forgetting factor"
         TOTAL_RW = 0.9
@@ -975,30 +974,113 @@ class update_trust_level(Resource):
         CURRENT_TIME_WINDOW = 1800
 
         "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.233
-        NOTICE_DIMENSION_WEIGHTING = 0.3
-        WEIRD_DIMENSION_WEIGHTING = 0.233
-        STATS_DIMENSION_WEIGHTING = 0.233
+        #CONN_DIMENSION_WEIGHTING = 0.233
+        #NOTICE_DIMENSION_WEIGHTING = 0.3
+        #WEIRD_DIMENSION_WEIGHTING = 0.233
+        #STATS_DIMENSION_WEIGHTING = 0.233
 
-        "Global variable definition"
-        global icmp_orig_pkts
-        global tcp_orig_pkts
-        global udp_orig_pkts
 
         total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment"])
+        offerDID = last_trust_score["trustor"]["offerDID"]
+        current_offer_type = offer_type[offerDID]
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        if current_offer_type == 'RAN' or current_offer_type == 'spectrum':
+            current_reward_and_punishment = self.RAN_and_spectrum_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
+        elif current_offer_type == 'edge':
+            current_reward_and_punishment = self.edge_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
+        elif current_offer_type == 'cloud':
+            current_reward_and_punishment = self.cloud_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
+        elif current_offer_type == 'vnf' or current_offer_type == 'cnf':
+            current_reward_and_punishment = self.vnf_cnf_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
 
-        current_reward_and_punishment = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-                          + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+        #current_reward_and_punishment = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+                          #+ WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
 
         final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
 
 
         return final_security_reward_and_punishment
+
+    def RAN_and_spectrum_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Dimensions weighting"
+        CONN_DIMENSION_WEIGHTING = 0.4
+        NOTICE_DIMENSION_WEIGHTING = 0.1
+        WEIRD_DIMENSION_WEIGHTING = 0.1
+        STATS_DIMENSION_WEIGHTING = 0.4
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+
+    def edge_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Dimensions weighting"
+        CONN_DIMENSION_WEIGHTING = 0.233
+        NOTICE_DIMENSION_WEIGHTING = 0.3
+        WEIRD_DIMENSION_WEIGHTING = 0.233
+        STATS_DIMENSION_WEIGHTING = 0.233
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+
+    def cloud_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Dimensions weighting"
+        CONN_DIMENSION_WEIGHTING = 0.4
+        NOTICE_DIMENSION_WEIGHTING = 0.1
+        WEIRD_DIMENSION_WEIGHTING = 0.1
+        STATS_DIMENSION_WEIGHTING = 0.4
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+
+    def vnf_cnf_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW):
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Dimensions weighting"
+        CONN_DIMENSION_WEIGHTING = 0.4
+        NOTICE_DIMENSION_WEIGHTING = 0.1
+        WEIRD_DIMENSION_WEIGHTING = 0.1
+        STATS_DIMENSION_WEIGHTING = 0.4
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+
+        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+
 
     def conn_log(self, time_window):
         """ This function will compute the security level of an ongoing trust relationship between two operators from the
@@ -1048,42 +1130,107 @@ class update_trust_level(Resource):
 
         return final_conn_value
 
-    def notice_log(self, time_window):
+    def notice_log(self, time_window, offer_type):
         """ This function will compute the security level of an ongoing trust relationship between two operators from
          critical security events detected by the Zeek """
 
-        "Label definition"
-        TO_MUCH_LOSS = "CaptureLoss::Too_Much_Loss"
+        "Generic label definition"
+        TOO_MUCH_LOSS = "CaptureLoss::Too_Much_Loss"
+        TOO_LITTLE_TRAFFIC = " CaptureLoss::Too_Little_Traffic"
         WEIRD_ACTIVITY = "Weird::Activity"
         PACKET_FILTER = "PacketFilter::Dropped_Packets"
         SOFTWARE_VULNERABLE = "Software::Vulnerable_Version"
-        PORT_SCAN = "Scan::Port_Scan"
         SQL_INJECTION_ATTACKER = "HTTP::SQL_Injection_Attacker"
         SQL_INJECTION_VICTIM = "HTTP::SQL_Injection_Victim"
         PASSWORD_GUESSING = "SSH::Password_Guessing"
+
+        "Edge specific label definition"
+        TOO_LONG_TO_COMPILE_FAILURE = "PacketFilter::Too_Long_To_Compile_Filter"
+        ADDRESS_SCAN = "Scan::Address_Scan"
+        PORT_SCAN = "Scan::Port_Scan"
+        MALWARE_HASH = "TeamCymruMalwareHashRegistry::Match"
+        TRACEROUTE = "Traceroute::Detected"
+        BLOCKED_HOST = "SMTP::Blocklist_Blocked_Host"
+        SUSPICIOUS_ORIGINATION = "SMTP::Suspicious_Origination"
+        CERTIFICATE_EXPIRED = "SSL::Certificate_Expired"
+        CERTIFICATE_NOT_VALID = "SSL::Certificate_Not_Valid_Yet"
         SSL_HEARTBEAT_ATTACK = "Heartbleed::SSL_Heartbeat_Attack"
+        SSL_HEARTBEAT_ATTACK_SUCCESS = "Heartbleed::SSL_Heartbeat_Attack_Success"
         SSL_WEAK_KEY = "SSL::Weak_Key"
         SSL_OLD_VERSION = "SSL::Old_Version"
         SSL_WEAK_CIPHER = "SSL::Weak_Cipher"
+
+        "Cloud specific label definition"
+        SERVER_FOUND = "ProtocolDetector::Server_Found"
+        BRUTEFORCING = "FTP::Bruteforcing"
+
+        "VNF/CNF specific label definition"
+        SENSITIVE_SIGNATURE = "Signatures::Sensitive_Signature"
+        COMPILE_FAILURE_PACKET_FILTER = "PacketFilter::Compile_Failure"
+        INSTALL_FAILURE = "PacketFilter::Install_Failure"
+        CONTENT_GAP = "Conn::Content_Gap"
 
         "By default notice.log file is gathered after 15 minutes"
         TIME_MONITORING_EVENT = 900
         LAST_FIVE_TIME_MONITORING_EVENT = 4500
 
-        "List of labels"
+        "List of general labels"
         events_to_monitor = []
-        events_to_monitor.append(TO_MUCH_LOSS)
+        events_to_monitor.append(TOO_MUCH_LOSS)
+        events_to_monitor.append(TOO_LITTLE_TRAFFIC)
         events_to_monitor.append(WEIRD_ACTIVITY)
         events_to_monitor.append(PACKET_FILTER)
         events_to_monitor.append(SOFTWARE_VULNERABLE)
-        events_to_monitor.append(PORT_SCAN)
         events_to_monitor.append(SQL_INJECTION_ATTACKER)
         events_to_monitor.append(SQL_INJECTION_VICTIM)
         events_to_monitor.append(PASSWORD_GUESSING)
-        events_to_monitor.append(SSL_HEARTBEAT_ATTACK)
-        events_to_monitor.append(SSL_WEAK_KEY)
-        events_to_monitor.append(SSL_OLD_VERSION)
-        events_to_monitor.append(SSL_WEAK_CIPHER)
+
+        "List of specific labels regarding the type of offer"
+        edge_events_to_monitor = []
+        edge_events_to_monitor.append(PORT_SCAN)
+        edge_events_to_monitor.append(TOO_LONG_TO_COMPILE_FAILURE)
+        edge_events_to_monitor.append(COMPILE_FAILURE_PACKET_FILTER)
+        edge_events_to_monitor.append(INSTALL_FAILURE)
+        edge_events_to_monitor.append(MALWARE_HASH)
+        edge_events_to_monitor.append(TRACEROUTE)
+        edge_events_to_monitor.append(ADDRESS_SCAN)
+        edge_events_to_monitor.append(BRUTEFORCING)
+        edge_events_to_monitor.append(BLOCKED_HOST)
+        edge_events_to_monitor.append(SUSPICIOUS_ORIGINATION)
+        edge_events_to_monitor.append(CERTIFICATE_EXPIRED)
+        edge_events_to_monitor.append(CERTIFICATE_NOT_VALID)
+        edge_events_to_monitor.append(SSL_HEARTBEAT_ATTACK)
+        edge_events_to_monitor.append(SSL_HEARTBEAT_ATTACK_SUCCESS)
+        edge_events_to_monitor.append(SSL_WEAK_KEY)
+        edge_events_to_monitor.append(SSL_OLD_VERSION)
+        edge_events_to_monitor.append(SSL_WEAK_CIPHER)
+
+        cloud_events_to_monitor = []
+        cloud_events_to_monitor.append(PORT_SCAN)
+        cloud_events_to_monitor.append(COMPILE_FAILURE_PACKET_FILTER)
+        cloud_events_to_monitor(INSTALL_FAILURE)
+        cloud_events_to_monitor.append(SERVER_FOUND)
+        cloud_events_to_monitor.append(MALWARE_HASH)
+        cloud_events_to_monitor.append(TRACEROUTE)
+        cloud_events_to_monitor.append(ADDRESS_SCAN)
+        cloud_events_to_monitor.append(BRUTEFORCING)
+        cloud_events_to_monitor.append(CERTIFICATE_EXPIRED)
+        cloud_events_to_monitor.append(CERTIFICATE_NOT_VALID)
+        cloud_events_to_monitor.append(SSL_HEARTBEAT_ATTACK)
+        cloud_events_to_monitor.append(SSL_HEARTBEAT_ATTACK_SUCCESS)
+        cloud_events_to_monitor.append(SSL_WEAK_KEY)
+        cloud_events_to_monitor.append(SSL_OLD_VERSION)
+        cloud_events_to_monitor.append(SSL_WEAK_CIPHER)
+
+        vnf_cnf_events_to_monitor = []
+        vnf_cnf_events_to_monitor.append(SENSITIVE_SIGNATURE)
+        vnf_cnf_events_to_monitor.append(COMPILE_FAILURE_PACKET_FILTER)
+        vnf_cnf_events_to_monitor.append(INSTALL_FAILURE)
+        vnf_cnf_events_to_monitor.append(MALWARE_HASH)
+        vnf_cnf_events_to_monitor.append(TRACEROUTE)
+        vnf_cnf_events_to_monitor.append(ADDRESS_SCAN)
+        vnf_cnf_events_to_monitor.append(PORT_SCAN)
+        vnf_cnf_events_to_monitor.append(CONTENT_GAP)
 
         "Variable definition"
         actual_event_number = 0
@@ -1109,6 +1256,37 @@ class update_trust_level(Resource):
                 last_five_monitoring_window_event_number += 1
             elif log["note"] in events_to_monitor and log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
+            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_event_number += 1
+            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_event_number += 1
+                last_five_monitoring_window_event_number += 1
+            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_event_number += 1
+            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_event_number += 1
+            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_event_number += 1
+                last_five_monitoring_window_event_number += 1
+            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_event_number += 1
+            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_event_number += 1
+            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_event_number += 1
+                last_five_monitoring_window_event_number += 1
+            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_event_number += 1
+
 
         final_notice_value = 1 - ((actual_event_number/(previous_monitoring_window_event_number + actual_event_number) +
                                    (actual_event_number / actual_event_number + ( last_five_monitoring_window_event_number / 5))) / 2)
@@ -1216,7 +1394,7 @@ class update_trust_level(Resource):
 
 
 def launch_server_REST(port):
-    api.add_resource(initialise_type_offer, '/initialise_type_offer')
+    api.add_resource(initialise_offer_type, '/initialise_offer_type')
     api.add_resource(start_data_collection, '/start_data_collection')
     api.add_resource(gather_information, '/gather_information')
     api.add_resource(compute_trust_level, '/compute_trust_level')

@@ -44,8 +44,7 @@ class request_trust_scores(Resource):
                     list_product_offers[did_provider] = [did_resource]
 
 
-        #data = {"type_offer": i['offer_category']}
-        requests.post("http://localhost:5002/initialise_type_offer", data=json.dumps(type_offer_list).encode("utf-8"))
+        requests.post("http://localhost:5002/initialise_offer_type", data=json.dumps(type_offer_list).encode("utf-8"))
 
 
         """ Initialize the process of requesting trust information of each offer and provider """
