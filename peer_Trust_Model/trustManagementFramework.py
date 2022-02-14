@@ -1028,10 +1028,10 @@ class update_trust_level(Resource):
         global udp_orig_pkts
 
         "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.233
-        NOTICE_DIMENSION_WEIGHTING = 0.3
-        WEIRD_DIMENSION_WEIGHTING = 0.233
-        STATS_DIMENSION_WEIGHTING = 0.233
+        CONN_DIMENSION_WEIGHTING = 0.2
+        NOTICE_DIMENSION_WEIGHTING = 0.35
+        WEIRD_DIMENSION_WEIGHTING = 0.25
+        STATS_DIMENSION_WEIGHTING = 0.2
 
         first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
         first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
@@ -1048,10 +1048,10 @@ class update_trust_level(Resource):
         global udp_orig_pkts
 
         "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.4
-        NOTICE_DIMENSION_WEIGHTING = 0.1
-        WEIRD_DIMENSION_WEIGHTING = 0.1
-        STATS_DIMENSION_WEIGHTING = 0.4
+        CONN_DIMENSION_WEIGHTING = 0.2
+        NOTICE_DIMENSION_WEIGHTING = 0.35
+        WEIRD_DIMENSION_WEIGHTING = 0.25
+        STATS_DIMENSION_WEIGHTING = 0.2
 
         first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
         first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
@@ -1068,10 +1068,10 @@ class update_trust_level(Resource):
         global udp_orig_pkts
 
         "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.4
-        NOTICE_DIMENSION_WEIGHTING = 0.1
-        WEIRD_DIMENSION_WEIGHTING = 0.1
-        STATS_DIMENSION_WEIGHTING = 0.4
+        CONN_DIMENSION_WEIGHTING = 0.233
+        NOTICE_DIMENSION_WEIGHTING = 0.3
+        WEIRD_DIMENSION_WEIGHTING = 0.233
+        STATS_DIMENSION_WEIGHTING = 0.233
 
         first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
         first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
