@@ -984,13 +984,13 @@ class update_trust_level(Resource):
         offerDID = last_trust_score["trustor"]["offerDID"]
         current_offer_type = offer_type[offerDID]
 
-        if current_offer_type == 'RAN' or current_offer_type == 'spectrum':
+        if current_offer_type.lower() == 'RAN' or current_offer_type.lower() == 'spectrum':
             current_reward_and_punishment = self.RAN_and_spectrum_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type == 'edge':
+        elif current_offer_type.lower() == 'edge':
             current_reward_and_punishment = self.edge_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type == 'cloud':
+        elif current_offer_type.lower() == 'cloud':
             current_reward_and_punishment = self.cloud_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type == 'vnf' or current_offer_type == 'cnf':
+        elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
             current_reward_and_punishment = self.vnf_cnf_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
 
         #current_reward_and_punishment = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
@@ -1232,6 +1232,8 @@ class update_trust_level(Resource):
         vnf_cnf_events_to_monitor.append(PORT_SCAN)
         vnf_cnf_events_to_monitor.append(CONTENT_GAP)
 
+        slice_events_to_monitor = []
+
         "Variable definition"
         actual_event_number = 0
         previous_monitoring_window_event_number = 0
@@ -1256,34 +1258,34 @@ class update_trust_level(Resource):
                 last_five_monitoring_window_event_number += 1
             elif log["note"] in events_to_monitor and log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
                     log["ts"] >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
                     log["ts"] >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'edge' and log["note"] in edge_events_to_monitor and \
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
                     log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
                     log["ts"] >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
                     log["ts"] >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'cloud' and log["note"] in cloud_events_to_monitor and \
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
                     log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
                     log["ts"] >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
                     log["ts"] >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type == 'vnf' or offer_type == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
                     log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
 
@@ -1301,11 +1303,33 @@ class update_trust_level(Resource):
         "Label definition"
         DNS_UNMTATCHED_REPLY = "dns_unmatched_reply"
         ACTIVE_CONNECTION_REUSE = "active_connection_reuse"
+        SPLIT_ROUTING = "possible_split_routing"
+        INAPPROPIATE_FIN = "inappropriate_FIN"
+        FRAGMENT_PAKCKET = "fragment_with_DF"
+        BAD_ICMP_CHECKSUM = "bad_ICMP_checksum"
+        TCP_CHRISTMAS = "TCP_Christmas"
 
         "List of labels"
         weird_event_list = []
         weird_event_list.apppend(DNS_UNMTATCHED_REPLY)
         weird_event_list.apppend(ACTIVE_CONNECTION_REUSE)
+
+        "List of specific labels regarding the type of offer"
+        edge_events_to_monitor = []
+        edge_events_to_monitor.append(SPLIT_ROUTING)
+        edge_events_to_monitor.append(BAD_ICMP_CHECKSUM)
+        edge_events_to_monitor.append(TCP_CHRISTMAS)
+
+        cloud_events_to_monitor = []
+        cloud_events_to_monitor.append(SPLIT_ROUTING)
+        cloud_events_to_monitor.append(BAD_ICMP_CHECKSUM)
+        cloud_events_to_monitor.append(TCP_CHRISTMAS)
+
+        vnf_cnf_events_to_monitor = []
+        vnf_cnf_events_to_monitor.append(INAPPROPIATE_FIN)
+        vnf_cnf_events_to_monitor.append(FRAGMENT_PAKCKET)
+
+        slice_events_to_monitor = []
 
         "Variable definition"
         actual_weird_event_number = 0
@@ -1334,6 +1358,36 @@ class update_trust_level(Resource):
                 previous_monitoring_window_weird_event_number += 1
                 last_five_monitoring_window_weird_event_number += 1
             elif log["name"] in weird_event_list and log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_weird_event_number += 1
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_weird_event_number += 1
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_weird_event_number += 1
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_weird_event_number += 1
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= timestamp_limit:
+                actual_weird_event_number += 1
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= previous_event_monitoring_timestamp:
+                previous_monitoring_window_weird_event_number += 1
+                last_five_monitoring_window_weird_event_number += 1
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
+                    log["ts"] >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_weird_event_number += 1
 
         final_weird_value = 1 - ((actual_weird_event_number/(previous_monitoring_window_weird_event_number + actual_weird_event_number) +
