@@ -221,10 +221,12 @@ class start_data_collection(Resource):
 
                 write_only_row_to_csv(dlt_file_name, data)
 
+        "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
 
         if not os.path.exists("tests"):
             os.makedirs("tests")
 
+        "Time measurements of the different phases "
         if not os.path.exists(time_file_name):
             with open(time_file_name, 'w', encoding='UTF8', newline='') as time_data:
                 writer = csv.DictWriter(time_data, fieldnames=time_headers)
@@ -437,8 +439,8 @@ class compute_trust_level(Resource):
                 new_recommendation_list = []
 
                 for recommendation in recommendation_list:
-                    satisfaction_deviation= last_satisfaction - new_satisfaction
-                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_deviation, recommendation)
+                    satisfaction_variance= last_satisfaction - new_satisfaction
+                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
                     recommendation["recommendation_trust"] = new_recommendation_trust
                     new_recommendation_list.append(recommendation)
 
@@ -614,31 +616,31 @@ class compute_trust_level(Resource):
 
         return response
 
-    def recomputingRecommendationTrust(self, satisfaction_deviation, recommendation_object):
+    def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object):
 
-        mean_deviation = (recommendation_object["average_recommendations"]/recommendation_object["recommendation_total_number"]) - recommendation_object["last_recommendation"]
+        mean_variance = (recommendation_object["average_recommendations"]/recommendation_object["recommendation_total_number"]) - recommendation_object["last_recommendation"]
 
-        if satisfaction_deviation > 0 and mean_deviation > 0:
-            new_recommendation_trust = (1 + satisfaction_deviation)*(mean_deviation/10) + recommendation_object["recommendation_trust"]
+        if satisfaction_variance > 0 and mean_variance > 0:
+            new_recommendation_trust = (1 + satisfaction_variance)*(mean_variance/10) + recommendation_object["recommendation_trust"]
             if new_recommendation_trust > 1.0:
                 new_recommendation_trust = 1.0
             return new_recommendation_trust
-        elif satisfaction_deviation < 0 and mean_deviation < 0:
-            new_recommendation_trust = (1 + abs(satisfaction_deviation))*(abs(mean_deviation)/10) + recommendation_object["recommendation_trust"]
+        elif satisfaction_variance < 0 and mean_variance < 0:
+            new_recommendation_trust = (1 + abs(satisfaction_variance))*(abs(mean_variance)/10) + recommendation_object["recommendation_trust"]
             if new_recommendation_trust > 1.0:
                 new_recommendation_trust = 1.0
             return new_recommendation_trust
-        elif satisfaction_deviation < 0 and mean_deviation > 0:
-            new_recommendation_trust = (1 - satisfaction_deviation)*(mean_deviation/10) - recommendation_object["recommendation_trust"]
+        elif satisfaction_variance < 0 and mean_variance > 0:
+            new_recommendation_trust = (1 - satisfaction_variance)*(mean_variance/10) - recommendation_object["recommendation_trust"]
             if new_recommendation_trust < 0:
                 new_recommendation_trust = 0
             return new_recommendation_trust
-        elif satisfaction_deviation > 0 and mean_deviation < 0:
-            new_recommendation_trust = recommendation_object["recommendation_trust"] - (1 + satisfaction_deviation)*(abs(mean_deviation)/10)
+        elif satisfaction_variance > 0 and mean_variance < 0:
+            new_recommendation_trust = recommendation_object["recommendation_trust"] - (1 + satisfaction_variance)*(abs(mean_variance)/10)
             if new_recommendation_trust < 0:
                 new_recommendation_trust = 0
             return new_recommendation_trust
-        elif mean_deviation == 0:
+        elif mean_variance == 0:
             return recommendation_object["recommendation_trust"]
 
 
@@ -1013,10 +1015,12 @@ class update_trust_level(Resource):
         WEIRD_DIMENSION_WEIGHTING = 0.1
         STATS_DIMENSION_WEIGHTING = 0.4
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        indices_info = self.get_ELK_information()
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1033,10 +1037,12 @@ class update_trust_level(Resource):
         WEIRD_DIMENSION_WEIGHTING = 0.25
         STATS_DIMENSION_WEIGHTING = 0.2
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        indices_info = self.get_ELK_information()
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1053,10 +1059,12 @@ class update_trust_level(Resource):
         WEIRD_DIMENSION_WEIGHTING = 0.25
         STATS_DIMENSION_WEIGHTING = 0.2
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        indices_info = self.get_ELK_information()
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1073,16 +1081,40 @@ class update_trust_level(Resource):
         WEIRD_DIMENSION_WEIGHTING = 0.233
         STATS_DIMENSION_WEIGHTING = 0.233
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts)
+        indices_info = self.get_ELK_information()
+
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
 
+    def get_ELK_information(self):
 
-    def conn_log(self, time_window):
+        load_dotenv()
+        elk_address = os.getenv('ELK')
+
+        os.system('curl '+elk_address+'_cat/indices > output.txt')
+        instances = []
+        indices_info = []
+
+        with open('output.txt', 'r') as f:
+            for line in f:
+                if 'yellow' in line:
+                    indice = line.split('open ')[1].split(" ")[0]
+                    instances.append(indice)
+
+        for instance in instances:
+            response = requests.post(elk_address+instance+'/_search')
+            response = json.loads(response.text)
+            indices_info.append(response)
+            print(response)
+
+        return indices_info
+
+    def conn_log(self, time_window, indices_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from the
         percentage of network packages correctly sent """
         global icmp_orig_pkts
@@ -1130,7 +1162,7 @@ class update_trust_level(Resource):
 
         return final_conn_value
 
-    def notice_log(self, time_window, offer_type):
+    def notice_log(self, time_window, offer_type, indices_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from
          critical security events detected by the Zeek """
 
@@ -1296,7 +1328,7 @@ class update_trust_level(Resource):
 
         return final_notice_value
 
-    def weird_log(self, time_window):
+    def weird_log(self, time_window, indices_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from
          weird events detected by the Zeek """
 
@@ -1307,6 +1339,7 @@ class update_trust_level(Resource):
         INAPPROPIATE_FIN = "inappropriate_FIN"
         FRAGMENT_PAKCKET = "fragment_with_DF"
         BAD_ICMP_CHECKSUM = "bad_ICMP_checksum"
+        BAD_UDP_CHECKSUM = "bad_UDP_checksum"
         TCP_CHRISTMAS = "TCP_Christmas"
 
         "List of labels"
@@ -1318,11 +1351,13 @@ class update_trust_level(Resource):
         edge_events_to_monitor = []
         edge_events_to_monitor.append(SPLIT_ROUTING)
         edge_events_to_monitor.append(BAD_ICMP_CHECKSUM)
+        edge_events_to_monitor.append(BAD_UDP_CHECKSUM)
         edge_events_to_monitor.append(TCP_CHRISTMAS)
 
         cloud_events_to_monitor = []
         cloud_events_to_monitor.append(SPLIT_ROUTING)
         cloud_events_to_monitor.append(BAD_ICMP_CHECKSUM)
+        cloud_events_to_monitor.append(BAD_UDP_CHECKSUM)
         cloud_events_to_monitor.append(TCP_CHRISTMAS)
 
         vnf_cnf_events_to_monitor = []
@@ -1395,7 +1430,7 @@ class update_trust_level(Resource):
 
         return final_weird_value
 
-    def stats_log(self, time_window, icmp_sent_pkts, tcp_sent_pkts, udp_sent_pkts):
+    def stats_log(self, time_window, icmp_sent_pkts, tcp_sent_pkts, udp_sent_pkts, indices_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from the
         percentage of network packages sent and the packets finally analyzed by Zeek"""
 

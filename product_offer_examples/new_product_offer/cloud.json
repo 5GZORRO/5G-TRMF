@@ -1,5 +1,5 @@
 {
-	"offer_did" : "ERCqBothWunXWyBHXemxA9",
+	"offer_did" : "c5d634ae-3a40-48c9-9436-d3831c02cdfe",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -93,7 +93,7 @@
 			"productSpecificationRelationship" : [ ],
 			"relatedParty" : [
 				{
-					"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+					"extendedInfo" : "KjuJxYb9ycEstuWMHjZSZ5",
 					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 				}
@@ -110,7 +110,7 @@
 					"name" : "Cloud radical",
 					"relatedParty" : [
 						{
-							"extendedInfo" : "PpDuVVKAbRaKgyQiau6Kzp",
+							"extendedInfo" : "KjuJxYb9ycEstuWMHjZSZ5",
 							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 						}
