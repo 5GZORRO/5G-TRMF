@@ -89,9 +89,11 @@ def write_only_row_to_csv(filename, row):
         writer.writerow(row)
 
 class initialise_offer_type(Resource):
+    """ This class recaps the type of offers being analysed per request. Then, the informatation is leveraged by the
+    Computation and Update classes"""
+
     def post(self):
         global offer_type
-
         req = request.data.decode("utf-8")
         offer_type = json.loads(req)
         return 200
@@ -193,10 +195,6 @@ class start_data_collection(Resource):
                             """ Establish two new interactions per each provider"""
                             peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
 
-                    #if trustee in list_product_offers:
-                        #print("New Interactions")
-                        #peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
-
                     print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
                     """ Retrieve information from trustor and trustee """
@@ -228,7 +226,7 @@ class start_data_collection(Resource):
         if not os.path.exists("tests"):
             os.makedirs("tests")
 
-        "Time measurements of the different phases "
+        "Time measurements of the different phases to perform internal tests"
         if not os.path.exists(time_file_name):
             with open(time_file_name, 'w', encoding='UTF8', newline='') as time_data:
                 writer = csv.DictWriter(time_data, fieldnames=time_headers)
@@ -251,8 +249,6 @@ class start_data_collection(Resource):
                                 "TF": TF, "CF": CF, "offers": 1000}
                 writer.writerow(data)
 
-        #client.close()
-        #new_request = False
         return json.dumps(trust_scores)
 
 
@@ -357,6 +353,7 @@ class compute_trust_level(Resource):
             last_community_factor = i['lastValue']['communityFactor']
             last_interaction_number = i['lastValue']['interaction_number']
             last_trust_value = i['lastValue']['trust_value']
+            last_trustor_satisfaction = i['lastValue']['userSatisfaction']
 
             response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": i['lastValue']["trust_value"], "evaluation_criteria": "Inter-domain", "initEvaluationPeriod": i['lastValue']["initEvaluationPeriod"],"endEvaluationPeriod": i['lastValue']["endEvaluationPeriod"]}
 
@@ -423,7 +420,6 @@ class compute_trust_level(Resource):
                 information["trustor"]["credibility"] = round(new_credibility, 4)
                 information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
                 information["trustor"]["communityFactor"] = round(new_community_factor, 4)
-                #information["trustor"]["direct_parameters"]["userSatisfaction"] = round((round(random.uniform(0.75, 0.95), 3) + i["userSatisfaction"])/2, 3)
                 direct_weighting = round(random.uniform(0.65, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
@@ -435,19 +431,6 @@ class compute_trust_level(Resource):
                 information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
                 information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
-
-                """UPDATE THE RECOMMENDATION TRUST HERE"""
-                recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
-                new_recommendation_list = []
-
-                for recommendation in recommendation_list:
-                    satisfaction_variance= last_satisfaction - new_satisfaction
-                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
-                    recommendation["recommendation_trust"] = new_recommendation_trust
-                    new_recommendation_list.append(recommendation)
-
-                if bool(new_recommendation_list):
-                    information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
 
                 """ These values should be requested from other 5GZORRO components in future releases, in particular, 
                 from the Calatog and SLA Breach Predictor"""
@@ -494,7 +477,6 @@ class compute_trust_level(Resource):
                                                              totalOfferLocation, city, country, locality, x_coordinate,
                                                              y_coordinate, z_coordinate, new_request)
 
-                        #new_request = False
 
                         """Calculate the statistical parameters with respect to the considered offers"""
                         for offer in considered_offer_list:
@@ -575,7 +557,6 @@ class compute_trust_level(Resource):
                 start_satisfaction = time.time()
                 provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
                 offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
-                ps_weighting = round(random.uniform(0.4, 0.6),2)
                 information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
                 ps_weighting = round(random.uniform(0.4, 0.6),2)
                 information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
@@ -584,8 +565,22 @@ class compute_trust_level(Resource):
                 information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
                 information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 4)
                 information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 4)
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
+                new_trustor_satisfaction = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(self.recomputingTrustValue(last_trustor_satisfaction, new_trustor_satisfaction, FORGETTING_FACTOR), 4)
                 satisfaction = satisfaction + (time.time()-start_satisfaction)
+
+                """Updating the recommendation trust"""
+                recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
+                new_recommendation_list = []
+
+                for recommendation in recommendation_list:
+                    satisfaction_variance= last_trustor_satisfaction - new_trustor_satisfaction
+                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
+                    recommendation["recommendation_trust"] = new_recommendation_trust
+                    new_recommendation_list.append(recommendation)
+
+                if bool(new_recommendation_list):
+                    information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
 
                 response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
@@ -601,14 +596,6 @@ class compute_trust_level(Resource):
 
                 peerTrust.historical.append(information)
 
-                #data = {"trustorDID": trustorDID, "trusteeDID": current_trustee, "offerDID": offerDID,
-                        #"userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
-                        #"interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
-                        #"totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        #"currentInteractionNumber": information["currentInteractionNumber"]}
-
-                #write_only_row_to_csv(dlt_file_name, data)
-
                 compute_time = compute_time + (time.time()-start_time)
                 ###print("Compute time:", compute_time)
 
@@ -619,6 +606,8 @@ class compute_trust_level(Resource):
         return response
 
     def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object):
+        """ This method updates the recommendation trust (RT) value after new interactions between a trustor and a trustee.
+        The method makes use of the satisfaction and recommendation variances to increase o decrease the RT."""
 
         mean_variance = (recommendation_object["average_recommendations"]/recommendation_object["recommendation_total_number"]) - recommendation_object["last_recommendation"]
 
@@ -647,6 +636,8 @@ class compute_trust_level(Resource):
 
 
     def recomputingTrustValue(self, historical_value, new_value, forgetting_factor):
+        """ This method applies a sliding window to compute a new trust score. Besides, we avoid new values can
+        immediately change an historical value through the forgetting factor """
 
         return (1-forgetting_factor) * historical_value + forgetting_factor * new_value
 
@@ -777,64 +768,6 @@ class compute_trust_level(Resource):
         totalOffers = current_totalOffers
         totalOfferLocation = current_totalOfferLocation
 
-        """for i in product_offering:
-            href = i['productSpecification']['href']
-            id_product_offering = i['id']
-            product_offering_location = i['place'][0]['href']
-            category = i['category'][0]['name']
-
-            #Obtaining the real product offer specification object
-            response = requests.get(href)
-            response = json.loads(response.text)
-            did_provider = response['relatedParty'][0]['extendedInfo']
-
-            #Obtaining the location of the product offering object
-            response = requests.get(product_offering_location)
-            response = json.loads(response.text)
-
-            #Check whether the POs have location information
-            if "city" and "country" and "locality" in response:
-                city = response['city']
-                country = response['country']
-                locality = response['locality']
-                x_coordinate = response['geographicLocation']['geometry'][0]['x']
-                y_coordinate = response['geographicLocation']['geometry'][0]['y']
-                z_coordinate = response['geographicLocation']['geometry'][0]['z']
-
-                #Getting statictical parameters from the Catalog
-                if did_provider == trustee:
-                    current_totalAssets += 1
-                    if city == current_city_offer and country == current_country_offer and locality == \
-                            current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
-                            current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                        current_totalAssetLocation+=1
-
-                    if i['lifecycleStatus'] == 'Active':
-                        current_availableAssets+=1
-                        if city == current_city_offer and country == current_country_offer and locality == \
-                                current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
-                                current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                            current_availableAssetLocation+=1
-
-                    if i['lifecycleStatus'] == 'Active' and category.lower() == type_offer.lower():
-                        current_totalOffers+=1
-                        if city == current_city_offer and country == current_country_offer and locality == \
-                                current_locality_offer and x_coordinate == current_x_coordinate_offer and y_coordinate == \
-                                current_y_coordinate_offer and z_coordinate == current_z_coordinate_offer:
-                            current_totalOfferLocation+=1
-
-                    #Obtaining the did product offer
-                    #5GBarcelona"
-                    #load_dotenv()
-                    #barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-                    #response = requests.get(barcelona_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-
-                    #5TONIC"
-                    #madrid_address = os.getenv('5TONIC_CATALOG_A')
-                    #response = requests.get(madrid_address+"productCatalogManagement/v4/productOfferingStatus/"+id_product_offering)
-                    #response = json.loads(response.text)
-                    #did_offer = response['did']"""
-
 
 class store_trust_level(Resource):
     def post(self):
@@ -897,30 +830,12 @@ class update_trust_level(Resource):
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+
+        """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
         event = threading.Event()
         x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
         threads.append({offerDID:x, "stop_event": event})
         x.start()
-
-        #new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score, offer_type)
-
-        """if new_reward_and_punishment >= 0.5:
-            reward_and_punishment = new_reward_and_punishment - 0.5
-            n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
-            new_trust_score = min(n_ts, 1)
-        elif new_reward_and_punishment < 0.5:
-            #The lower value the higher punishment
-            reward_and_punishment = 0.5 - new_reward_and_punishment
-            n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
-            new_trust_score = max(0, n_ts)
-
-        print("\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
-        last_trust_score["trustor"]["reward_and_punishment"] = new_reward_and_punishment
-        last_trust_score["trust_value"] = round(new_trust_score, 4)
-        last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
-
-        peerTrust.historical.append(last_trust_score)"""
-        #mongoDB.insert_one(last_trust_score)
 
         #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
 
@@ -971,12 +886,15 @@ class update_trust_level(Resource):
             #last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
             
             #peerTrust.historical.append(last_trust_score)
+            #mongoDB.insert_one(last_trust_score)
 
         print("\n$$$$$$$$$$$$$$ Ending update trust level process process $$$$$$$$$$$$$$\n")
 
         return 200
 
     def reward_and_punishment_based_on_security(self, last_trust_score, offer_type, event):
+        """" This method is in charge of updating an ongoing trust relationship after each 30 minutes employing security
+        monitoring events reported by the Security Analysis Service"""
 
         "Sliding window weighting with respect to the forgetting factor"
         TOTAL_RW = 0.9
@@ -984,13 +902,6 @@ class update_trust_level(Resource):
 
         "Sliding window definition IN SECONDS"
         CURRENT_TIME_WINDOW = 1800
-
-        "Dimensions weighting"
-        #CONN_DIMENSION_WEIGHTING = 0.233
-        #NOTICE_DIMENSION_WEIGHTING = 0.3
-        #WEIRD_DIMENSION_WEIGHTING = 0.233
-        #STATS_DIMENSION_WEIGHTING = 0.233
-
 
         total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment"])
         offerDID = last_trust_score["trustor"]["offerDID"]
@@ -1024,14 +935,15 @@ class update_trust_level(Resource):
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             peerTrust.historical.append(last_trust_score)
+            #mongoDB.insert_one(last_trust_score)
             time.sleep(CURRENT_TIME_WINDOW)
 
-
-        #return final_security_reward_and_punishment
 
     def generic_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type, CONN_DIMENSION_WEIGHTING,
                                                         NOTICE_DIMENSION_WEIGHTING, WEIRD_DIMENSION_WEIGHTING,
                                                         STATS_DIMENSION_WEIGHTING):
+        """ This methods collects from ElasticSearch new security effects and computes the reward or punishment based on
+        the type of offers. So, different sets of events are linked to each PO as well as weighting factors """
         "Global variable definition"
         global icmp_orig_pkts
         global tcp_orig_pkts
@@ -1076,208 +988,8 @@ class update_trust_level(Resource):
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
 
-    def RAN_and_spectrum_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
-        "Global variable definition"
-        global icmp_orig_pkts
-        global tcp_orig_pkts
-        global udp_orig_pkts
-
-        "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.4
-        NOTICE_DIMENSION_WEIGHTING = 0.1
-        WEIRD_DIMENSION_WEIGHTING = 0.1
-        STATS_DIMENSION_WEIGHTING = 0.4
-
-        conn_info = []
-        notice_info = []
-        weird_info = []
-        stats_info = []
-
-        first_conn_value = 0
-        first_notice_value = 0
-        first_weird_value = 0
-        first_stats_value = 0
-
-        indices_info = self.get_ELK_information()
-
-        for index in indices_info:
-            for hit in index["hits"]["hits"]:
-                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
-                    conn_info.append(hit)
-                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
-                    notice_info.append(hit)
-                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
-                    weird_info.append(hit)
-                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
-                    stats_info.append(hit)
-
-                "Now, we can have multiple VMs linked to the same slices"
-                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
-                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
-                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
-                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, offer_type, stats_info))/len(indices_info)
-
-        "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
-
-        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
-
-    def edge_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
-        "Global variable definition"
-        global icmp_orig_pkts
-        global tcp_orig_pkts
-        global udp_orig_pkts
-
-        conn_info = []
-        notice_info = []
-        weird_info = []
-        stats_info = []
-
-        first_conn_value = 0
-        first_notice_value = 0
-        first_weird_value = 0
-        first_stats_value = 0
-
-        "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.2
-        NOTICE_DIMENSION_WEIGHTING = 0.35
-        WEIRD_DIMENSION_WEIGHTING = 0.25
-        STATS_DIMENSION_WEIGHTING = 0.2
-
-        indices_info = self.get_ELK_information()
-
-        for index in indices_info:
-            for hit in index["hits"]["hits"]:
-                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
-                    conn_info.append(hit)
-                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
-                    notice_info.append(hit)
-                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
-                    weird_info.append(hit)
-                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
-                    stats_info.append(hit)
-
-                "Now, we can have multiple VMs linked to the same slices"
-                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
-                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
-                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
-                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
-
-        "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
-
-        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
-
-    def cloud_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
-        "Global variable definition"
-        global icmp_orig_pkts
-        global tcp_orig_pkts
-        global udp_orig_pkts
-
-        conn_info = []
-        notice_info = []
-        weird_info = []
-        stats_info = []
-
-        first_conn_value = 0
-        first_notice_value = 0
-        first_weird_value = 0
-        first_stats_value = 0
-
-        "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.2
-        NOTICE_DIMENSION_WEIGHTING = 0.35
-        WEIRD_DIMENSION_WEIGHTING = 0.25
-        STATS_DIMENSION_WEIGHTING = 0.2
-
-        indices_info = self.get_ELK_information()
-
-        for index in indices_info:
-            for hit in index["hits"]["hits"]:
-                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
-                    conn_info.append(hit)
-                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
-                    notice_info.append(hit)
-                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
-                    weird_info.append(hit)
-                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
-                    stats_info.append(hit)
-
-                "Now, we can have multiple VMs linked to the same slices"
-                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
-                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
-                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
-                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
-
-        "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
-
-        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
-
-    def vnf_cnf_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW):
-        "Global variable definition"
-        global icmp_orig_pkts
-        global tcp_orig_pkts
-        global udp_orig_pkts
-
-        conn_info = []
-        notice_info = []
-        weird_info = []
-        stats_info = []
-
-        first_conn_value = 0
-        first_notice_value = 0
-        first_weird_value = 0
-        first_stats_value = 0
-
-        "Dimensions weighting"
-        CONN_DIMENSION_WEIGHTING = 0.233
-        NOTICE_DIMENSION_WEIGHTING = 0.3
-        WEIRD_DIMENSION_WEIGHTING = 0.233
-        STATS_DIMENSION_WEIGHTING = 0.233
-
-        indices_info = self.get_ELK_information()
-
-        for index in indices_info:
-            for hit in index["hits"]["hits"]:
-                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
-                    conn_info.append(hit)
-                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
-                    notice_info.append(hit)
-                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
-                    weird_info.append(hit)
-                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
-                    stats_info.append(hit)
-
-                "Now, we can have multiple VMs linked to the same slices"
-                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
-                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
-                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
-                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
-
-        "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
-
-        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
-
     def get_ELK_information(self):
-
+        """ This method gets all new index from the ELK"""
         load_dotenv()
         elk_address = os.getenv('ELK')
 
