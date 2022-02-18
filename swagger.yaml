@@ -54,25 +54,17 @@ paths:
             $ref: "#/definitions/trust_parameters"
         400:
           description: "Invalid status value."
-  /stop_data_collection:
+  /stop_trust_relationship:
     post:
       tags:
       - "5G-TRMF"
-      summary: "Disables the process of collecting trust information about a stakeholder."
-      description: "This method is responsible for stoping a continous collection data from Data Lake."
-      operationId: "disconnetVPN"
+      summary: "Disables the process of collecting trust information as well as a relationship with a stakeholder."
+      description: "This method is responsible for stopping a continuous trust relationship."
+      operationId: "stopRelationship"
       produces:
       - "application/json"
       parameters:
-      - name: "stakeholder_id"
-        description: "Distributed identifier of the 5GZORRO participant who request a slice or resource."
-        required: true
-        type: "DID"
-      - name: "candidate_id"
-        description: "Distributed identifier of the final stakeholder candidate."
-        required: true
-        type: "DID"
-      - name: "offer_id"
+      - name: "offerDID"
         description: "Distributed identifier of the final selected resource or service/slice."
         required: true
         type: "DID"
@@ -195,6 +187,36 @@ paths:
           $ref: "#/definitions/trust_dictionary"
         #schema:
           #$ref: "#/definitions/trust_parameters"
+      responses:
+        200:
+          description: "Successful operation."
+        400:
+          description: "Invalid status value."
+  /update_trust_level:
+    post:
+      tags:
+        - "5G-TRMF"
+      summary: "Updates a trust score of an ongoing relationship"
+      description: "This method allows continuosly updating an established trust score between two stakeholders."
+      operationId: "updateTrustLevel"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "trust_template"
+          description: "Information about the trustee and offer to be updated."
+          required: true
+          type: "trust_dictionary"
+        - in: "body"
+          name: "trust_information"
+          description: "Dictionary containing relevant data on the trust level and confidence parameters used."
+          required: true
+          #type: "dictionary"
+          schema:
+            $ref: "#/definitions/trust_dictionary"
+            #schema:
+            #$ref: "#/definitions/trust_parameters"
       responses:
         200:
           description: "Successful operation."
