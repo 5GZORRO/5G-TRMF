@@ -222,6 +222,7 @@ class start_data_collection(Resource):
 
                 write_only_row_to_csv(dlt_file_name, data)
                 "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
+                "The ISSM should send to the TRMF the final selected offer"
                 requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
 
         if not os.path.exists("tests"):
@@ -1023,7 +1024,7 @@ class update_trust_level(Resource):
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             peerTrust.historical.append(last_trust_score)
-            time.sleep(5)
+            time.sleep(CURRENT_TIME_WINDOW)
 
 
         #return final_security_reward_and_punishment
@@ -1687,9 +1688,9 @@ class update_trust_level(Resource):
 class stop_trust_relationship(Resource):
     def post(self):
         """This method stops a trust relationship"""
-        print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
         req = request.data.decode("utf-8")
         information = json.loads(req)
+        print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
         for thread in threads:
             if information['offerDID'] in thread:
                 thread['stop_event'].set()
@@ -1697,10 +1698,10 @@ class stop_trust_relationship(Resource):
         for i in range(len(threads)):
             if information['offerDID'] in threads[i]:
                 del threads[i]
-                break
-        print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
+                return 200
+        print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
 
-        return 200
+        return 400
 
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')

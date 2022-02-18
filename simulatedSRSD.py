@@ -39,6 +39,7 @@ response = requests.post("http://172.28.3.126:31115/request_trust_scores", data=
 #response = requests.post("http://localhost:5001/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 best_offer = {}
+max_trust_score = 0.0
 
 if response.status_code == 200:
     req = json.loads(response.text)
@@ -49,12 +50,15 @@ if response.status_code == 200:
     print("\nTrust scores according to the previous product offers are:\n ")
     for respuesta in req:
         print("\t-TrusteeDID: ",ast.literal_eval(respuesta)["trusteeDID"]["trusteeDID"],", offerDID: ",ast.literal_eval(respuesta)["trusteeDID"]["offerDID"]," new trust value --->", ast.literal_eval(respuesta)["trust_value"])
-        best_offer = {"offerDID": ast.literal_eval(respuesta)["trusteeDID"]["offerDID"]}
+        if max_trust_score <= float(ast.literal_eval(respuesta)["trust_value"]):
+            max_trust_score = float(ast.literal_eval(respuesta)["trust_value"])
+            best_offer = {"offerDID": ast.literal_eval(respuesta)["trusteeDID"]["offerDID"]}
     print("%s seconds" % (time.time()-start_time))
 else:
     print("Error:", response)
 
-#time.sleep(4)
+"We are finishing all the trust establishments"
+time.sleep(3)
 response = requests.post("http://172.28.3.126:31115/stop_relationship", data=json.dumps(best_offer).encode("utf-8"))
 if response.status_code == 200:
     print("Finished")
