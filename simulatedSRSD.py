@@ -32,11 +32,13 @@ print("The Smart Resource and Service Discovery application needs to identify th
 
 start_time = time.time()
 "5GBarcelona"
-response = requests.post("http://172.28.3.126:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
+response = requests.post("http://172.28.3.126:31115/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 "5TONIC"
 #response = requests.post("http://10.4.2.110:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 #response = requests.post("http://localhost:5001/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
+
+best_offer = {}
 
 if response.status_code == 200:
     req = json.loads(response.text)
@@ -46,7 +48,15 @@ if response.status_code == 200:
 
     print("\nTrust scores according to the previous product offers are:\n ")
     for respuesta in req:
-        print("\t-",ast.literal_eval(respuesta)["trusteeDID"]["trusteeDID"],"new trust value --->", ast.literal_eval(respuesta)["trust_value"])
+        print("\t-TrusteeDID: ",ast.literal_eval(respuesta)["trusteeDID"]["trusteeDID"],", offerDID: ",ast.literal_eval(respuesta)["trusteeDID"]["offerDID"]," new trust value --->", ast.literal_eval(respuesta)["trust_value"])
+        best_offer = {"offerDID": ast.literal_eval(respuesta)["trusteeDID"]["offerDID"]}
     print("%s seconds" % (time.time()-start_time))
+else:
+    print("Error:", response)
+
+#time.sleep(4)
+response = requests.post("http://172.28.3.126:31115/stop_relationship", data=json.dumps(best_offer).encode("utf-8"))
+if response.status_code == 200:
+    print("Finished")
 else:
     print("Error:", response)

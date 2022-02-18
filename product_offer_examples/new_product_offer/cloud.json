@@ -1,5 +1,5 @@
 {
-	"offer_did" : "c5d634ae-3a40-48c9-9436-d3831c02cdfe",
+	"offer_did" : "MzCciMdUNovcBSbUspeQHf",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -172,7 +172,7 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-16T11:00:00.000Z"
 		},
-		"did" : "8qZg5To9T1TV3xrdrPyekp"
+		"did" : "MzCciMdUNovcBSbUspeQHf"
 	},
 	"offer_category" : "cloud",
 	"predicted_cluster" : 1

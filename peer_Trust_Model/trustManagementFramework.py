@@ -64,6 +64,7 @@ offer_type = {}
 product_offering = []
 old_product_offering = []
 statistic_catalog = []
+threads = list()
 
 
 def find_by_column(filename, column, value):
@@ -220,8 +221,8 @@ class start_data_collection(Resource):
                         "currentInteractionNumber": interaction["currentInteractionNumber"]}
 
                 write_only_row_to_csv(dlt_file_name, data)
-
-        "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
+                "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
+                requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
 
         if not os.path.exists("tests"):
             os.makedirs("tests")
@@ -476,7 +477,7 @@ class compute_trust_level(Resource):
                         #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
 
                         response = json.loads(response.text)
-
+                        print(offerDID)
                         place = response['place'][0]['href']
                         response = requests.get(place)
                         response = json.loads(response.text)
@@ -876,6 +877,7 @@ class store_trust_level(Resource):
 
         return 200
 
+
 class update_trust_level(Resource):
     def post(self):
         """ This method updates a trust score based on certain SLA events. More events need to be considered,
@@ -888,30 +890,35 @@ class update_trust_level(Resource):
         print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
 
         #slaBreachPredictor_topic = information["SLABreachPredictor"]
-        trustorDID = information["trustorDID"]
-        trusteeDID = information["trusteeDID"]
-        offerDID = information["offerDID"]
+        trustorDID = information["trustor"]["trustorDID"]
+        trusteeDID = information["trustor"]["trusteeDID"]
+        offerDID = information["trustor"]["offerDID"]
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
-        new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score, offer_type)
+        event = threading.Event()
+        x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
+        threads.append({offerDID:x, "stop_event": event})
+        x.start()
 
-        if new_reward_and_punishment >= 0.5:
+        #new_reward_and_punishment = self.reward_and_punishment_based_on_security(last_trust_score, offer_type)
+
+        """if new_reward_and_punishment >= 0.5:
             reward_and_punishment = new_reward_and_punishment - 0.5
             n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
             new_trust_score = min(n_ts, 1)
         elif new_reward_and_punishment < 0.5:
-            "The lower value the higher punishment"
+            #The lower value the higher punishment
             reward_and_punishment = 0.5 - new_reward_and_punishment
             n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
             new_trust_score = max(0, n_ts)
 
-        print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 4), "\n")
+        print("\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
         last_trust_score["trustor"]["reward_and_punishment"] = new_reward_and_punishment
         last_trust_score["trust_value"] = round(new_trust_score, 4)
         last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-        peerTrust.historical.append(last_trust_score)
+        peerTrust.historical.append(last_trust_score)"""
         #mongoDB.insert_one(last_trust_score)
 
         #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
@@ -964,9 +971,11 @@ class update_trust_level(Resource):
             
             #peerTrust.historical.append(last_trust_score)
 
+        print("\n$$$$$$$$$$$$$$ Ending update trust level process process $$$$$$$$$$$$$$\n")
+
         return 200
 
-    def reward_and_punishment_based_on_security(self, last_trust_score, offer_type):
+    def reward_and_punishment_based_on_security(self, last_trust_score, offer_type, event):
 
         "Sliding window weighting with respect to the forgetting factor"
         TOTAL_RW = 0.9
@@ -986,22 +995,85 @@ class update_trust_level(Resource):
         offerDID = last_trust_score["trustor"]["offerDID"]
         current_offer_type = offer_type[offerDID]
 
-        if current_offer_type.lower() == 'RAN' or current_offer_type.lower() == 'spectrum':
-            current_reward_and_punishment = self.RAN_and_spectrum_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type.lower() == 'edge':
-            current_reward_and_punishment = self.edge_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type.lower() == 'cloud':
-            current_reward_and_punishment = self.cloud_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
-        elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
-            current_reward_and_punishment = self.vnf_cnf_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type)
+        while not event.isSet():
+            if current_offer_type.lower() == 'RAN' or current_offer_type.lower() == 'spectrum':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+            elif current_offer_type.lower() == 'edge':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+            elif current_offer_type.lower() == 'cloud':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+            elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
 
-        #current_reward_and_punishment = CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-                          #+ WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+            final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
 
-        final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
+            if final_security_reward_and_punishment >= 0.5:
+                reward_and_punishment = final_security_reward_and_punishment - 0.5
+                n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+                new_trust_score = min(n_ts, 1)
+            elif final_security_reward_and_punishment < 0.5:
+                "The lower value the higher punishment"
+                reward_and_punishment = 0.5 - final_security_reward_and_punishment
+                n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+                new_trust_score = max(0, n_ts)
+
+            print("\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
+            last_trust_score["trustor"]["reward_and_punishment"] = final_security_reward_and_punishment
+            last_trust_score["trust_value"] = round(new_trust_score, 4)
+            last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+
+            peerTrust.historical.append(last_trust_score)
+            time.sleep(5)
 
 
-        return final_security_reward_and_punishment
+        #return final_security_reward_and_punishment
+
+    def generic_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type, CONN_DIMENSION_WEIGHTING,
+                                                        NOTICE_DIMENSION_WEIGHTING, WEIRD_DIMENSION_WEIGHTING,
+                                                        STATS_DIMENSION_WEIGHTING):
+        "Global variable definition"
+        global icmp_orig_pkts
+        global tcp_orig_pkts
+        global udp_orig_pkts
+
+        "Local variable definition"
+        conn_info = []
+        notice_info = []
+        weird_info = []
+        stats_info = []
+
+        first_conn_value = 0
+        first_notice_value = 0
+        first_weird_value = 0
+        first_stats_value = 0
+
+        indices_info = self.get_ELK_information()
+
+        for index in indices_info:
+            for hit in index["hits"]["hits"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                    conn_info.append(hit)
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                    notice_info.append(hit)
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                    weird_info.append(hit)
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                    stats_info.append(hit)
+
+            "Now, we can have multiple VMs linked to the same slices"
+            first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+            first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+            first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+            first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
+
+        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
+
+        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
 
     def RAN_and_spectrum_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type):
         "Global variable definition"
@@ -1015,12 +1087,40 @@ class update_trust_level(Resource):
         WEIRD_DIMENSION_WEIGHTING = 0.1
         STATS_DIMENSION_WEIGHTING = 0.4
 
+        conn_info = []
+        notice_info = []
+        weird_info = []
+        stats_info = []
+
+        first_conn_value = 0
+        first_notice_value = 0
+        first_weird_value = 0
+        first_stats_value = 0
+
         indices_info = self.get_ELK_information()
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
+        for index in indices_info:
+            for hit in index["hits"]["hits"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                    conn_info.append(hit)
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                    notice_info.append(hit)
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                    weird_info.append(hit)
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                    stats_info.append(hit)
+
+                "Now, we can have multiple VMs linked to the same slices"
+                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, offer_type, stats_info))/len(indices_info)
+
+        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1031,6 +1131,16 @@ class update_trust_level(Resource):
         global tcp_orig_pkts
         global udp_orig_pkts
 
+        conn_info = []
+        notice_info = []
+        weird_info = []
+        stats_info = []
+
+        first_conn_value = 0
+        first_notice_value = 0
+        first_weird_value = 0
+        first_stats_value = 0
+
         "Dimensions weighting"
         CONN_DIMENSION_WEIGHTING = 0.2
         NOTICE_DIMENSION_WEIGHTING = 0.35
@@ -1039,10 +1149,28 @@ class update_trust_level(Resource):
 
         indices_info = self.get_ELK_information()
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
+        for index in indices_info:
+            for hit in index["hits"]["hits"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                    conn_info.append(hit)
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                    notice_info.append(hit)
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                    weird_info.append(hit)
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                    stats_info.append(hit)
+
+                "Now, we can have multiple VMs linked to the same slices"
+                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
+
+        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1053,6 +1181,16 @@ class update_trust_level(Resource):
         global tcp_orig_pkts
         global udp_orig_pkts
 
+        conn_info = []
+        notice_info = []
+        weird_info = []
+        stats_info = []
+
+        first_conn_value = 0
+        first_notice_value = 0
+        first_weird_value = 0
+        first_stats_value = 0
+
         "Dimensions weighting"
         CONN_DIMENSION_WEIGHTING = 0.2
         NOTICE_DIMENSION_WEIGHTING = 0.35
@@ -1061,10 +1199,28 @@ class update_trust_level(Resource):
 
         indices_info = self.get_ELK_information()
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
+        for index in indices_info:
+            for hit in index["hits"]["hits"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                    conn_info.append(hit)
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                    notice_info.append(hit)
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                    weird_info.append(hit)
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                    stats_info.append(hit)
+
+                "Now, we can have multiple VMs linked to the same slices"
+                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
+
+        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1075,6 +1231,16 @@ class update_trust_level(Resource):
         global tcp_orig_pkts
         global udp_orig_pkts
 
+        conn_info = []
+        notice_info = []
+        weird_info = []
+        stats_info = []
+
+        first_conn_value = 0
+        first_notice_value = 0
+        first_weird_value = 0
+        first_stats_value = 0
+
         "Dimensions weighting"
         CONN_DIMENSION_WEIGHTING = 0.233
         NOTICE_DIMENSION_WEIGHTING = 0.3
@@ -1083,10 +1249,28 @@ class update_trust_level(Resource):
 
         indices_info = self.get_ELK_information()
 
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, indices_info)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, indices_info)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, indices_info)
+        for index in indices_info:
+            for hit in index["hits"]["hits"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                    conn_info.append(hit)
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                    notice_info.append(hit)
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                    weird_info.append(hit)
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                    stats_info.append(hit)
+
+                "Now, we can have multiple VMs linked to the same slices"
+                first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+                first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+                first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+                first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
+
+        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
@@ -1096,7 +1280,12 @@ class update_trust_level(Resource):
         load_dotenv()
         elk_address = os.getenv('ELK')
 
-        os.system('curl '+elk_address+'_cat/indices > output.txt')
+        response = requests.post(elk_address+'_cat/indices')
+        response = response.text
+        with open('output.txt', 'w') as my_data_file:
+            my_data_file.write(response)
+            my_data_file.close()
+
         instances = []
         indices_info = []
 
@@ -1110,11 +1299,10 @@ class update_trust_level(Resource):
             response = requests.post(elk_address+instance+'/_search')
             response = json.loads(response.text)
             indices_info.append(response)
-            print(response)
 
         return indices_info
 
-    def conn_log(self, time_window, indices_info):
+    def conn_log(self, time_window, conn_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from the
         percentage of network packages correctly sent """
         global icmp_orig_pkts
@@ -1137,32 +1325,37 @@ class update_trust_level(Resource):
         timestamp = time.time()
         timestamp_limit = timestamp - time_window
 
-        filebeat_index = "XXXXX"
-        "Change the direction for the IP in which the service is listening"
-        response = requests.get("elasticsearch:9200/"+filebeat_index)
-        response = json.loads(response.text)
+        for log in conn_info:
+            timestamp_log = time.mktime(time.strptime(log["_source"]["@timestamp"].split(".")[0], '%Y-%m-%dT%H:%M:%S'))
+            if timestamp_log >= timestamp_limit:
+                if log["_source"]["network"]["transport"] == "icmp":
+                    icmp_orig_pkts += icmp_orig_pkts + log["_source"]["source"]["packets"]
+                    icmp_resp_pkts += icmp_resp_pkts + log["_source"]["destination"]["packets"]
+                elif log["_source"]["network"]["transport"] == "tcp":
+                    tcp_orig_pkts += tcp_orig_pkts + log["_source"]["source"]["packets"]
+                    tcp_resp_pkts += tcp_resp_pkts + log["_source"]["destination"]["packets"]
+                elif log["_source"]["network"]["transport"] == "udp":
+                    udp_orig_pkts += udp_orig_pkts + log["_source"]["source"]["packets"]
+                    udp_resp_pkts += udp_orig_pkts + log["_source"]["destination"]["packets"]
 
-        for log in response:
-            if log["ts"] >= timestamp_limit and log["id"] == filebeat_index:
-                if log["proto"] == "icmp":
-                    icmp_orig_pkts += icmp_orig_pkts + int(log["orig_pkts"])
-                    icmp_resp_pkts += icmp_resp_pkts + int(log["resp_pkts"])
-                elif log["proto"] == "tcp":
-                    tcp_orig_pkts += tcp_orig_pkts + int(log["orig_pkts"])
-                    tcp_resp_pkts += tcp_resp_pkts + int(log["resp_pkts"])
-                elif log["proto"] == "udp":
-                    udp_orig_pkts += udp_orig_pkts + int(log["orig_pkts"])
-                    udp_resp_pkts += udp_orig_pkts + int(log["resp_pkts"])
-
-        icmp_packet_hit_rate = icmp_resp_pkts/icmp_orig_pkts
-        tcp_packet_hit_rate = tcp_resp_pkts/tcp_orig_pkts
-        udp_packet_hit_rate = udp_resp_pkts/udp_orig_pkts
+        try:
+            icmp_packet_hit_rate = icmp_resp_pkts/icmp_orig_pkts
+        except ZeroDivisionError:
+            icmp_packet_hit_rate = 0
+        try:
+            tcp_packet_hit_rate = tcp_resp_pkts/tcp_orig_pkts
+        except ZeroDivisionError:
+            tcp_packet_hit_rate = 0
+        try:
+            udp_packet_hit_rate = udp_resp_pkts/udp_orig_pkts
+        except ZeroDivisionError:
+            udp_packet_hit_rate = 0
 
         final_conn_value = ICMP * icmp_packet_hit_rate + TCP * tcp_packet_hit_rate + UDP * udp_packet_hit_rate
 
         return final_conn_value
 
-    def notice_log(self, time_window, offer_type, indices_info):
+    def notice_log(self, time_window, offer_type, notice_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from
          critical security events detected by the Zeek """
 
@@ -1240,7 +1433,7 @@ class update_trust_level(Resource):
         cloud_events_to_monitor = []
         cloud_events_to_monitor.append(PORT_SCAN)
         cloud_events_to_monitor.append(COMPILE_FAILURE_PACKET_FILTER)
-        cloud_events_to_monitor(INSTALL_FAILURE)
+        cloud_events_to_monitor.append(INSTALL_FAILURE)
         cloud_events_to_monitor.append(SERVER_FOUND)
         cloud_events_to_monitor.append(MALWARE_HASH)
         cloud_events_to_monitor.append(TRACEROUTE)
@@ -1277,58 +1470,62 @@ class update_trust_level(Resource):
         previous_event_monitoring_timestamp = timestamp - TIME_MONITORING_EVENT
         last_five_event_monitoring_timestamp = timestamp - LAST_FIVE_TIME_MONITORING_EVENT
 
-        filebeat_index = "XXXXX"
-        "Change the direction for the IP in which the service is listening"
-        response = requests.get("elasticsearch:9200/"+filebeat_index)
-        response = json.loads(response.text)
-
-        for log in response:
-            if log["note"] in events_to_monitor and log["ts"] >= timestamp_limit:
+        for log in notice_info:
+            timestamp_log = time.mktime(time.strptime(log["_source"]["@timestamp"].split(".")[0], '%Y-%m-%dT%H:%M:%S'))
+            if log["_source"]["zeek"]["notice"]["name"] in events_to_monitor and timestamp_log >= timestamp_limit:
                 actual_event_number += 1
-            elif log["note"] in events_to_monitor and log["ts"] >= previous_event_monitoring_timestamp:
+            elif log["_source"]["zeek"]["notice"]["name"] in events_to_monitor and timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif log["note"] in events_to_monitor and log["ts"] >= last_five_event_monitoring_timestamp:
+            elif log["_source"]["zeek"]["notice"]["name"] in events_to_monitor and timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["notice"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["notice"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["notice"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["notice"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["notice"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["notice"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["notice"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= timestamp_limit:
                 actual_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["notice"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_event_number += 1
                 last_five_monitoring_window_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["notice"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_event_number += 1
 
+        try:
+            last_window_notice_events = actual_event_number/(previous_monitoring_window_event_number + actual_event_number)
+        except ZeroDivisionError:
+            last_window_notice_events = 0
 
-        final_notice_value = 1 - ((actual_event_number/(previous_monitoring_window_event_number + actual_event_number) +
-                                   (actual_event_number / actual_event_number + ( last_five_monitoring_window_event_number / 5))) / 2)
+        try:
+            five_last_window_notice_events = actual_event_number / actual_event_number + ( last_five_monitoring_window_event_number / 5)
+        except ZeroDivisionError:
+            five_last_window_notice_events = 0
+
+        final_notice_value = 1 - ((last_window_notice_events + five_last_window_notice_events) / 2)
 
 
         return final_notice_value
 
-    def weird_log(self, time_window, indices_info):
+    def weird_log(self, time_window, offer_type, weird_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from
          weird events detected by the Zeek """
 
@@ -1344,8 +1541,8 @@ class update_trust_level(Resource):
 
         "List of labels"
         weird_event_list = []
-        weird_event_list.apppend(DNS_UNMTATCHED_REPLY)
-        weird_event_list.apppend(ACTIVE_CONNECTION_REUSE)
+        weird_event_list.append(DNS_UNMTATCHED_REPLY)
+        weird_event_list.append(ACTIVE_CONNECTION_REUSE)
 
         "List of specific labels regarding the type of offer"
         edge_events_to_monitor = []
@@ -1381,56 +1578,61 @@ class update_trust_level(Resource):
         previous_event_monitoring_timestamp = timestamp - TIME_MONITORING_WEIRD_EVENT
         last_five_event_monitoring_timestamp = timestamp - LAST_FIVE_TIME_MONITORING_WEIRD_EVENT
 
-        filebeat_index = "XXXXX"
-        "Change the direction for the IP in which the service is listening"
-        response = requests.get("elasticsearch:9200/"+filebeat_index)
-        response = json.loads(response.text)
-
-        for log in response:
-            if log["name"] in weird_event_list and log["ts"] >= timestamp_limit:
+        for log in weird_info:
+            timestamp_log = time.mktime(time.strptime(log["_source"]["@timestamp"].split(".")[0], '%Y-%m-%dT%H:%M:%S'))
+            if log["_source"]["zeek"]["weird"]["name"] in weird_event_list and timestamp_log >= timestamp_limit:
                 actual_weird_event_number += 1
-            elif log["name"] in weird_event_list and log["ts"] >= previous_event_monitoring_timestamp:
+            elif log["_source"]["zeek"]["weird"]["name"] in weird_event_list and timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_weird_event_number += 1
                 last_five_monitoring_window_weird_event_number += 1
-            elif log["name"] in weird_event_list and log["ts"] >= last_five_event_monitoring_timestamp:
+            elif log["_source"]["zeek"]["weird"]["name"] in weird_event_list and timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["weird"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= timestamp_limit:
                 actual_weird_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["weird"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_weird_event_number += 1
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'edge' and log["note"] in edge_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'edge' and log["_source"]["zeek"]["weird"]["name"] in edge_events_to_monitor and \
+                    timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["weird"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= timestamp_limit:
                 actual_weird_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["weird"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_weird_event_number += 1
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'cloud' and log["note"] in cloud_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'cloud' and log["_source"]["zeek"]["weird"]["name"] in cloud_events_to_monitor and \
+                    timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= timestamp_limit:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["weird"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= timestamp_limit:
                 actual_weird_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= previous_event_monitoring_timestamp:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["weird"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= previous_event_monitoring_timestamp:
                 previous_monitoring_window_weird_event_number += 1
                 last_five_monitoring_window_weird_event_number += 1
-            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["note"] in vnf_cnf_events_to_monitor and \
-                    log["ts"] >= last_five_event_monitoring_timestamp:
+            elif offer_type.lower() == 'vnf' or offer_type.lower() == 'cnf' and log["_source"]["zeek"]["weird"]["name"] \
+                    in vnf_cnf_events_to_monitor and timestamp_log >= last_five_event_monitoring_timestamp:
                 last_five_monitoring_window_weird_event_number += 1
 
-        final_weird_value = 1 - ((actual_weird_event_number/(previous_monitoring_window_weird_event_number + actual_weird_event_number) +
-                                   (actual_weird_event_number / actual_weird_event_number + (last_five_monitoring_window_weird_event_number / 5))) / 2)
+        try:
+            last_window_weird_events = actual_weird_event_number/(previous_monitoring_window_weird_event_number + actual_weird_event_number)
+        except ZeroDivisionError:
+            last_window_weird_events = 0
+
+        try:
+            five_last_window_weird_events = actual_weird_event_number / actual_weird_event_number + (last_five_monitoring_window_weird_event_number / 5)
+        except ZeroDivisionError:
+            five_last_window_weird_events = 0
+
+        final_weird_value = 1 - (( last_window_weird_events + five_last_window_weird_events ) / 2)
 
         return final_weird_value
 
-    def stats_log(self, time_window, icmp_sent_pkts, tcp_sent_pkts, udp_sent_pkts, indices_info):
+    def stats_log(self, time_window, icmp_sent_pkts, tcp_sent_pkts, udp_sent_pkts, stat_info):
         """ This function will compute the security level of an ongoing trust relationship between two operators from the
         percentage of network packages sent and the packets finally analyzed by Zeek"""
 
@@ -1455,32 +1657,50 @@ class update_trust_level(Resource):
         timestamp = time.time()
         timestamp_limit = timestamp - time_window
 
-        filebeat_index = "XXXXX"
-        "Change the direction for the IP in which the service is listening"
-        response = requests.get("elasticsearch:9200/"+filebeat_index)
-        response = json.loads(response.text)
+        for log in stat_info:
+            timestamp_log = time.mktime(time.strptime(log["_source"]["@timestamp"].split(".")[0], '%Y-%m-%dT%H:%M:%S'))
+            if timestamp_log >= timestamp_limit:
+                icmp_pkts_analyzed_by_zeek += icmp_pkts_analyzed_by_zeek + log["_source"]["zeek"]["connections"]["icmp"]["count"]
+                tcp_pkts_analyzed_by_zeek += tcp_pkts_analyzed_by_zeek + log["_source"]["zeek"]["connections"]["tcp"]["count"]
+                udp_pkts_analyzed_by_zeek += udp_pkts_analyzed_by_zeek + log["_source"]["zeek"]["connections"]["udp"]["count"]
 
-        for log in response:
-            if log["ts"] >= timestamp_limit and log["id"] == filebeat_index:
-                if log["proto"] == "icmp":
-                    icmp_orig_pkts += icmp_orig_pkts + int(log["orig_pkts"])
-                    icmp_pkts_analyzed_by_zeek += icmp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
-                elif log["proto"] == "tcp":
-                    tcp_orig_pkts += tcp_orig_pkts + int(log["orig_pkts"])
-                    tcp_pkts_analyzed_by_zeek += tcp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
-                elif log["proto"] == "udp":
-                    udp_orig_pkts += udp_orig_pkts + int(log["orig_pkts"])
-                    udp_pkts_analyzed_by_zeek += udp_pkts_analyzed_by_zeek + int(log["resp_pkts"])
+        try:
+            icmp_packet_rate_analyzed_by_zeek = icmp_pkts_analyzed_by_zeek/icmp_orig_pkts
+        except ZeroDivisionError:
+            icmp_packet_rate_analyzed_by_zeek = 0
+        try:
+            tcp_packet_rate_analyzed_by_zeek = tcp_pkts_analyzed_by_zeek/tcp_orig_pkts
+        except ZeroDivisionError:
+            tcp_packet_rate_analyzed_by_zeek = 0
+        try:
+            udp_packet_rate_analyzed_by_zeek = udp_pkts_analyzed_by_zeek/udp_orig_pkts
+        except ZeroDivisionError:
+            udp_packet_rate_analyzed_by_zeek = 0
 
-        icmp_packet_rate_analyzed_by_zeek = icmp_pkts_analyzed_by_zeek/icmp_orig_pkts
-        tcp_packet_rate_analyzed_by_zeek = tcp_pkts_analyzed_by_zeek/tcp_orig_pkts
-        udp_packet_rate_analyzed_by_zeek = udp_pkts_analyzed_by_zeek/udp_orig_pkts
 
         final_stats_value = ICMP * icmp_packet_rate_analyzed_by_zeek + TCP * tcp_packet_rate_analyzed_by_zeek + UDP * \
                             udp_packet_rate_analyzed_by_zeek
 
         return final_stats_value
 
+
+class stop_trust_relationship(Resource):
+    def post(self):
+        """This method stops a trust relationship"""
+        print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+        for thread in threads:
+            if information['offerDID'] in thread:
+                thread['stop_event'].set()
+
+        for i in range(len(threads)):
+            if information['offerDID'] in threads[i]:
+                del threads[i]
+                break
+        print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
+
+        return 200
 
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
@@ -1489,6 +1709,7 @@ def launch_server_REST(port):
     api.add_resource(compute_trust_level, '/compute_trust_level')
     api.add_resource(store_trust_level, '/store_trust_level')
     api.add_resource(update_trust_level, '/update_trust_level')
+    api.add_resource(stop_trust_relationship, '/stop_trust_relationship')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

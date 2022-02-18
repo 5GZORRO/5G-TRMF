@@ -1,5 +1,5 @@
 {
-	"offer_did" : "KSWb2cbvb8sCWFXpRt2siK",
+	"offer_did" : "TYamjjVoTNXF7sYgd6fieZ",
         "trust_value" : 0.878,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -172,7 +172,7 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-16T11:00:00.000Z"
 		},
-		"did" : "PB2bpkWNKnVVY8MFYermER"
+		"did" : "TYamjjVoTNXF7sYgd6fieZ"
 	},
 	"offer_category" : "edge",
 	"predicted_cluster" : 3

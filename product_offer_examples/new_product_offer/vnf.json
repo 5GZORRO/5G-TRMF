@@ -1,5 +1,5 @@
 {
-	"offer_did" : "XgeKBbTj1z4tr72oX3ZPhg",
+	"offer_did" : "VHRN56FxhC5YQYkZSLK5KG",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -254,7 +254,7 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-15T11:00:00.000Z"
 		},
-		"did" : "CimN4QVFrk3pZ2aXjRMee6"
+		"did" : "VHRN56FxhC5YQYkZSLK5KG"
 	},
 	"offer_category" : "vnf",
 	"predicted_cluster" : 0
