@@ -204,10 +204,6 @@ paths:
       produces:
         - "application/json"
       parameters:
-        - name: "trust_template"
-          description: "Information about the trustee and offer to be updated."
-          required: true
-          type: "trust_dictionary"
         - in: "body"
           name: "trust_information"
           description: "Dictionary containing relevant data on the trust level and confidence parameters used."
