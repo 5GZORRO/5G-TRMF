@@ -461,7 +461,6 @@ class compute_trust_level(Resource):
                         #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
 
                         response = json.loads(response.text)
-                        print(offerDID)
                         place = response['place'][0]['href']
                         response = requests.get(place)
                         response = json.loads(response.text)
@@ -567,6 +566,7 @@ class compute_trust_level(Resource):
                 information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 4)
                 new_trustor_satisfaction = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
                 information["trustor"]["direct_parameters"]["userSatisfaction"] = round(self.recomputingTrustValue(last_trustor_satisfaction, new_trustor_satisfaction, FORGETTING_FACTOR), 4)
+                new_trustor_satisfaction = information["trustor"]["direct_parameters"]["userSatisfaction"]
                 satisfaction = satisfaction + (time.time()-start_satisfaction)
 
                 """Updating the recommendation trust"""
@@ -592,6 +592,7 @@ class compute_trust_level(Resource):
                 print("\tβ ---> ", round(1-direct_weighting, 3))
                 print("\tCF(u) ---> ", new_community_factor)
 
+
                 print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
                 peerTrust.historical.append(information)
@@ -609,8 +610,7 @@ class compute_trust_level(Resource):
         """ This method updates the recommendation trust (RT) value after new interactions between a trustor and a trustee.
         The method makes use of the satisfaction and recommendation variances to increase o decrease the RT."""
 
-        mean_variance = (recommendation_object["average_recommendations"]/recommendation_object["recommendation_total_number"]) - recommendation_object["last_recommendation"]
-
+        mean_variance = recommendation_object["average_recommendations"] - recommendation_object["last_recommendation"]
         if satisfaction_variance > 0 and mean_variance > 0:
             new_recommendation_trust = (1 + satisfaction_variance)*(mean_variance/10) + recommendation_object["recommendation_trust"]
             if new_recommendation_trust > 1.0:
@@ -622,7 +622,7 @@ class compute_trust_level(Resource):
                 new_recommendation_trust = 1.0
             return new_recommendation_trust
         elif satisfaction_variance < 0 and mean_variance > 0:
-            new_recommendation_trust = (1 - satisfaction_variance)*(mean_variance/10) - recommendation_object["recommendation_trust"]
+            new_recommendation_trust = recommendation_object["recommendation_trust"] - (1 - satisfaction_variance)*(mean_variance/10)
             if new_recommendation_trust < 0:
                 new_recommendation_trust = 0
             return new_recommendation_trust
@@ -908,14 +908,44 @@ class update_trust_level(Resource):
         current_offer_type = offer_type[offerDID]
 
         while not event.isSet():
-            if current_offer_type.lower() == 'RAN' or current_offer_type.lower() == 'spectrum':
+
+            current_reward_and_punishment = 0.0
+
+            if current_offer_type.lower() == 'ran' or current_offer_type.lower() == 'spectrum':
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
-            elif current_offer_type.lower() == 'edge':
-                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
-            elif current_offer_type.lower() == 'cloud':
+            elif current_offer_type.lower() == 'edge' or current_offer_type.lower() == 'cloud':
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
             elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+            elif current_offer_type.lower() == 'network service' or current_offer_type.lower() == 'network slice':
+                "We deal in particular with offers of the network service/slice type"
+                resource_specification_list = self.get_resource_list_network_service_offer(offerDID)
+                for resource in resource_specification_list:
+                    resource_specification = resource['href']
+                    response = requests.get(resource_specification)
+                    response = json.loads(response.text)
+                    type = response['resourceSpecCharacteristic'][0]['name']
+
+                    if 'ran' in type.lower():
+                        current_offer_type = 'ran'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+                    elif 'spectrum' in type.lower():
+                        current_offer_type = 'spectrum'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+                    elif 'edge' in type.lower():
+                        current_offer_type = 'edge'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+                    elif 'cloud' in type.lower():
+                        current_offer_type = 'cloud'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+                    elif 'vnf' in type.lower():
+                        current_offer_type = 'vnf'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+                    elif 'cnf' in type.lower():
+                        current_offer_type = 'cnf'
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+
+                current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)
 
             final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
 
@@ -938,6 +968,27 @@ class update_trust_level(Resource):
             #mongoDB.insert_one(last_trust_score)
             time.sleep(CURRENT_TIME_WINDOW)
 
+    def get_resource_list_network_service_offer(self, offerDID):
+        """ This method retrieves one or more resources involved in a Network Service/Slice Product Offering"""
+        "5GBarcelona"
+        load_dotenv()
+        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
+        "5TONIC"
+        #madrid_address = os.getenv('5TONIC_CATALOG_A')
+        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
+
+        response = json.loads(response.text)
+
+        product_specification = response['productSpecification']['href']
+        response = requests.get(product_specification)
+        response = json.loads(response.text)
+        service_specification = response['serviceSpecification'][0]['href']
+        response = requests.get(service_specification)
+        response = json.loads(response.text)
+        resource_specification = response['resourceSpecification']
+
+        return resource_specification
 
     def generic_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type, CONN_DIMENSION_WEIGHTING,
                                                         NOTICE_DIMENSION_WEIGHTING, WEIRD_DIMENSION_WEIGHTING,
@@ -964,13 +1015,13 @@ class update_trust_level(Resource):
 
         for index in indices_info:
             for hit in index["hits"]["hits"]:
-                if "conn.log" in hit["_source"]["log"]["file"]["path"]:
+                if "conn.log" in hit["_source"]["log"]["file"]["path"] and hit not in conn_info:
                     conn_info.append(hit)
-                elif "notice.log" in hit["_source"]["log"]["file"]["path"]:
+                elif "notice.log" in hit["_source"]["log"]["file"]["path"] and hit not in notice_info:
                     notice_info.append(hit)
-                elif "weird.log" in hit["_source"]["log"]["file"]["path"]:
+                elif "weird.log" in hit["_source"]["log"]["file"]["path"] and hit not in weird_info:
                     weird_info.append(hit)
-                elif "stats.log" in hit["_source"]["log"]["file"]["path"]:
+                elif "stats.log" in hit["_source"]["log"]["file"]["path"] and hit not in stats_info:
                     stats_info.append(hit)
 
             "Now, we can have multiple VMs linked to the same slices"
@@ -1119,8 +1170,6 @@ class update_trust_level(Resource):
         events_to_monitor.append(WEIRD_ACTIVITY)
         events_to_monitor.append(PACKET_FILTER)
         events_to_monitor.append(SOFTWARE_VULNERABLE)
-        events_to_monitor.append(SQL_INJECTION_ATTACKER)
-        events_to_monitor.append(SQL_INJECTION_VICTIM)
         events_to_monitor.append(PASSWORD_GUESSING)
 
         "List of specific labels regarding the type of offer"
@@ -1142,6 +1191,8 @@ class update_trust_level(Resource):
         edge_events_to_monitor.append(SSL_WEAK_KEY)
         edge_events_to_monitor.append(SSL_OLD_VERSION)
         edge_events_to_monitor.append(SSL_WEAK_CIPHER)
+        edge_events_to_monitor.append(SQL_INJECTION_ATTACKER)
+        edge_events_to_monitor.append(SQL_INJECTION_VICTIM)
 
         cloud_events_to_monitor = []
         cloud_events_to_monitor.append(PORT_SCAN)
@@ -1159,6 +1210,8 @@ class update_trust_level(Resource):
         cloud_events_to_monitor.append(SSL_WEAK_KEY)
         cloud_events_to_monitor.append(SSL_OLD_VERSION)
         cloud_events_to_monitor.append(SSL_WEAK_CIPHER)
+        cloud_events_to_monitor.append(SQL_INJECTION_ATTACKER)
+        cloud_events_to_monitor.append(SQL_INJECTION_VICTIM)
 
         vnf_cnf_events_to_monitor = []
         vnf_cnf_events_to_monitor.append(SENSITIVE_SIGNATURE)
@@ -1169,8 +1222,6 @@ class update_trust_level(Resource):
         vnf_cnf_events_to_monitor.append(ADDRESS_SCAN)
         vnf_cnf_events_to_monitor.append(PORT_SCAN)
         vnf_cnf_events_to_monitor.append(CONTENT_GAP)
-
-        slice_events_to_monitor = []
 
         "Variable definition"
         actual_event_number = 0
@@ -1250,31 +1301,44 @@ class update_trust_level(Resource):
         FRAGMENT_PAKCKET = "fragment_with_DF"
         BAD_ICMP_CHECKSUM = "bad_ICMP_checksum"
         BAD_UDP_CHECKSUM = "bad_UDP_checksum"
+        BAD_TCP_CHECKSUM = "bad_TCP_checksum"
         TCP_CHRISTMAS = "TCP_Christmas"
+        UNSCAPED_PERCENTAGE_URI = "unescaped_%_in_URI"
+        ILLEGAL_ENCODING = "base64_illegal_encoding"
+        BAD_HTTP_REPLY = "bad_HTTP_reply"
+        MALFORMED_SSH_IDENTIFICATION = "malformed_ssh_identification"
+        MALFORMED_SSH_VERSION = "malformed_ssh_version"
 
         "List of labels"
         weird_event_list = []
         weird_event_list.append(DNS_UNMTATCHED_REPLY)
         weird_event_list.append(ACTIVE_CONNECTION_REUSE)
+        weird_event_list.append(ILLEGAL_ENCODING)
 
         "List of specific labels regarding the type of offer"
         edge_events_to_monitor = []
         edge_events_to_monitor.append(SPLIT_ROUTING)
         edge_events_to_monitor.append(BAD_ICMP_CHECKSUM)
         edge_events_to_monitor.append(BAD_UDP_CHECKSUM)
+        edge_events_to_monitor.append(BAD_TCP_CHECKSUM)
         edge_events_to_monitor.append(TCP_CHRISTMAS)
+        edge_events_to_monitor.append(UNSCAPED_PERCENTAGE_URI)
+        edge_events_to_monitor.append(BAD_HTTP_REPLY)
 
         cloud_events_to_monitor = []
         cloud_events_to_monitor.append(SPLIT_ROUTING)
         cloud_events_to_monitor.append(BAD_ICMP_CHECKSUM)
         cloud_events_to_monitor.append(BAD_UDP_CHECKSUM)
+        cloud_events_to_monitor.append(BAD_TCP_CHECKSUM)
         cloud_events_to_monitor.append(TCP_CHRISTMAS)
+        cloud_events_to_monitor.append(BAD_HTTP_REPLY)
 
         vnf_cnf_events_to_monitor = []
         vnf_cnf_events_to_monitor.append(INAPPROPIATE_FIN)
         vnf_cnf_events_to_monitor.append(FRAGMENT_PAKCKET)
+        vnf_cnf_events_to_monitor.append(MALFORMED_SSH_IDENTIFICATION)
+        vnf_cnf_events_to_monitor.append(MALFORMED_SSH_VERSION)
 
-        slice_events_to_monitor = []
 
         "Variable definition"
         actual_weird_event_number = 0

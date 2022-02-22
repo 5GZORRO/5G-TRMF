@@ -82,7 +82,7 @@ class PeerTrust():
         information["trustor"]["credibility"] = round(random.uniform(0.75, 0.9),4)
         information["trustor"]["transactionFactor"] = round(random.uniform(0.8, 0.9),4)
         information["trustor"]["communityFactor"] = round(random.uniform(0.85, 0.9),4)
-        information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.75, 0.9),4)
+        information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.7),4)
         direct_weighting = round(random.uniform(0.6, 0.7),2)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -181,7 +181,7 @@ class PeerTrust():
 
 
                 new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID":  new_trustee,
-                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.80, 0.99), 4),
+                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.50, 0.7), 4),
                                    "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
 
                 """ Adjusting the parameters based on previous interactions """
@@ -210,7 +210,7 @@ class PeerTrust():
             else:
                 for offer in dict_product_offers[trustee]:
                     new_interaction = {"trustorDID": "did:5gzorro:domain-Z", "trusteeDID":  trustee, "offerDID": offer,
-                                       "userSatisfaction": round(random.uniform(0.80, 0.99), 4), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
+                                       "userSatisfaction": round(random.uniform(0.5, 0.7), 4), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
                     aux_new_interactions.append(new_interaction)
 
         """ Adjusting the parameters based on previous interactions"""
@@ -480,7 +480,7 @@ class PeerTrust():
             information["trustor"]["credibility"] = 0.913
             information["trustor"]["transactionFactor"] = 0.856
             information["trustor"]["communityFactor"] = 0.865
-            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.95),4)
+            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.7),4)
             direct_weighting = round(random.uniform(0.6, 0.7),2)
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
             information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -526,7 +526,7 @@ class PeerTrust():
                 information["trustor"]["credibility"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["credibility"])/2, 4)
                 information["trustor"]["transactionFactor"] = round((round(random.uniform(0.75, 0.95), 3) + trust_data["transactionFactor"])/2, 4)
                 information["trustor"]["communityFactor"] = round((round(random.uniform(0.75, 0.9), 3) + trust_data["communityFactor"])/2, 4)
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.8, 0.9),4)
+                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.7),4)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
@@ -874,7 +874,7 @@ class PeerTrust():
         global consumer
         """ This constant displays the weighting of action trust and recommendation trust """
         ALPHA_WEIGTHING = 0.5
-        RECOMMENDATION_THRESHOLD = 0.3
+        RECOMMENDATION_THRESHOLD = 0.2
 
         trustworthy_recommender_list = self.list_additional_did_providers[:]
 
@@ -898,6 +898,8 @@ class PeerTrust():
             if bool(recommendation_trust) and recommendation_trust >= RECOMMENDATION_THRESHOLD:
                 counter +=1
                 average_trust_recommenders = average_trust_recommenders + recommendation_trust
+            elif bool(recommendation_trust) and recommendation_trust < RECOMMENDATION_THRESHOLD:
+                print("Recommendation trust, ",recommendation_trust," is lower than Threshold: ", RECOMMENDATION_THRESHOLD)
 
         average_trust_recommenders = average_trust_recommenders / counter
 
@@ -978,6 +980,19 @@ class PeerTrust():
         number_offer_trustee_feedbacks_DLT = self.getOfferFeedbackNumberDLT(trusteeDID, offerDID)
         number_trustee_feedbacks_DLT = self.getTrusteeFeedbackNumberDLT(trusteeDID)
 
+        try:
+            offer_percentage_DLT = number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions
+        except ZeroDivisionError:
+            print("ZERO offer feedback registered in the DLT: ", trusteeDID, offerDID)
+            offer_percentage_DLT = 0
+
+        try:
+            trustee_percentage_DLT = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
+        except ZeroDivisionError:
+            print("ZERO trustee feedback registered in the DLT: ", trusteeDID, offerDID)
+            trustee_percentage_DLT = 0
+
+
         transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
 
         return round(transactionFactor, 4)
@@ -998,8 +1013,11 @@ class PeerTrust():
 
         """ We obtain our last trust value on the recommender from our Kafka topic """
         last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
-
-        provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
+        """ If we don't have a trust value about the recommender, its recommendation is fully contemplated """
+        if last_trust_score_recommender == 0:
+            provider_satisfaction = round((providerReputation + provider_recommendation)/2, 4)
+        else:
+            provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
@@ -1041,7 +1059,11 @@ class PeerTrust():
         """ We obtain our last trust value on the offer from our Kafka topic"""
         last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
 
-        provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
+        """ If we don't have a trust value about the recommender, its recommendation is fully contemplated """
+        if last_trust_score_recommender == 0:
+            provider_satisfaction = round((offerReputation + provider_recommendation )/2, 4)
+        else:
+            provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
