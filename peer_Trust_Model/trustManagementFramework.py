@@ -195,7 +195,7 @@ class start_data_collection(Resource):
                             """ Establish two new interactions per each provider"""
                             peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
 
-                    print("$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
+                    print("\nt$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
                     """ Retrieve information from trustor and trustee """
                     data = {"trustorDID": trustorDID, "trusteeDID": trustee, "offerDID": offer, "topicName": trustorDID}
@@ -888,7 +888,7 @@ class update_trust_level(Resource):
             #peerTrust.historical.append(last_trust_score)
             #mongoDB.insert_one(last_trust_score)
 
-        print("\n$$$$$$$$$$$$$$ Ending update trust level process process $$$$$$$$$$$$$$\n")
+        print("\n$$$$$$$$$$$$$$ Ending update trust level process $$$$$$$$$$$$$$\n")
 
         return 200
 
