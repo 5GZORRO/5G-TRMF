@@ -918,7 +918,7 @@ class update_trust_level(Resource):
         current_offer_type = offer_type[offerDID]
 
         while not event.isSet():
-
+            time.sleep(CURRENT_TIME_WINDOW)
             current_reward_and_punishment = 0.0
 
             if current_offer_type.lower() == 'ran' or current_offer_type.lower() == 'spectrum':
@@ -969,14 +969,14 @@ class update_trust_level(Resource):
                 n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
                 new_trust_score = max(0, n_ts)
 
-            print("\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
+            print("\n\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
             last_trust_score["trustor"]["reward_and_punishment"] = final_security_reward_and_punishment
             last_trust_score["trust_value"] = round(new_trust_score, 4)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             peerTrust.historical.append(last_trust_score)
             #mongoDB.insert_one(last_trust_score)
-            time.sleep(CURRENT_TIME_WINDOW)
+
 
     def get_resource_list_network_service_offer(self, offerDID):
         """ This method retrieves one or more resources involved in a Network Service/Slice Product Offering"""
@@ -1484,8 +1484,8 @@ class stop_trust_relationship(Resource):
         for i in range(len(threads)):
             if information['offerDID'] in threads[i]:
                 del threads[i]
+                print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
                 return 200
-        print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
 
         return 400
 
