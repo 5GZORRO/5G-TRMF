@@ -16,7 +16,7 @@ import threading
 from threading import Lock
 from dotenv import load_dotenv
 from peerTrust import *
-#from producer import *
+from producer import *
 from consumer import *
 from trustInformationTemplate import *
 from datetime import datetime
@@ -30,7 +30,7 @@ monkey.patch_all()
 app = Flask(__name__)
 api = Api(app)
 
-producer = "Producer()"
+producer = Producer()
 consumer = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
@@ -218,7 +218,17 @@ class start_data_collection(Resource):
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
                         "currentInteractionNumber": interaction["currentInteractionNumber"]}
 
+                load_dotenv()
+                trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+                message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
+                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
+                        "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                        "currentInteractionNumber": interaction["currentInteractionNumber"], "timestamp": interaction["endEvaluationPeriod"],
+                           "endpoint":trmf_endpoint}
+
                 write_only_row_to_csv(dlt_file_name, data)
+                producer.createTopic("test1")
+                producer.sendMessage("test1",max_trust_score_offerDID, message)
                 "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
                 "The ISSM should send to the TRMF the final selected offer"
                 requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
@@ -398,7 +408,7 @@ class compute_trust_level(Resource):
                         TF = TF + (time.time()-start_TF)
                         start_CF = time.time()
                         #current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
-                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'])
+                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'], offerDID)
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
                         CF = CF + (time.time()-start_CF)
@@ -1479,6 +1489,16 @@ class stop_trust_relationship(Resource):
 
         return 400
 
+class query_trust_level(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, information["trustorDID"], information["trusteeDID"], information["offerDID"])
+
+        return last_trust_value["trust_value"]
+
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
     api.add_resource(start_data_collection, '/start_data_collection')
@@ -1487,6 +1507,7 @@ def launch_server_REST(port):
     api.add_resource(store_trust_level, '/store_trust_level')
     api.add_resource(update_trust_level, '/update_trust_level')
     api.add_resource(stop_trust_relationship, '/stop_trust_relationship')
+    api.add_resource(query_trust_level, '/query_trust_level')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

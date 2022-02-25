@@ -869,7 +869,7 @@ class PeerTrust():
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/recommendation_counter))/2,4)
 
-    def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID, new_trusteeDID):
+    def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID, new_trusteeDID, new_offerDID):
 
         global consumer
         """ This constant displays the weighting of action trust and recommendation trust """
@@ -888,6 +888,10 @@ class PeerTrust():
             trustworthy_recommender_list.remove(trusteeDID)
 
         trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trusteeDID, new_trusteeDID, trustworthy_recommender_list)
+        self.consumer.start()
+        self.consumer.subscribe("test1")
+        external_recommendations = self.consumer.start_reading(trustorDID, new_offerDID)
+        print("$$$$$ External recommendations $$$$$\n", external_recommendations)
 
         summation_trustworthy_recommendations = 0.0
         average_trust_recommenders = 0.0

@@ -1,19 +1,33 @@
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, TopicPartition
 import json
 import logging
 import time
+import requests
+import copy
 
 
 class Consumer():
 
     consumer = None
-    name_server = 'kafka:9093'
+    tp = None
+    #name_server = 'kafka:9093'
+    name_server = '172.28.3.196:9092'
+    lastOffset = None
 
     def start(self):
         """ This method initialises a KafkaConsumer reading messages from the beginning """
         global consumer
+        global tp
+        global lastOffset
 
-        self.consumer = KafkaConsumer(bootstrap_servers='kafka:9093', group_id=None, auto_offset_reset='earliest')
+        tp = TopicPartition("test1",0)
+        self.consumer = KafkaConsumer(bootstrap_servers='172.28.3.196:9092', group_id=None, auto_offset_reset='earliest')
+
+        self.consumer.assign([tp])
+        self.consumer.seek_to_beginning(tp)
+
+        # obtain the last offset value
+        lastOffset = self.consumer.end_offsets([tp])[tp]
         #self.consumer = KafkaConsumer(topic, bootstrap_servers=self.name_servername_server, group_id=None,
                                       #enable_auto_commit=False, auto_offset_reset='earliest')
 
@@ -33,26 +47,36 @@ class Consumer():
         """ This method finishes a KafkaConsumer connection as well as unsubscribing the topics registered """
         global consumer
 
-        self.consumer.unsubscribe()
+        #self.consumer.unsubscribe()
         self.consumer.close()
 
-    def start_reading(self, data_lock, historical):
+    def start_reading(self, trustorDID, offerDID):
         """ This method begins to retrieve messages from a KafkaTopic.
         IT MUST BE LAUNCHED AS A THREAD TO AVOID BLOCKING THE APP """
         logging.basicConfig(level=logging.INFO)
         global consumer
+        global lastOffset
+
+        external_recommendations = []
 
         for message in self.consumer:
             trust_information = json.loads(message.value.decode())
-            data_lock.acquire()
+            print("New OfferDID: ", offerDID, "Topic Offer", trust_information["offerDID"])
+            if trust_information["offerDID"] == offerDID and trustorDID!= trust_information["offerDID"]:
+                end_point = trust_information["endpoint"]
 
-            if trust_information["trustor"]["trustorDID"] in historical:
-                historical[trust_information["trustor"]["trustorDID"]].append(trust_information)
-            else:
-                historical[trust_information["trustor"]["trustorDID"]] = [trust_information]
+                response = requests.post(end_point, data=json.dumps(trust_information).encode("utf-8"))
+                #response = json.loads(response.text)
 
-            data_lock.release()
+                new_object = copy.deepcopy(trust_information)
+                new_object["trust_value"] = response
+                external_recommendations.append(new_object)
+
             logging.info("New message: %s", trust_information)
+            if message.offset == lastOffset - 1:
+                return external_recommendations
+                #break
+            break
 
 
     def readSLANotification(self, historical, trustor, trustee, offerDID):
@@ -313,3 +337,10 @@ class Consumer():
                 satisfactionsummation = satisfactionsummation + interactions["trustor"]["direct_parameters"]["userSatisfaction"]
 
         return round(satisfactionsummation/counter, 3)
+
+
+"""consumer_instance = Consumer()
+consumer_instance.start()
+consumer_instance.subscribe("test1")
+consumer_instance.start_reading("a","b")
+consumer_instance.stop()"""
