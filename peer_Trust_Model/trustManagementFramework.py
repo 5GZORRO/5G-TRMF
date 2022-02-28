@@ -227,7 +227,7 @@ class start_data_collection(Resource):
                            "endpoint":trmf_endpoint}
 
                 write_only_row_to_csv(dlt_file_name, data)
-                producer.start()
+                #producer.start()
                 producer.createTopic("test1")
                 producer.sendMessage("test1",max_trust_score_offerDID, message)
                 "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"

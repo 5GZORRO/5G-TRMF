@@ -5,17 +5,9 @@ import json
 
 class Producer():
 
-    admin_client = None
-    producer = None
 
-    def start(self):
-        global admin_client
-        global producer
-
-        #admin_client = KafkaAdminClient(bootstrap_servers="kafka:9093",client_id='test')
-        #producer = KafkaProducer(bootstrap_servers='kafka:9093', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
-        admin_client = KafkaAdminClient(bootstrap_servers="172.28.3.196:9092",client_id='test')
-        producer = KafkaProducer(bootstrap_servers='172.28.3.196:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+    admin_client = KafkaAdminClient(bootstrap_servers="172.28.3.196:9092",client_id='test')
+    producer = KafkaProducer(bootstrap_servers='172.28.3.196:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     def createTopic(self, topic_name):
         """ This function allows generating new kafka topics where the topic name is composed by trustor's DID +

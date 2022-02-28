@@ -58,25 +58,30 @@ class Consumer():
         global lastOffset
 
         external_recommendations = []
-        print("Primera vez", self.consumer)
+
         for message in self.consumer:
             trust_information = json.loads(message.value.decode())
-            print("New OfferDID: ", offerDID, "Topic Offer", trust_information["offerDID"])
+            #print("New OfferDID: ", offerDID, "Topic Offer", trust_information["offerDID"])
+            #print("New trustorDID: ", trustorDID, "Topic trustorDID", trust_information["trustorDID"])
             if trust_information["offerDID"] == offerDID and trustorDID != trust_information["trustorDID"]:
                 end_point = trust_information["endpoint"]
 
                 response = requests.post(end_point, data=json.dumps(trust_information).encode("utf-8"))
-                #response = json.loads(response.text)
+                response = json.loads(response.text)
 
-                new_object = copy.deepcopy(trust_information)
-                new_object["trust_value"] = response
-                external_recommendations.append(new_object)
+                new_object = {}
+                new_object["trustorDID"] = trust_information["trustorDID"]
+                new_object["trusteDID"] = trust_information["trusteeDID"]
+                new_object["offerDID"] = trust_information["offerDID"]
+                new_object["trust_value"] = response["trust_value"]
 
-            logging.info("New message: %s", trust_information)
+                if new_object not in external_recommendations:
+                    "Adding a new recommendation if it was not previously taken into account"
+                    external_recommendations.append(new_object)
+                    #logging.info("New recomendation: %s", new_object)
+
             if message.offset == lastOffset - 1:
                 return external_recommendations
-                #break
-            break
 
 
     def readSLANotification(self, historical, trustor, trustee, offerDID):
