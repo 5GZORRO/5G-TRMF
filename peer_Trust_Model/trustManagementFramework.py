@@ -1471,7 +1471,7 @@ class update_trust_level(Resource):
         return final_stats_value
 
 
-class stop_trust_relationship(Resource):
+class stop_relationship(Resource):
     def post(self):
         """This method stops a trust relationship"""
         req = request.data.decode("utf-8")
@@ -1489,7 +1489,7 @@ class stop_trust_relationship(Resource):
 
         return 400
 
-class query_trust_level(Resource):
+class query_trust_score(Resource):
     def post(self):
         """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
         req = request.data.decode("utf-8")
@@ -1506,8 +1506,8 @@ def launch_server_REST(port):
     api.add_resource(compute_trust_level, '/compute_trust_level')
     api.add_resource(store_trust_level, '/store_trust_level')
     api.add_resource(update_trust_level, '/update_trust_level')
-    api.add_resource(stop_trust_relationship, '/stop_trust_relationship')
-    api.add_resource(query_trust_level, '/query_trust_level')
+    api.add_resource(stop_relationship, '/stop_relationship')
+    api.add_resource(query_trust_score, '/query_trust_score')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

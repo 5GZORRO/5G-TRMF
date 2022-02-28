@@ -58,12 +58,12 @@ class request_trust_scores(Resource):
             return response
 
 
-class stop_relationship(Resource):
+class stop_trust_relationship(Resource):
     def post(self):
         """This method stops a trust relationship"""
         req = request.data.decode("utf-8")
         offerDID = json.loads(req)
-        response = requests.post("http://localhost:5002/stop_trust_relationship", data=json.dumps(offerDID).encode("utf-8"))
+        response = requests.post("http://localhost:5002/stop_relationship", data=json.dumps(offerDID).encode("utf-8"))
 
         if response.status_code == 200:
             response = json.loads(response.text)
@@ -78,7 +78,7 @@ class query_trust_level(Resource):
         req = request.data.decode("utf-8")
         information = json.loads(req)
 
-        response = requests.post("http://localhost:5002/query_trust_level", data=json.dumps(information).encode("utf-8"))
+        response = requests.post("http://localhost:5002/query_trust_score", data=json.dumps(information).encode("utf-8"))
 
         if response.status_code == 200:
             response = json.loads(response.text)
@@ -90,7 +90,7 @@ class query_trust_level(Resource):
 
 def launch_server_REST(port):
     api.add_resource(request_trust_scores, '/request_trust_scores')
-    api.add_resource(stop_relationship, '/stop_relationship')
+    api.add_resource(stop_trust_relationship, '/stop_trust_relationship')
     api.add_resource(query_trust_level, '/query_trust_level')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()

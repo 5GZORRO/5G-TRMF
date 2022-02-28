@@ -230,15 +230,23 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "stakeholder_did"
-        description: "Stakeholder’s DID from whom to retrieve trust info"
+      - name: "trustorDID"
+        description: "Stakeholder’s DID who wants to know a trust value"
         required: true
         type: "string"
+      - name: "trusteeDID"
+          description: "Stakeholder’s DID from whom to retrieve trust value"
+          required: true
+          type: "string"
+      - name: "offerDID"
+          description: "Offer’s DID from whom to retrieve trust value"
+          required: true
+          type: "string"
       responses:
         200:
           description: "Successful operation"
           schema:
-            $ref: "#/definitions/trust_parameters"
+            $ref: "#/definitions/trustValue"
         400:
           description: "Invalid status value"
       #security:
@@ -246,6 +254,11 @@ paths:
         #- "write:pets"
         #- "read:pets"
 definitions:
+  trustValue:
+    type: "object"
+    properties:
+      trust_value:
+        type: "double"
   recommendation:
     type: "object"
     properties:
