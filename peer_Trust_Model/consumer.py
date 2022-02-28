@@ -58,7 +58,7 @@ class Consumer():
         global lastOffset
 
         external_recommendations = []
-
+        print("Primera vez", self.consumer)
         for message in self.consumer:
             trust_information = json.loads(message.value.decode())
             print("New OfferDID: ", offerDID, "Topic Offer", trust_information["offerDID"])
