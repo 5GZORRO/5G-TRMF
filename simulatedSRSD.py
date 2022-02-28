@@ -30,6 +30,14 @@ for file_name in list_product_offers:
 print("The Smart Resource and Service Discovery application needs to identify the most trustworthy offer for", trustor_DID["trustorDID"], "\n")
 #print("The available product offers are: \n\t- did:5gzorro:domain-B-RAN-1\n\t- did:5gzorro:domain-C-RAN-2\n\t- did:5gzorro:domain-D-RAN-1\n\t- did:5gzorro:domain-E-RAN-1")
 
+"""object = {"trustorDID": "99lm6s88-jv84-ii57-qq53-6166qvw8l3zt", "trusteeDID": "KjuJxYb9ycEstuWMHjZSZ5", "offerDID": "MzCciMdUNovcBSbUspeQHf"}
+response = requests.post("http://172.28.3.126:31115/query_trust_level", data=json.dumps(object).encode("utf-8"))
+if response.status_code == 200:
+    req = json.loads(response.text)
+    print(req)
+else:
+    print("Error:", response)"""
+
 start_time = time.time()
 "5GBarcelona"
 response = requests.post("http://172.28.3.126:31115/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
