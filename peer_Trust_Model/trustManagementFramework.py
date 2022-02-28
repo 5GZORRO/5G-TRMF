@@ -1497,7 +1497,7 @@ class query_trust_level(Resource):
 
         last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, information["trustorDID"], information["trusteeDID"], information["offerDID"])
 
-        return last_trust_value["trust_value"]
+        return {'trust_value': last_trust_value["trust_value"]}
 
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
