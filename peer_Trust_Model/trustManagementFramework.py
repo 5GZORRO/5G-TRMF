@@ -141,6 +141,8 @@ class start_data_collection(Resource):
         list_product_offers = {}
         considered_offer_list = []
 
+        print(peerTrust.historical)
+
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
 
@@ -168,6 +170,7 @@ class start_data_collection(Resource):
                                 offer_found = True
 
                     if not offer_found:
+                        print("NEW OFFER IN MONGODB")
                         if trustee in list_product_offers:
                             list_product_offers[trustee].append(offer)
                         else:
@@ -227,9 +230,9 @@ class start_data_collection(Resource):
                 load_dotenv()
                 trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
                 message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
-                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"] + 1,
+                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": interaction["currentInteractionNumber"] + 1, "timestamp": interaction["endEvaluationPeriod"],
+                        "currentInteractionNumber": interaction["currentInteractionNumber"], "timestamp": interaction["endEvaluationPeriod"],
                            "endpoint":trmf_endpoint}
 
                 #write_only_row_to_csv(dlt_file_name, data)
@@ -238,9 +241,9 @@ class start_data_collection(Resource):
                 producer.sendMessage("test1",max_trust_score_offerDID, message)
 
                 "Adjusting the parameters based on new interactions"
-                interaction["trustor"]["direct_parameters"]["interactionNumber"] = message["interactionNumber"]
-                interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
-                peerTrust.historical.append(interaction)
+                #interaction["trustor"]["direct_parameters"]["interactionNumber"] = message["interactionNumber"]
+                #interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
+                #peerTrust.historical.append(interaction)
 
                 "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
                 "The ISSM should send to the TRMF the final selected offer"
@@ -271,7 +274,7 @@ class start_data_collection(Resource):
                                 "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
                                 "TF": TF, "CF": CF, "offers": 1000}
                 writer.writerow(data)
-
+        print(peerTrust.historical)
         return json.dumps(trust_scores)
 
 
@@ -393,9 +396,19 @@ class compute_trust_level(Resource):
             counter_new_interactions = 0
 
             """Obtaining the last interaction registered by the Trustee in the DLT """
-            print(current_trustee_interactions)
+
             last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
             print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
+            #print(last_interaction_DLT['currentInteractionNumber'], last_trustee_interaction_registered, "\n", last_interaction_DLT)
+            #print("Last Value: ", i['lastValue'])
+            #print("Now Value: ", consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID))
+            #given_offer = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
+            #print("Given offer: ", given_offer)
+            #given_offer['trustor']['direct_parameters']['totalInteractionNumber'] = int(last_interaction_DLT['currentInteractionNumber'])
+            #given_offer = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
+            #print("Given offer: ", given_offer)
+            #peerTrust.historical.append(given_offer)
+
 
             if int(last_interaction_DLT['currentInteractionNumber']) > last_trustee_interaction_registered:
                 print(int(last_interaction_DLT['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
@@ -428,6 +441,12 @@ class compute_trust_level(Resource):
                         CF = CF + (time.time()-start_CF)
                         counter_new_interactions += 1
 
+                #current_trustee_interactions[len(current_trustee_interactions)-1]["currentInteractionNumber"] = last_trustee_interaction_registered
+                #update_interaction = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
+                #update_interaction['trustor']['direct_parameters']['totalInteractionNumber'] = int(last_interaction_DLT['currentInteractionNumber'])
+                #print("Updated Trustee Interaction: ", update_interaction['trustor']['direct_parameters']['totalInteractionNumber'])
+                #peerTrust.historical.append(update_interaction)
+
                 """ Updating the last value with the summation of new interactions"""
                 new_satisfaction = round(self.recomputingTrustValue(last_satisfaction, (new_satisfaction/counter_new_interactions), FORGETTING_FACTOR), 4)
                 new_credibility = round(self.recomputingTrustValue(last_credibility, (new_credibility/counter_new_interactions), FORGETTING_FACTOR), 4)
@@ -448,7 +467,9 @@ class compute_trust_level(Resource):
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
                 information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
-                information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
+                #print(peerTrust.getLastTotalInteractionNumber(current_trustee))
+                #information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
+                information["trustor"]["direct_parameters"]["totalInteractionNumber"] = last_interaction_DLT['currentInteractionNumber']
                 information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
                 information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
                 information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,4)
@@ -619,8 +640,15 @@ class compute_trust_level(Resource):
 
                 print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
-                peerTrust.historical.append(information)
+                #print("$$$$$ Historical: \n", peerTrust.historical)
+                #last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID)
+                #print("$$$$$ Last Value: ", last_trust_value)
 
+                peerTrust.historical.append(information)
+                if information in peerTrust.historical:
+                    print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
+
+                #print("$$$$$ Historical after: \n", peerTrust.historical)
                 compute_time = compute_time + (time.time()-start_time)
                 ###print("Compute time:", compute_time)
 

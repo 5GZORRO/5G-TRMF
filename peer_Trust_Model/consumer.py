@@ -198,26 +198,29 @@ class Consumer():
         Only specific information is returned """
 
         data = {}
+        last_interaction = 0
 
         for interactions in reversed(historical):
             if interactions["trustor"]["trustorDID"] == trustor and \
-                        interactions["trustor"]["trusteeDID"] == trustee and \
-                        interactions["trustor"]["offerDID"] == offer:
+                    interactions["trustor"]["trusteeDID"] == trustee and \
+                    interactions["trustor"]["offerDID"] == offer and \
+                    int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"]) >= last_interaction:
                 data = {"trustorDID": interactions["trustor"]["trustorDID"],
-                            "trusteeDID": interactions["trustor"]["trusteeDID"],
-                            "offerDID": interactions["trustor"]["offerDID"],
-                            "trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
-                            "credibility": interactions["trustor"]["credibility"],
-                            "transactionFactor": interactions["trustor"]["transactionFactor"],
-                            "communityFactor": interactions["trustor"]["communityFactor"],
-                            "interaction_number": interactions["trustor"]["direct_parameters"]["interactionNumber"],
-                            "totalInteractionNumber": interactions["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                            "userSatisfaction": interactions["trustor"]["direct_parameters"]["userSatisfaction"],
-                            "trust_value": interactions["trust_value"],
-                            "initEvaluationPeriod": interactions["initEvaluationPeriod"],
-                            "endEvaluationPeriod": interactions["endEvaluationPeriod"]
-                         }
-                return data
+                        "trusteeDID": interactions["trustor"]["trusteeDID"],
+                        "offerDID": interactions["trustor"]["offerDID"],
+                        "trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
+                        "credibility": interactions["trustor"]["credibility"],
+                        "transactionFactor": interactions["trustor"]["transactionFactor"],
+                        "communityFactor": interactions["trustor"]["communityFactor"],
+                        "interaction_number": interactions["trustor"]["direct_parameters"]["interactionNumber"],
+                        "totalInteractionNumber": interactions["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                        "userSatisfaction": interactions["trustor"]["direct_parameters"]["userSatisfaction"],
+                        "trust_value": interactions["trust_value"],
+                        "initEvaluationPeriod": interactions["initEvaluationPeriod"],
+                        "endEvaluationPeriod": interactions["endEvaluationPeriod"]
+                        }
+                last_interaction = int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"])
+                #return data
 
         return data
 
