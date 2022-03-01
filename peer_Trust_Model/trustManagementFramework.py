@@ -227,15 +227,21 @@ class start_data_collection(Resource):
                 load_dotenv()
                 trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
                 message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
-                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
+                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"] + 1,
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": interaction["currentInteractionNumber"], "timestamp": interaction["endEvaluationPeriod"],
+                        "currentInteractionNumber": interaction["currentInteractionNumber"] + 1, "timestamp": interaction["endEvaluationPeriod"],
                            "endpoint":trmf_endpoint}
 
                 #write_only_row_to_csv(dlt_file_name, data)
                 #producer.start()
                 producer.createTopic("test1")
                 producer.sendMessage("test1",max_trust_score_offerDID, message)
+
+                "Adjusting the parameters based on new interactions"
+                interaction["trustor"]["direct_parameters"]["interactionNumber"] = message["interactionNumber"]
+                interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
+                peerTrust.historical.append(interaction)
+
                 "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
                 "The ISSM should send to the TRMF the final selected offer"
                 requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
@@ -387,6 +393,7 @@ class compute_trust_level(Resource):
             counter_new_interactions = 0
 
             """Obtaining the last interaction registered by the Trustee in the DLT """
+            print(current_trustee_interactions)
             last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
             print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
 
@@ -816,7 +823,7 @@ class store_trust_level(Resource):
             list_trustee_interactions[information["trustee"]["trusteeDID"]] = [information]
             mongoDB.insert_one(list_trustee_interactions)"""
 
-        #mongoDB.insert_one(information)
+        mongoDB.insert_one(information)
 
         #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
         #mongoDB.insert_many([tutorial2, tutorial1])
@@ -982,7 +989,7 @@ class update_trust_level(Resource):
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             peerTrust.historical.append(last_trust_score)
-            #mongoDB.insert_one(last_trust_score)
+            mongoDB.insert_one(last_trust_score)
 
 
     def get_resource_list_network_service_offer(self, offerDID):

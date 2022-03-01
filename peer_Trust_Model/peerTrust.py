@@ -492,7 +492,8 @@ class PeerTrust():
         for interaction in last_interaction:
             endpoint = interaction["endpoint"].split("/")[2]
             data = {"trustorDID": interaction["trustorDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": interaction["offerDID"]}
-            response = requests.post(endpoint+"/query_satisfaction_score", data=json.dumps(data).encode("utf-8"))
+            response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
+            print(response.text)
             response = json.loads(response.text)
             #general_satisfaction = general_satisfaction + float(interaction['userSatisfaction'])
             general_satisfaction = general_satisfaction + float(response['userSatisfaction'])
@@ -560,6 +561,8 @@ class PeerTrust():
             #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
                 #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
                 #writer.writerow(data)
+            producer.createTopic("test1")
+            producer.sendMessage("test1", trustorDID, data)
             self.kafka_interaction_list.append(data)
 
             for i in range(previous_interaction_number-1):
@@ -607,6 +610,8 @@ class PeerTrust():
                 #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
                     #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
                     #writer.writerow(data)
+                producer.createTopic("test1")
+                producer.sendMessage("test1", trustorDID, data)
                 self.kafka_interaction_list.append(data)
 
         return None
@@ -710,6 +715,8 @@ class PeerTrust():
         #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
             #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
             #writer.writerow(data)
+        producer.createTopic("test1")
+        producer.sendMessage("test1", trustorDID, data)
         self.kafka_interaction_list.append(data)
 
         return data
