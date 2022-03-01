@@ -87,11 +87,27 @@ class query_trust_level(Resource):
         else:
             return response
 
+class query_satisfaction_value(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        response = requests.post("http://localhost:5002/query_satisfaction_score", data=json.dumps(information).encode("utf-8"))
+
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            """ Return a list of trust scores linked to the previous list of product offers """
+            return response
+        else:
+            return response
+
 
 def launch_server_REST(port):
     api.add_resource(request_trust_scores, '/request_trust_scores')
     api.add_resource(stop_trust_relationship, '/stop_trust_relationship')
     api.add_resource(query_trust_level, '/query_trust_level')
+    api.add_resource(query_satisfaction_value, '/query_satisfaction_value')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

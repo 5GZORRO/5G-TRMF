@@ -67,14 +67,17 @@ statistic_catalog = []
 threads = list()
 
 
-def find_by_column(filename, column, value):
+def find_by_column(column, value):
     """ This method discovers interactions registered in the DLT looking at one specific value"""
     list = []
-    with open(filename) as f:
+    """with open(filename) as f:
         reader = csv.DictReader(f)
         for item in reader:
             if item[column] == value:
-                list.append(item)
+                list.append(item)"""
+    for interaction in peerTrust.kafka_interaction_list:
+        if interaction[column] == value:
+            list.append(interaction)
     return list
 
 
@@ -173,7 +176,10 @@ class start_data_collection(Resource):
         """ Adding a set of minimum interactions between entities that compose the trust model """
         if len(list_product_offers)>1:
             minimum_data = peerTrust.minimumTrustValuesDLT(producer, consumer, trustorDID, list_product_offers)
-            write_data_to_csv(dlt_file_name, minimum_data)
+            for data in minimum_data:
+                producer.createTopic("test1")
+                producer.sendMessage("test1", trustorDID, data)
+            #write_data_to_csv(dlt_file_name, minimum_data)
 
         trustor_acquired = False
 
@@ -212,11 +218,11 @@ class start_data_collection(Resource):
         for interaction in reversed(peerTrust.historical):
             if interaction["trust_value"] == max_trust_score and \
                     interaction["trustor"]["offerDID"] == max_trust_score_offerDID:
-                data = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
+                """data = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
                         "userSatisfaction": interaction["trustor"]["direct_parameters"]["userSatisfaction"],
                         "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": interaction["currentInteractionNumber"]}
+                        "currentInteractionNumber": interaction["currentInteractionNumber"]}"""
 
                 load_dotenv()
                 trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
@@ -226,7 +232,7 @@ class start_data_collection(Resource):
                         "currentInteractionNumber": interaction["currentInteractionNumber"], "timestamp": interaction["endEvaluationPeriod"],
                            "endpoint":trmf_endpoint}
 
-                write_only_row_to_csv(dlt_file_name, data)
+                #write_only_row_to_csv(dlt_file_name, data)
                 #producer.start()
                 producer.createTopic("test1")
                 producer.sendMessage("test1",max_trust_score_offerDID, message)
@@ -315,7 +321,7 @@ class gather_information(Resource):
     def getInteractionTrustee(self, trusteeDID):
         """ This method retrieves all interactions related to a Trustee"""
 
-        return list(find_by_column(dlt_file_name, "trustorDID", trusteeDID))
+        return list(find_by_column("trustorDID", trusteeDID))
 
 class compute_trust_level(Resource):
     def post(self):
@@ -409,7 +415,7 @@ class compute_trust_level(Resource):
                         TF = TF + (time.time()-start_TF)
                         start_CF = time.time()
                         #current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
-                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'], offerDID)
+                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
                         CF = CF + (time.time()-start_CF)
@@ -1500,6 +1506,17 @@ class query_trust_score(Resource):
 
         return {'trust_value': last_trust_value["trust_value"]}
 
+
+class query_satisfaction_score(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        last_user_satisfaction = consumer.readSatisfaction(peerTrust.historical, information["trustorDID"], information["trusteeDID"], information["offerDID"])
+
+        return {'userSatisfaction': last_user_satisfaction}
+
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
     api.add_resource(start_data_collection, '/start_data_collection')
@@ -1509,6 +1526,7 @@ def launch_server_REST(port):
     api.add_resource(update_trust_level, '/update_trust_level')
     api.add_resource(stop_relationship, '/stop_relationship')
     api.add_resource(query_trust_score, '/query_trust_score')
+    api.add_resource(query_satisfaction_score, '/query_satisfaction_score')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

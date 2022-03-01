@@ -327,6 +327,13 @@ class Consumer():
 
         return counter
 
+    def readSatisfaction(self, historical, trustor, trustee, offer):
+        for interactions in reversed(historical):
+            if interactions["trustor"]["trustorDID"] == trustor and \
+                    interactions["trustor"]["trusteeDID"] == trustee and \
+                    interactions["trustor"]["offerDID"] == offer:
+                return float(interactions["trustor"]["direct_parameters"]["userSatisfaction"])
+
     def readSatisfactionSummation(self, historical, trustor, trustee):
         """ This method returns the satisfaction average rate between a trustor and a trustee  """
 

@@ -9,6 +9,7 @@ import os.path
 import csv
 import rstr
 import copy
+import requests
 
 
 #from producer import *
@@ -16,6 +17,7 @@ from trustInformationTemplate import *
 from consumer import *
 from datetime import datetime
 from random import randint
+from dotenv import load_dotenv
 
 from multiprocessing import Process, Value, Manager
 from threading import Lock
@@ -32,6 +34,8 @@ class PeerTrust():
     """ Creating additional domains to generate previous interactions and avoid a cold start """
     list_additional_did_providers = []
     list_additional_did_offers = []
+    recommender_list = []
+    kafka_interaction_list = []
 
     """ Parameters to define a minimum interactions in the system and avoid a cold start"""
     max_previous_providers_DLT = 4
@@ -42,26 +46,34 @@ class PeerTrust():
     historical = []
     consumer = None
 
-    def find_by_column(self, filename, column, value):
+    def find_by_column(self, column, value):
         """ This method discovers interactions registered in the DLT looking at one specific value"""
 
         list_object = []
-        with open(filename) as f:
+        """with open(filename) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item[column] == value:
-                    list_object.append(item)
+                    list_object.append(item)"""
+        for interaction in self.kafka_interaction_list:
+            if interaction[column] == value:
+                list_object.append(interaction)
+
         return list(list_object)
 
     def find_by_two_column(self, filename, column1, value1, colum2, value2):
         """ This method discovers interactions registered in the DLT looking at two specific values"""
 
         list_object = []
-        with open(filename) as f:
+        """with open(filename) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item[column1] == value1 and item[colum2] == value2:
-                    list_object.append(item)
+                    list_object.append(item)"""
+        for interaction in self.kafka_interaction_list:
+            if interaction[column1] == value1 and interaction[colum2] == value2:
+                list_object.append(interaction)
+
         return list(list_object)
 
     def minimumTrustTemplate(self, trustorDID, trusteeDID, offerDID):
@@ -103,6 +115,9 @@ class PeerTrust():
         global consumer
 
         self.consumer = consumer_instance
+
+        load_dotenv()
+        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
 
         print("\n\nSet of previous trust interactions between 5GZORRO domains\n")
         data = []
@@ -180,9 +195,12 @@ class PeerTrust():
                             interaction = True
 
 
-                new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID":  new_trustee,
-                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.50, 0.7), 4),
-                                   "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
+                """new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID":  new_trustee,
+                                   "offerDID": new_offer, "userSatisfaction": round(random.uniform(0.50, 0.75), 4),
+                                   "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}"""
+                new_interaction = {"trustorDID": self.list_additional_did_providers[i], "trusteeDID": new_trustee, "offerDID": new_offer,
+                           "interactionNumber": 1, "totalInteractionNumber": 2, "currentInteractionNumber": 3,
+                           "timestamp": datetime.timestamp(datetime.now()), "endpoint":trmf_endpoint}
 
                 """ Adjusting the parameters based on previous interactions """
                 for interaction in data:
@@ -209,8 +227,11 @@ class PeerTrust():
                 trustor_acquired = True
             else:
                 for offer in dict_product_offers[trustee]:
-                    new_interaction = {"trustorDID": "did:5gzorro:domain-Z", "trusteeDID":  trustee, "offerDID": offer,
-                                       "userSatisfaction": round(random.uniform(0.5, 0.7), 4), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}
+                    """new_interaction = {"trustorDID": "did:5gzorro:domain-Z", "trusteeDID":  trustee, "offerDID": offer,
+                                       "userSatisfaction": round(random.uniform(0.5, 0.7), 4), "interactionNumber": 1, "totalInteractionNumber": 6, "currentInteractionNumber": 8}"""
+                    new_interaction = {"trustorDID": "did:5gzorro:domain-Z", "trusteeDID": trustee, "offerDID": offer,
+                               "interactionNumber": 1, "totalInteractionNumber": 2, "currentInteractionNumber": 3,
+                               "timestamp": datetime.timestamp(datetime.now()), "endpoint":trmf_endpoint}
                     aux_new_interactions.append(new_interaction)
 
         """ Adjusting the parameters based on previous interactions"""
@@ -234,15 +255,16 @@ class PeerTrust():
 
         interactions = []
         "If DLT.csv file doesn't exist, we add new interactions related to the POs and minimum interactions between providers"
-        if not os.path.exists(self.dlt_file_name):
-            if not os.path.exists(self.dlt_file_name):
-                with open(self.dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
-                    writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
-                    writer.writeheader()
+        #if not os.path.exists(self.dlt_file_name):
+        if not bool(self.kafka_interaction_list):
+            #if not os.path.exists(self.dlt_file_name):
+                #with open(self.dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
+                    #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
+                    #writer.writeheader()
 
             for interaction in data:
                 trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
-                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = interaction["userSatisfaction"]
+                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.75), 4)
                 trust_informartion["trustor"]["direct_parameters"]["interactionNumber"] = interaction["interactionNumber"]
                 trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
@@ -259,24 +281,27 @@ class PeerTrust():
             for i in interactions:
                 self.historical.append(i)
 
+            self.kafka_interaction_list = copy.deepcopy(data)
             return data
         else:
             "We only add new interactions related to the POs"
             for interaction in aux_new_interactions:
                 trust_informartion = self.minimumTrustTemplate(interaction["trustorDID"], interaction["trusteeDID"], interaction["offerDID"])
-                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = interaction["userSatisfaction"]
+                trust_informartion["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.75), 4)
                 trust_informartion["trustor"]["direct_parameters"]["interactionNumber"] = interaction["interactionNumber"]
                 trust_informartion["trustor"]["direct_parameters"]["totalInteractionNumber"] = interaction["totalInteractionNumber"]
                 trust_informartion["currentInteractionNumber"] = interaction["currentInteractionNumber"]
 
                 """ Adding the recommender list so as to have an initial set"""
                 recommender_list = self.setRecommenderList(trust_informartion["trustor"]["trustorDID"], trust_informartion["trustor"]["trusteeDID"])
-                if len(recommender_list)>0:
+                if len(recommender_list) > 0:
                     trust_informartion["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
                 """ The minimum interactions are also registered in the Trustor's historical but 
                 they must be deleted when cold start is not used """
                 interactions.append(trust_informartion)
+                """ Adding new interaction to Kafka copy list"""
+                self.kafka_interaction_list.append(interaction)
 
             for i in interactions:
                 self.historical.append(i)
@@ -327,13 +352,19 @@ class PeerTrust():
 
         last_total_iteraction_number = 1
 
-        with open(self.dlt_file_name) as f:
+        """with open(self.dlt_file_name) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item["trustorDID"] == trusteeDID and int(item["currentInteractionNumber"]) > last_total_iteraction_number:
                     last_total_iteraction_number = int(item["currentInteractionNumber"])
                 elif item["trusteeDID"] == trusteeDID and int(item["totalInteractionNumber"]) > last_total_iteraction_number:
-                    last_total_iteraction_number = int(item["totalInteractionNumber"])
+                    last_total_iteraction_number = int(item["totalInteractionNumber"])"""
+
+        for interaction in self.kafka_interaction_list:
+            if interaction["trustorDID"] == trusteeDID and int(interaction["currentInteractionNumber"]) > last_total_iteraction_number:
+                last_total_iteraction_number = int(interaction["currentInteractionNumber"])
+            elif interaction["trusteeDID"] == trusteeDID and int(interaction["totalInteractionNumber"]) > last_total_iteraction_number:
+                last_total_iteraction_number = int(interaction["totalInteractionNumber"])
 
         return last_total_iteraction_number
 
@@ -342,13 +373,19 @@ class PeerTrust():
 
         current_iteraction_number = 0
 
-        with open(self.dlt_file_name) as f:
+        """with open(self.dlt_file_name) as f:
             reader = csv.DictReader(f)
             for item in reader:
                 if item["trustorDID"] == trustorDID and int(item["currentInteractionNumber"]) > current_iteraction_number:
                     current_iteraction_number = int(item["currentInteractionNumber"])
                 elif item["trusteeDID"] == trustorDID and int(item["totalInteractionNumber"]) > current_iteraction_number:
-                    current_iteraction_number = int(item["totalInteractionNumber"])
+                    current_iteraction_number = int(item["totalInteractionNumber"])"""
+
+        for interaction in self.kafka_interaction_list:
+            if interaction["trustorDID"] == trustorDID and int(interaction["currentInteractionNumber"]) > current_iteraction_number:
+                current_iteraction_number = int(interaction["currentInteractionNumber"])
+            elif interaction["trusteeDID"] == trustorDID and int(interaction["totalInteractionNumber"]) > current_iteraction_number:
+                current_iteraction_number = int(interaction["totalInteractionNumber"])
 
         return current_iteraction_number+1
 
@@ -356,7 +393,7 @@ class PeerTrust():
         """ This method retrieves the number of interactions between two entities and adds one more interaction """
         iteraction_number = 0
 
-        list_interactions = self.find_by_column(self.dlt_file_name, 'trustorDID', trustorDID)
+        list_interactions = self.find_by_column('trustorDID', trustorDID)
         for interaction in list_interactions:
             if interaction["trusteeDID"] == trusteeDID and int(interaction["interactionNumber"]) > iteraction_number:
                 iteraction_number = int(interaction["interactionNumber"])
@@ -373,21 +410,21 @@ class PeerTrust():
 
         last_registered_interaction = True
 
-        with open(self.dlt_file_name) as f:
-            reader = csv.DictReader(f)
-            """ Starting from the end to identify the last recommender"""
-            for interaction in reversed(list(reader)):
-                """ Check that the last recommender is not ourselves"""
-                if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID:
-                    """ Store the most recent interaction with the Trustee to return it in the case of no trustworthy 
-                    recommenders can be found"""
-                    if last_registered_interaction:
-                        last_interaction = interaction
-                        last_registered_interaction = False
-                    """Check if the Trustor is reliable for us"""
-                    for trustworthy_candidate in reversed(list(reader)):
-                        if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID']:
-                            return dict(interaction)
+        #with open(self.dlt_file_name) as f:
+            #reader = csv.DictReader(f)
+        """ Starting from the end to identify the last recommender"""
+        for interaction in reversed(self.kafka_interaction_list):
+            """ Check that the last recommender is not ourselves"""
+            if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID:
+                """ Store the most recent interaction with the Trustee to return it in the case of no trustworthy 
+                recommenders can be found"""
+                if last_registered_interaction:
+                    last_interaction = interaction
+                    last_registered_interaction = False
+                """Check if the Trustor is reliable for us"""
+                for trustworthy_candidate in reversed(self.kafka_interaction_list):
+                    if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID']:
+                        return dict(interaction)
         return dict(last_interaction)
 
     def getRecommenderOfferDLT(self, trustorDID, trusteeDID, offerDID):
@@ -399,20 +436,20 @@ class PeerTrust():
 
         last_registered_interaction = True
 
-        with open(self.dlt_file_name) as f:
-            reader = csv.DictReader(f)
-            """ Starting from the end to identify the last recommender"""
-            for interaction in reversed(list(reader)):
-                """ Check that the last recommender is not ourselves"""
-                if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
-                    """ Store the most recent interaction with the Trustee """
-                    if last_registered_interaction:
-                        last_interaction = interaction
-                        last_registered_interaction = False
-                    """ Check if the Trustor is reliable for us """
-                    for trustworthy_candidate in reversed(list(reader)):
-                        if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID'] and trustworthy_candidate['offerDID'] == offerDID:
-                            return dict(interaction)
+        #with open(self.dlt_file_name) as f:
+            #reader = csv.DictReader(f)
+        """ Starting from the end to identify the last recommender"""
+        for interaction in reversed(self.kafka_interaction_list):
+            """ Check that the last recommender is not ourselves"""
+            if interaction['trustorDID'] != trustorDID and interaction['trusteeDID'] == trusteeDID and interaction['offerDID'] == offerDID:
+                """ Store the most recent interaction with the Trustee """
+                if last_registered_interaction:
+                    last_interaction = interaction
+                    last_registered_interaction = False
+                """ Check if the Trustor is reliable for us """
+                for trustworthy_candidate in reversed(self.kafka_interaction_list):
+                    if trustworthy_candidate['trustorDID'] == trustorDID and trustworthy_candidate['trusteeDID'] == interaction['trustorDID'] and trustworthy_candidate['offerDID'] == offerDID:
+                        return dict(interaction)
 
         return dict(last_interaction)
 
@@ -450,9 +487,15 @@ class PeerTrust():
         counter = 0
         general_satisfaction = 0.0
 
-        last_interaction = self.find_by_column(self.dlt_file_name, 'trustorDID', trusteeDID)
+        #last_interaction = self.find_by_column(self.dlt_file_name, 'trustorDID', trusteeDID)
+        last_interaction = self.find_by_column('trustorDID', trusteeDID)
         for interaction in last_interaction:
-            general_satisfaction = general_satisfaction + float(interaction['userSatisfaction'])
+            endpoint = interaction["endpoint"].split("/")[2]
+            data = {"trustorDID": interaction["trustorDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": interaction["offerDID"]}
+            response = requests.post(endpoint+"/query_satisfaction_score", data=json.dumps(data).encode("utf-8"))
+            response = json.loads(response.text)
+            #general_satisfaction = general_satisfaction + float(interaction['userSatisfaction'])
+            general_satisfaction = general_satisfaction + float(response['userSatisfaction'])
             counter = counter + 1
 
         return round(general_satisfaction/counter, 4)
@@ -465,6 +508,9 @@ class PeerTrust():
         global consumer
 
         self.consumer = consumer_instance
+
+        load_dotenv()
+        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
 
         if previous_interaction_number != 0:
             trustInformationTemplate = TrustInformationTemplate()
@@ -499,15 +545,22 @@ class PeerTrust():
 
                 self.historical.append(information)
 
-            data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
+            """data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
                      "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
                     "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
                     "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                    "currentInteractionNumber": information["currentInteractionNumber"]}
+                    "currentInteractionNumber": information["currentInteractionNumber"]}"""
 
-            with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
-                writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
-                writer.writerow(data)
+            data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID,
+                    "offerDID": offerDID, "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
+                    "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                    "currentInteractionNumber": information["currentInteractionNumber"], "timestamp":
+                        information["endEvaluationPeriod"], "endpoint":trmf_endpoint}
+
+            #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
+                #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
+                #writer.writerow(data)
+            self.kafka_interaction_list.append(data)
 
             for i in range(previous_interaction_number-1):
                 interaction_number = self.getInteractionNumber(trustorDID, trusteeDID)
@@ -546,14 +599,15 @@ class PeerTrust():
                     self.historical.append(information)
 
                 data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
-                        "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
                         "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
                         "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": information["currentInteractionNumber"]}
+                        "currentInteractionNumber": information["currentInteractionNumber"], "timestamp":
+                            information["endEvaluationPeriod"], "endpoint":trmf_endpoint}
 
-                with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
-                    writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
-                    writer.writerow(data)
+                #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
+                    #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
+                    #writer.writerow(data)
+                self.kafka_interaction_list.append(data)
 
         return None
 
@@ -562,25 +616,31 @@ class PeerTrust():
         values previously established """
 
         self.consumer = consumer
+        load_dotenv()
+        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+
         trustee_selection = random.randint(0,3)
         offer_selection = random.randint(0,1)
 
         if not bool(self.list_additional_did_providers):
             "Adding the previous DID providers autogenerated to avoid the cold start"
             self.list_additional_did_offers = [[]] * self.max_previous_providers_DLT
-            with open(self.dlt_file_name) as f:
+            """with open(self.dlt_file_name) as f:
                 reader = csv.DictReader(f)
                 pointer = 0
-                for item in reader:
-                    if item["trustorDID"] not in self.list_additional_did_providers and pointer < self.max_previous_interactions_DLT:
-                        self.list_additional_did_providers.append(item["trustorDID"])
-                    pointer+=1
+                for item in reader:"""
+            pointer = 0
+            for item in self.kafka_interaction_list:
+                if item["trustorDID"] not in self.list_additional_did_providers and pointer < self.max_previous_interactions_DLT:
+                    self.list_additional_did_providers.append(item["trustorDID"])
+                pointer+=1
             "Adding the previous DID offers autogenerated to avoid the cold start"
-            with open(self.dlt_file_name) as f:
-                reader = csv.DictReader(f)
-                for item in reader:
-                    if item["trusteeDID"] in self.list_additional_did_providers and item["offerDID"] not in self.list_additional_did_offers:
-                        self.list_additional_did_offers[self.list_additional_did_providers.index(item["trusteeDID"])].append(item["offerDID"])
+            #with open(self.dlt_file_name) as f:
+                #reader = csv.DictReader(f)
+            for item in self.kafka_interaction_list:
+                #for item in reader:
+                if item["trusteeDID"] in self.list_additional_did_providers and item["offerDID"] not in self.list_additional_did_offers:
+                    self.list_additional_did_offers[self.list_additional_did_providers.index(item["trusteeDID"])].append(item["offerDID"])
 
 
         trusteeDID = self.list_additional_did_providers[trustee_selection]
@@ -642,14 +702,15 @@ class PeerTrust():
             self.historical.append(information)
 
         data = {"trustorDID": trustorDID, "trusteeDID": trusteeDID, "offerDID": offerDID,
-                "userSatisfaction": information["trustor"]["direct_parameters"]["userSatisfaction"],
                 "interactionNumber": information["trustor"]["direct_parameters"]["interactionNumber"],
                 "totalInteractionNumber": information["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                "currentInteractionNumber": information["currentInteractionNumber"]}
+                "currentInteractionNumber": information["currentInteractionNumber"], "timestamp":
+                    information["endEvaluationPeriod"], "endpoint":trmf_endpoint}
 
-        with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
-            writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
-            writer.writerow(data)
+        #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
+            #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
+            #writer.writerow(data)
+        self.kafka_interaction_list.append(data)
 
         return data
 
@@ -712,7 +773,8 @@ class PeerTrust():
         counter = 0
 
         """ Check that the last recommender is not ourselves"""
-        list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        #list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        list_interactions = self.find_by_column('trusteeDID', trusteeDID)
 
         """ Check the number of interactions whose offerID is the same"""
         for interaction in list_interactions:
@@ -725,14 +787,17 @@ class PeerTrust():
         """ This method counts the number of feedbacks registered in the DLT for a particular trustee """
 
         """ Check that the last recommender is not ourselves"""
-        return len(self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID))
+        #return len(self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID))
+        return len(self.find_by_column('trusteeDID', trusteeDID))
+
 
     def getTrustworthyRecommendationDLT(self, trustorDID, trusteeDID, trustworthy_recommender_list):
         """ This method returns from a trusted list those recommender that have interacted with the trustor """
 
         trustworthy_recommendations = []
 
-        list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        #list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        list_interactions = self.find_by_column('trusteeDID', trusteeDID)
         """ Starting from the end to identify the last recommender"""
         for interaction in reversed(list_interactions):
             """ We obtain the latest trust value from our reliable recommenders on the trustor giving 
@@ -761,7 +826,8 @@ class PeerTrust():
         """ This methods return all trustor's interactions registered in the DLT"""
         trustee_interactions = []
 
-        list_trustor_interactions = self.find_by_column(self.dlt_file_name, 'trustorDID', trustorDID)
+        #list_trustor_interactions = self.find_by_column(self.dlt_file_name, 'trustorDID', trustorDID)
+        list_trustor_interactions = self.find_by_column('trustorDID', trustorDID)
         for interaction in list_trustor_interactions:
             trustee_interactions.append(interaction["trusteeDID"])
 
@@ -772,7 +838,8 @@ class PeerTrust():
         have published feedbacks in the DLT"""
         interactions = []
 
-        list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        #list_interactions = self.find_by_column(self.dlt_file_name, 'trusteeDID', trusteeDID)
+        list_interactions = self.find_by_column('trusteeDID', trusteeDID)
         for interaction in list_interactions:
             if interaction["trustorDID"] != trustorDID:
                 interactions.append(interaction["trustorDID"])
@@ -876,7 +943,12 @@ class PeerTrust():
         ALPHA_WEIGTHING = 0.5
         RECOMMENDATION_THRESHOLD = 0.2
 
-        trustworthy_recommender_list = self.list_additional_did_providers[:]
+        deleted_recommender = False
+
+        if bool(self.recommender_list):
+            self.recommender_list = self.list_additional_did_providers[:]
+
+        #trustworthy_recommender_list = self.list_additional_did_providers[:]
 
         total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, new_trusteeDID)
 
@@ -884,16 +956,17 @@ class PeerTrust():
 
         trustee_interaction_rate = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
 
-        if trusteeDID in trustworthy_recommender_list:
-            trustworthy_recommender_list.remove(trusteeDID)
+        if trusteeDID in self.recommender_list:
+            self.recommender_list.remove(trusteeDID)
+            deleted_recommender = True
 
-        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trusteeDID, new_trusteeDID, trustworthy_recommender_list)
+        trustworthy_recommendations = self.getTrustworthyRecommendationDLT(trusteeDID, new_trusteeDID, self.recommender_list)
 
         summation_trustworthy_recommendations = 0.0
         average_trust_recommenders = 0.0
         counter = 0
 
-        if len(trustworthy_recommendations > 0):
+        if len(trustworthy_recommendations) > 0:
             "If we had trustworthy recommenders, we will use their recommendations together with our trust recommendation"
             for recommender in trustworthy_recommendations:
                 recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
@@ -938,13 +1011,10 @@ class PeerTrust():
                     self.historical.append(trustor_template)
         else:
             "We don't have trustworthy recommenders and we use external recommendations"
-            summation_trustworthy_recommendations = 0.0
-            counter = 0
-
             self.consumer.start()
             self.consumer.subscribe("test1")
             external_recommendations = self.consumer.start_reading(trustorDID, new_offerDID)
-            print("$$$$$ External recommendations $$$$$\n", external_recommendations)
+            print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
 
             trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
             recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
@@ -955,12 +1025,16 @@ class PeerTrust():
                                                 "average_recommendations": external_recommendation["trust_value"],
                                             "last_recommendation": external_recommendation["trust_value"]})
                 summation_trustworthy_recommendations = summation_trustworthy_recommendations + external_recommendation["trust_value"]
+                "Adding new recommenders"
+                self.recommender_list.append(external_recommendation["trustorDID"])
 
             counter = len(external_recommendations)
             if counter > 0:
                 trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
                 self.historical.append(trustor_template)
 
+        if deleted_recommender:
+            self.recommender_list.append(trusteeDID)
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/counter))/2,4)
 
