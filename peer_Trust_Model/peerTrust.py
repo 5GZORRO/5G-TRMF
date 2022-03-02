@@ -866,8 +866,8 @@ class PeerTrust():
                 summation_counter = summation_counter + 1
                 similarity_summation = similarity_summation + self.similarity(previous_interaction)
         else:
-            similarity_summation = 1
-            summation_counter = 1
+            similarity_summation = 0.5
+            summation_counter = 0.5
 
         trustee_similarity = self.similarity(trusteeDID)
 
@@ -949,6 +949,7 @@ class PeerTrust():
         RECOMMENDATION_THRESHOLD = 0.2
 
         deleted_recommender = False
+        no_recommendations = False
 
         if bool(self.recommender_list):
             self.recommender_list = self.list_additional_did_providers[:]
@@ -981,67 +982,81 @@ class PeerTrust():
                 elif bool(recommendation_trust) and recommendation_trust < RECOMMENDATION_THRESHOLD:
                     print("Recommendation trust, ",recommendation_trust," is lower than Threshold: ", RECOMMENDATION_THRESHOLD)
 
-            average_trust_recommenders = average_trust_recommenders / counter
+            try:
+                average_trust_recommenders = average_trust_recommenders / counter
+            except ZeroDivisionError:
+                print("$$$$ No recommendations $$$$")
+                average_trust_recommenders = 0
+                no_recommendations = True
 
-            for recommender in trustworthy_recommendations:
-                recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
-                if bool(recommendation_trust) and recommendation_trust >= 0.3:
-                    last_trust_score_recommender = self.getLastHistoryTrustValue(trusteeDID, recommender)
-                    action_trust = ALPHA_WEIGTHING * last_trust_score_recommender
+            if not no_recommendations:
+                for recommender in trustworthy_recommendations:
+                    recommendation_trust = self.consumer.readLastRecommendationTrustValue(self.historical, trustorDID, trusteeDID, recommender)
+                    if bool(recommendation_trust) and recommendation_trust >= 0.3:
+                        last_trust_score_recommender = self.getLastHistoryTrustValue(trusteeDID, recommender)
+                        action_trust = ALPHA_WEIGTHING * last_trust_score_recommender
 
-                    recommendation = self.getLastHistoryTrustValue(recommender, new_trusteeDID)
-                    trust_on_recommender = (1-ALPHA_WEIGTHING) * (recommendation_trust * recommendation)
+                        recommendation = self.getLastHistoryTrustValue(recommender, new_trusteeDID)
+                        trust_on_recommender = (1-ALPHA_WEIGTHING) * (recommendation_trust * recommendation)
 
-                    recommender_influence = recommendation_trust / average_trust_recommenders
-                    summation_trustworthy_recommendations = summation_trustworthy_recommendations + ((action_trust + trust_on_recommender) * recommender_influence)
+                        recommender_influence = recommendation_trust / average_trust_recommenders
+                        summation_trustworthy_recommendations = summation_trustworthy_recommendations + ((action_trust + trust_on_recommender) * recommender_influence)
 
-                    trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
+                        trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
 
-                    new_recommender = True
+                        new_recommender = True
 
-                    for recommendation_list in trustor_template["trustor"]["indirect_parameters"]["recommendations"]:
-                        if recommendation_list["recommender"] == recommender:
-                            recommendation_list["average_recommendations"] = ((recommendation_list["average_recommendations"] * recommendation_list["recommendation_total_number"]) + recommendation) / (recommendation_list["recommendation_total_number"] + 1)
-                            recommendation_list["recommendation_total_number"] =  recommendation_list["recommendation_total_number"] + 1
-                            recommendation_list["last_recommendation"] = recommendation
-                            new_recommender = False
+                        for recommendation_list in trustor_template["trustor"]["indirect_parameters"]["recommendations"]:
+                            if recommendation_list["recommender"] == recommender:
+                                recommendation_list["average_recommendations"] = ((recommendation_list["average_recommendations"] * recommendation_list["recommendation_total_number"]) + recommendation) / (recommendation_list["recommendation_total_number"] + 1)
+                                recommendation_list["recommendation_total_number"] =  recommendation_list["recommendation_total_number"] + 1
+                                recommendation_list["last_recommendation"] = recommendation
+                                new_recommender = False
 
-                    if new_recommender:
-                        recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
-                        recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,
-                                                    "recommendation_trust": 0.5, "recommendation_total_number": 1,
-                                                    "average_recommendations": recommendation, "last_recommendation": recommendation})
-                        trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
+                        if new_recommender:
+                            recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
+                            recommendation_list.append({"recommender": recommender,"trust_value": last_trust_score_recommender,
+                                                        "recommendation_trust": 0.5, "recommendation_total_number": 1,
+                                                        "average_recommendations": recommendation, "last_recommendation": recommendation})
+                            trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
 
-                    self.historical.append(trustor_template)
+                        self.historical.append(trustor_template)
         else:
+            "We don't have reliable recommendations and we are going to obtain external recommendations"
+            no_recommendations = True
+
+        if no_recommendations:
             "We don't have trustworthy recommenders and we use external recommendations"
             self.consumer.start()
             self.consumer.subscribe("test1")
             external_recommendations = self.consumer.start_reading(trustorDID, new_offerDID)
-            #print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
+            print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
 
-            trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
-            recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
+            if bool(external_recommendations):
+                trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
+                recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]
 
-            for external_recommendation in external_recommendations:
-                recommendation_list.append({"recommender": external_recommendation["trustorDID"],"trust_value": 0.5,
+                for external_recommendation in external_recommendations:
+                    recommendation_list.append({"recommender": external_recommendation["trustorDID"],"trust_value": 0.5,
                                                 "recommendation_trust": 0.5, "recommendation_total_number": 1,
                                                 "average_recommendations": external_recommendation["trust_value"],
-                                            "last_recommendation": external_recommendation["trust_value"]})
-                summation_trustworthy_recommendations = summation_trustworthy_recommendations + external_recommendation["trust_value"]
-                "Adding new recommenders"
-                self.recommender_list.append(external_recommendation["trustorDID"])
+                                                "last_recommendation": external_recommendation["trust_value"]})
+                    summation_trustworthy_recommendations = summation_trustworthy_recommendations + external_recommendation["trust_value"]
+                    "Adding new recommenders"
+                    self.recommender_list.append(external_recommendation["trustorDID"])
 
-            counter = len(external_recommendations)
-            if counter > 0:
-                trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
-                self.historical.append(trustor_template)
+                counter = len(external_recommendations)
+                if counter > 0:
+                    trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
+                    self.historical.append(trustor_template)
+            else:
+                return 0
 
         if deleted_recommender:
             self.recommender_list.append(trusteeDID)
 
         return round((trustee_interaction_rate+(summation_trustworthy_recommendations/counter))/2,4)
+
 
     def communityContextFactor2(self, trustorDID, trusteeDID):
         """ This method displays the recommender on the screen and we have changed the parameters of the

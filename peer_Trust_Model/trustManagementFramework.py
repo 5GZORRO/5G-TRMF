@@ -391,6 +391,7 @@ class compute_trust_level(Resource):
             new_transaction_factor = 0.0
             new_community_factor = 0.0
             counter_new_interactions = 0
+            counter_new_CF_interactions = 0
 
             """Obtaining the last interaction registered by the Trustee in the DLT """
 
@@ -436,7 +437,11 @@ class compute_trust_level(Resource):
                         print("\tCF(u) ---> ", current_community_factor, "\n")
                         new_community_factor = new_community_factor + current_community_factor
                         CF = CF + (time.time()-start_CF)
-                        counter_new_interactions += 1
+                        if current_community_factor > 0:
+                            "It could be the case we don't have recommender for a new PO"
+                            counter_new_CF_interactions += 1
+
+                        counter_new_interactions +=1
 
                 #current_trustee_interactions[len(current_trustee_interactions)-1]["currentInteractionNumber"] = last_trustee_interaction_registered
                 #update_interaction = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
@@ -448,7 +453,12 @@ class compute_trust_level(Resource):
                 new_satisfaction = round(self.recomputingTrustValue(last_satisfaction, (new_satisfaction/counter_new_interactions), FORGETTING_FACTOR), 4)
                 new_credibility = round(self.recomputingTrustValue(last_credibility, (new_credibility/counter_new_interactions), FORGETTING_FACTOR), 4)
                 new_transaction_factor = round(self.recomputingTrustValue(last_transaction_factor, (new_transaction_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
-                new_community_factor = round(self.recomputingTrustValue(last_community_factor, (new_community_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
+
+                "Only updates and applies forgetting factor to the CF whether we have new recommendations"
+                if counter_new_CF_interactions > 0:
+                    new_community_factor = round(self.recomputingTrustValue(last_community_factor, (new_community_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
+                else:
+                    new_community_factor = last_community_factor
 
                 information = trustInformationTemplate.trustTemplate()
                 information["trustee"]["trusteeDID"] = current_trustee
@@ -460,7 +470,13 @@ class compute_trust_level(Resource):
                 information["trustor"]["credibility"] = round(new_credibility, 4)
                 information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
                 information["trustor"]["communityFactor"] = round(new_community_factor, 4)
-                direct_weighting = round(random.uniform(0.65, 0.7),2)
+
+                "If we don't have recommendations, we only rely on ourself"
+                if new_community_factor > 0:
+                    direct_weighting = round(random.uniform(0.65, 0.7),2)
+                else:
+                    direct_weighting = 1
+
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
                 information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
                 information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
