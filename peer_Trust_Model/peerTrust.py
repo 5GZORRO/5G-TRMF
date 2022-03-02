@@ -522,9 +522,9 @@ class PeerTrust():
             information["trustor"]["trustorDID"] = trustorDID
             information["trustor"]["trusteeDID"] = trusteeDID
             information["trustor"]["offerDID"] = offerDID
-            information["trustor"]["credibility"] = 0.913
-            information["trustor"]["transactionFactor"] = 0.856
-            information["trustor"]["communityFactor"] = 0.865
+            information["trustor"]["credibility"] = round(random.uniform(0.9, 0.92), 4)
+            information["trustor"]["transactionFactor"] = round(random.uniform(0.85, 0.88), 4)
+            information["trustor"]["communityFactor"] = round(random.uniform(0.85, 0.88), 4)
             information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.7),4)
             direct_weighting = round(random.uniform(0.6, 0.7),2)
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
