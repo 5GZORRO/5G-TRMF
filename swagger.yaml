@@ -235,13 +235,13 @@ paths:
         required: true
         type: "string"
       - name: "trusteeDID"
-          description: "Stakeholder’s DID from whom to retrieve trust value"
-          required: true
-          type: "string"
+        description: "Stakeholder’s DID from whom to retrieve trust value"
+        required: true
+        type: "string"
       - name: "offerDID"
-          description: "Offer’s DID from whom to retrieve trust value"
-          required: true
-          type: "string"
+        description: "Offer’s DID from whom to retrieve trust value"
+        required: true
+        type: "string"
       responses:
         200:
           description: "Successful operation"
@@ -266,13 +266,13 @@ paths:
           required: true
           type: "string"
         - name: "trusteeDID"
-            description: "Stakeholder’s DID from whom to retrieve trust value"
-            required: true
-            type: "string"
+          description: "Stakeholder’s DID from whom to retrieve trust value"
+          required: true
+          type: "string"
         - name: "offerDID"
-            description: "Offer’s DID from whom to retrieve trust value"
-            required: true
-            type: "string"
+          description: "Offer’s DID from whom to retrieve trust value"
+          required: true
+          type: "string"
       responses:
         200:
           description: "Successful operation"
