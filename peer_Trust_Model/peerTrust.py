@@ -493,9 +493,7 @@ class PeerTrust():
             endpoint = interaction["endpoint"].split("/")[2]
             data = {"trustorDID": interaction["trustorDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": interaction["offerDID"]}
             response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
-            print(response.text)
             response = json.loads(response.text)
-            #general_satisfaction = general_satisfaction + float(interaction['userSatisfaction'])
             general_satisfaction = general_satisfaction + float(response['userSatisfaction'])
             counter = counter + 1
 
@@ -1021,7 +1019,7 @@ class PeerTrust():
             self.consumer.start()
             self.consumer.subscribe("test1")
             external_recommendations = self.consumer.start_reading(trustorDID, new_offerDID)
-            print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
+            #print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
 
             trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
             recommendation_list = trustor_template["trustor"]["indirect_parameters"]["recommendations"]

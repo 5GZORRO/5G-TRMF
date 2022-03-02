@@ -223,7 +223,7 @@ paths:
       tags:
       - "5G-TRMF"
       summary: "Retrieve the last trust score of a stakeholder."
-      description: "This method requests the last trust score of a particular stakeholder, if there is no previous value or it was calculated too much time ago, it triggers the trust level assessment process."
+      description: "This method requests the last trust score of a particular stakeholder."
       operationId: "queryTrustLevel"
       consumes:
       - "application/json"
@@ -249,11 +249,47 @@ paths:
             $ref: "#/definitions/trustValue"
         400:
           description: "Invalid status value"
+  /query_satisfaction_value:
+    post:
+      tags:
+        - "5G-TRMF"
+      summary: "Retrieve the last satisfaction value of a stakeholder."
+      description: "This method requests the last satisfaction value of a particular stakeholder."
+      operationId: "queryTrustLevel"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "trustorDID"
+          description: "Stakeholder’s DID who wants to know a trust value"
+          required: true
+          type: "string"
+        - name: "trusteeDID"
+            description: "Stakeholder’s DID from whom to retrieve trust value"
+            required: true
+            type: "string"
+        - name: "offerDID"
+            description: "Offer’s DID from whom to retrieve trust value"
+            required: true
+            type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/satisfactionValue"
+        400:
+          description: "Invalid status value"
       #security:
       #- petstore_auth:
         #- "write:pets"
         #- "read:pets"
 definitions:
+  satisfactionValue:
+    type: "object"
+    properties:
+      userSatisfaction:
+        type: "double"
   trustValue:
     type: "object"
     properties:

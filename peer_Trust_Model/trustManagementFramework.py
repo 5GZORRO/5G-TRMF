@@ -141,8 +141,6 @@ class start_data_collection(Resource):
         list_product_offers = {}
         considered_offer_list = []
 
-        print(peerTrust.historical)
-
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
 
@@ -170,7 +168,6 @@ class start_data_collection(Resource):
                                 offer_found = True
 
                     if not offer_found:
-                        print("NEW OFFER IN MONGODB")
                         if trustee in list_product_offers:
                             list_product_offers[trustee].append(offer)
                         else:
@@ -274,7 +271,7 @@ class start_data_collection(Resource):
                                 "update_time": update_time, "satisfaction": satisfaction, "credibility": credibility,
                                 "TF": TF, "CF": CF, "offers": 1000}
                 writer.writerow(data)
-        print(peerTrust.historical)
+
         return json.dumps(trust_scores)
 
 
@@ -645,8 +642,8 @@ class compute_trust_level(Resource):
                 #print("$$$$$ Last Value: ", last_trust_value)
 
                 peerTrust.historical.append(information)
-                if information in peerTrust.historical:
-                    print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
+                #if information in peerTrust.historical:
+                    #print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
 
                 #print("$$$$$ Historical after: \n", peerTrust.historical)
                 compute_time = compute_time + (time.time()-start_time)

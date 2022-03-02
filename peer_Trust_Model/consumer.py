@@ -61,8 +61,6 @@ class Consumer():
 
         for message in self.consumer:
             trust_information = json.loads(message.value.decode())
-            #print("New OfferDID: ", offerDID, "Topic Offer", trust_information["offerDID"])
-            #print("New trustorDID: ", trustorDID, "Topic trustorDID", trust_information["trustorDID"])
             if trust_information["offerDID"] == offerDID and trustorDID != trust_information["trustorDID"]:
                 end_point = trust_information["endpoint"]
 
