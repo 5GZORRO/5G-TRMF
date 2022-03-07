@@ -559,8 +559,8 @@ class PeerTrust():
             #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
                 #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
                 #writer.writerow(data)
-            producer.createTopic("test1")
-            producer.sendMessage("test1", trustorDID, data)
+            producer.createTopic("TRMF-interconnections")
+            producer.sendMessage("TRMF-interconnections", trustorDID, data)
             self.kafka_interaction_list.append(data)
 
             for i in range(previous_interaction_number-1):
@@ -608,8 +608,8 @@ class PeerTrust():
                 #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
                     #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
                     #writer.writerow(data)
-                producer.createTopic("test1")
-                producer.sendMessage("test1", trustorDID, data)
+                producer.createTopic("TRMF-interconnections")
+                producer.sendMessage("TRMF-interconnections", trustorDID, data)
                 self.kafka_interaction_list.append(data)
 
         return None
@@ -713,8 +713,8 @@ class PeerTrust():
         #with open(self.dlt_file_name, 'a', encoding='UTF8', newline='') as dlt_data:
             #writer = csv.DictWriter(dlt_data, fieldnames=self.dlt_headers)
             #writer.writerow(data)
-        producer.createTopic("test1")
-        producer.sendMessage("test1", trustorDID, data)
+        producer.createTopic("TRMF-interconnections")
+        producer.sendMessage("TRMF-interconnections", trustorDID, data)
         self.kafka_interaction_list.append(data)
 
         return data
@@ -834,7 +834,8 @@ class PeerTrust():
         #list_trustor_interactions = self.find_by_column(self.dlt_file_name, 'trustorDID', trustorDID)
         list_trustor_interactions = self.find_by_column('trustorDID', trustorDID)
         for interaction in list_trustor_interactions:
-            trustee_interactions.append(interaction["trusteeDID"])
+            if interaction not in trustee_interactions:
+                trustee_interactions.append(interaction["trusteeDID"])
 
         return trustee_interactions
 
@@ -985,7 +986,6 @@ class PeerTrust():
             try:
                 average_trust_recommenders = average_trust_recommenders / counter
             except ZeroDivisionError:
-                print("$$$$ No recommendations $$$$")
                 average_trust_recommenders = 0
                 no_recommendations = True
 
@@ -1027,10 +1027,9 @@ class PeerTrust():
 
         if no_recommendations:
             "We don't have trustworthy recommenders and we use external recommendations"
-            self.consumer.start()
-            self.consumer.subscribe("test1")
+            self.consumer.start("TRMF-interconnections")
+            self.consumer.subscribe("TRMF-interconnections")
             external_recommendations = self.consumer.start_reading(trustorDID, new_offerDID)
-            print("$$$$$ External recommendations $$$$$\n", external_recommendations, new_offerDID)
 
             if bool(external_recommendations):
                 trustor_template = self.consumer.readAllTemplateTrustValue(self.historical, trustorDID, trusteeDID)
@@ -1050,7 +1049,7 @@ class PeerTrust():
                     trustor_template["trustor"]["indirect_parameters"]["recommendations"] = recommendation_list
                     self.historical.append(trustor_template)
             else:
-                return 0
+                return 0.5
 
         if deleted_recommender:
             self.recommender_list.append(trusteeDID)
@@ -1103,17 +1102,21 @@ class PeerTrust():
         try:
             offer_percentage_DLT = number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions
         except ZeroDivisionError:
-            print("ZERO offer feedback registered in the DLT: ", trusteeDID, offerDID)
             offer_percentage_DLT = 0
 
         try:
             trustee_percentage_DLT = number_trustee_feedbacks_DLT / total_registered_trustee_interaction
         except ZeroDivisionError:
-            print("ZERO trustee feedback registered in the DLT: ", trusteeDID, offerDID)
             trustee_percentage_DLT = 0
 
-
-        transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
+        if offer_percentage_DLT == 0 and trustee_percentage_DLT != 0:
+            transactionFactor = (number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/ 2
+        elif offer_percentage_DLT != 0 and trustee_percentage_DLT == 0:
+            transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions)/ 2
+        elif offer_percentage_DLT == 0 and trustee_percentage_DLT == 0:
+            transactionFactor = 0.5
+        else:
+            transactionFactor = (number_offer_trustee_feedbacks_DLT / total_registered_offer_interactions + number_trustee_feedbacks_DLT / total_registered_trustee_interaction)/2
 
         return round(transactionFactor, 4)
 
@@ -1129,15 +1132,18 @@ class PeerTrust():
         """ Only one recommendation is currently contemplated"""
         last_interaction = self.getRecommenderDLT(trustorDID, trusteeDID)
 
-        provider_recommendation = self.getLastRecommendationValue(last_interaction)
-
-        """ We obtain our last trust value on the recommender from our Kafka topic """
-        last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
-        """ If we don't have a trust value about the recommender, its recommendation is fully contemplated """
-        if last_trust_score_recommender == 0:
-            provider_satisfaction = round((providerReputation + provider_recommendation)/2, 4)
+        if not bool(last_interaction):
+            return 0.5
         else:
-            provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
+            provider_recommendation = self.getLastRecommendationValue(last_interaction)
+
+            """ We obtain our last trust value on the recommender from our Kafka topic """
+            last_trust_score_recommender = self.getLastHistoryTrustValue(trustorDID, last_interaction['trustorDID'])
+            """ If we don't have a trust value about the recommender, its recommendation is fully contemplated """
+            if last_trust_score_recommender == 0:
+                provider_satisfaction = round((providerReputation + provider_recommendation)/2, 4)
+            else:
+                provider_satisfaction = round((providerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
@@ -1174,16 +1180,20 @@ class PeerTrust():
         """ Only one recommendation is currently contemplated"""
         last_interaction = self.getRecommenderOfferDLT(trustorDID, trusteeDID, offerDID)
 
-        provider_recommendation = self.getLastOfferRecommendationValue(last_interaction)
-
-        """ We obtain our last trust value on the offer from our Kafka topic"""
-        last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
-
-        """ If we don't have a trust value about the recommender, its recommendation is fully contemplated """
-        if last_trust_score_recommender == 0:
-            provider_satisfaction = round((offerReputation + provider_recommendation )/2, 4)
+        """ If we don't have a trust value about the recommender, it is its first interaction """
+        if not bool(last_interaction):
+            return 0.5
         else:
-            provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
+            provider_recommendation = self.getLastOfferRecommendationValue(last_interaction)
+
+            """ We obtain our last trust value on the offer from our Kafka topic"""
+            last_trust_score_recommender = self.getLastOfferHistoryTrustValue(last_interaction['trustorDID'], trusteeDID, offerDID)
+
+            """ If we don't have a trust value about the recommender its recommendation is fully contemplated """
+            if last_trust_score_recommender == 0:
+                provider_satisfaction = round((offerReputation + provider_recommendation )/2, 4)
+            else:
+                provider_satisfaction = round((offerReputation + provider_recommendation * last_trust_score_recommender)/2, 4)
 
         return provider_satisfaction
 
