@@ -477,7 +477,7 @@ class compute_trust_level(Resource):
                         if not bool(new_trustee_interaction):
                             new_interaction["last_trustee_interaction_registered"] = last_trustee_interaction_registered
 
-                            response = requests.post("http://172.28.3.126:31115/query_trust_level", data=json.dumps(new_interaction).encode("utf-8"))
+                            response = requests.post("http://172.28.3.126:31115/query_trust_info", data=json.dumps(new_interaction).encode("utf-8"))
                             if response.status_code == 200:
                                 response = json.loads(response.text)
                             else:
@@ -701,6 +701,7 @@ class compute_trust_level(Resource):
                     satisfaction = satisfaction + (time.time()-start_satisfaction)
 
             start_satisfaction = time.time()
+            print("Trustor antes provider: ", trustorDID)
             provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
             offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
             information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
@@ -1633,7 +1634,7 @@ class stop_relationship(Resource):
 
         return 400
 
-class query_trust_score(Resource):
+class query_trust_information(Resource):
     def post(self):
         """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
         req = request.data.decode("utf-8")
@@ -1644,6 +1645,16 @@ class query_trust_score(Resource):
                                                         information['last_trustee_interaction_registered'])
 
         return last_trust_value
+
+class query_trust_score(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, information["trustorDID"], information["trusteeDID"], information["offerDID"])
+
+        return {'trust_value': last_trust_value["trust_value"]}
 
 
 class query_satisfaction_score(Resource):
@@ -1664,6 +1675,7 @@ def launch_server_REST(port):
     api.add_resource(store_trust_level, '/store_trust_level')
     api.add_resource(update_trust_level, '/update_trust_level')
     api.add_resource(stop_relationship, '/stop_relationship')
+    api.add_resource(query_trust_information, '/query_trust_information')
     api.add_resource(query_trust_score, '/query_trust_score')
     api.add_resource(query_satisfaction_score, '/query_satisfaction_score')
     http_server = WSGIServer(('0.0.0.0', port), app)

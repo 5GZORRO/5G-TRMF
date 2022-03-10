@@ -251,7 +251,8 @@ class Consumer():
             if interactions["trustor"]["trustorDID"] == trustor and \
                     interactions["trustor"]["trusteeDID"] == trustee and \
                     interactions["trustor"]["offerDID"] == offer and \
-                    int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"]) >= last_interaction:
+                    int(interactions["trustor"]["direct_parameters"]["interactionNumber"]) >= last_interaction:
+                    #int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"]) >= last_interaction:
                 data = {"trustorDID": interactions["trustor"]["trustorDID"],
                         "trusteeDID": interactions["trustor"]["trusteeDID"],
                         "offerDID": interactions["trustor"]["offerDID"],

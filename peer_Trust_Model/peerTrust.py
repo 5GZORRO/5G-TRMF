@@ -61,7 +61,7 @@ class PeerTrust():
 
         return list(list_object)
 
-    def find_by_two_column(self, filename, column1, value1, colum2, value2):
+    def find_by_two_column(self, column1, value1, colum2, value2):
         """ This method discovers interactions registered in the DLT looking at two specific values"""
 
         list_object = []
@@ -72,6 +72,21 @@ class PeerTrust():
                     list_object.append(item)"""
         for interaction in self.kafka_interaction_list:
             if interaction[column1] == value1 and interaction[colum2] == value2:
+                list_object.append(interaction)
+
+        return list(list_object)
+
+    def find_by_three_column(self, column1, value1, colum2, value2, colum3, value3):
+        """ This method discovers interactions registered in the DLT looking at three specific values"""
+
+        list_object = []
+        """with open(filename) as f:
+            reader = csv.DictReader(f)
+            for item in reader:
+                if item[column1] == value1 and item[colum2] == value2:
+                    list_object.append(item)"""
+        for interaction in self.kafka_interaction_list:
+            if interaction[column1] == value1 and interaction[colum2] == value2 and interaction[colum3] == value3:
                 list_object.append(interaction)
 
         return list(list_object)
@@ -463,7 +478,15 @@ class PeerTrust():
         trustee = last_interaction['trusteeDID']
 
         trust_information = self.consumer.readLastTrustValue(self.historical, trustor, trustee)
-        last_truste_value = trust_information["trust_value"]
+        if bool(trust_information):
+            print("Trustor: ", trustor, "trustee: ", trustee, trust_information)
+            last_truste_value = trust_information["trust_value"]
+        else:
+            interaction_list = self.find_by_two_column('trustorDID',trustor, 'trusteeDID', trustee)
+            response = requests.post(interaction_list[0]["endpoint"], data=json.dumps(interaction_list[0]).encode("utf-8"))
+            response = json.loads(response.text)
+            last_truste_value = response['trust_value']
+
 
         return last_truste_value
 
@@ -477,7 +500,13 @@ class PeerTrust():
         offer = last_interaction['offerDID']
 
         trust_information = self.consumer.readLastTrustValueOffer(self.historical, trustor, trustee, offer)
-        last_truste_value = trust_information["trust_value"]
+        if bool(trust_information):
+            last_truste_value = trust_information["trust_value"]
+        else:
+            interaction_list = self.find_by_three_column('trustorDID',trustor, 'trusteeDID', trustee, 'offerDID', offer)
+            response = requests.post(interaction_list[0]["endpoint"], data=json.dumps(interaction_list[0]).encode("utf-8"))
+            response = json.loads(response.text)
+            last_truste_value = response['trust_value']
 
         return last_truste_value
 
