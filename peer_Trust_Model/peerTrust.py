@@ -98,7 +98,7 @@ class PeerTrust():
         direct_weighting = round(random.uniform(0.6, 0.7),2)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
-        information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID)
+        information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID, offerDID)
         information["trustor"]["direct_parameters"]["totalInteractionNumber"] = self.getLastTotalInteractionNumber(trusteeDID)
         information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
         information["currentInteractionNumber"] = self.getCurrentInteractionNumber(trustorDID)
@@ -350,7 +350,8 @@ class PeerTrust():
     def getLastTotalInteractionNumber(self, trusteeDID):
         """ Retrieve the last interactions number registered in the DLT for a Trustee"""
 
-        last_total_iteraction_number = 1
+        #last_total_iteraction_number = 1
+        last_total_iteraction_number = 0
 
         """with open(self.dlt_file_name) as f:
             reader = csv.DictReader(f)
@@ -363,7 +364,7 @@ class PeerTrust():
         for interaction in self.kafka_interaction_list:
             if interaction["trustorDID"] == trusteeDID and int(interaction["currentInteractionNumber"]) > last_total_iteraction_number:
                 last_total_iteraction_number = int(interaction["currentInteractionNumber"])
-            elif interaction["trusteeDID"] == trusteeDID and int(interaction["totalInteractionNumber"]) > last_total_iteraction_number:
+            if interaction["trusteeDID"] == trusteeDID and int(interaction["totalInteractionNumber"]) > last_total_iteraction_number:
                 last_total_iteraction_number = int(interaction["totalInteractionNumber"])
 
         return last_total_iteraction_number
@@ -384,18 +385,18 @@ class PeerTrust():
         for interaction in self.kafka_interaction_list:
             if interaction["trustorDID"] == trustorDID and int(interaction["currentInteractionNumber"]) > current_iteraction_number:
                 current_iteraction_number = int(interaction["currentInteractionNumber"])
-            elif interaction["trusteeDID"] == trustorDID and int(interaction["totalInteractionNumber"]) > current_iteraction_number:
+            if interaction["trusteeDID"] == trustorDID and int(interaction["totalInteractionNumber"]) > current_iteraction_number:
                 current_iteraction_number = int(interaction["totalInteractionNumber"])
 
         return current_iteraction_number+1
 
-    def getInteractionNumber(self, trustorDID, trusteeDID):
+    def getInteractionNumber(self, trustorDID, trusteeDID, offerDID):
         """ This method retrieves the number of interactions between two entities and adds one more interaction """
         iteraction_number = 0
 
         list_interactions = self.find_by_column('trustorDID', trustorDID)
         for interaction in list_interactions:
-            if interaction["trusteeDID"] == trusteeDID and int(interaction["interactionNumber"]) > iteraction_number:
+            if interaction["trusteeDID"] == trusteeDID and interaction["offerDID"] == offerDID and int(interaction["interactionNumber"]) > iteraction_number:
                 iteraction_number = int(interaction["interactionNumber"])
 
         return iteraction_number+1
@@ -529,7 +530,7 @@ class PeerTrust():
             direct_weighting = round(random.uniform(0.6, 0.7),2)
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
             information["trustor"]["indirect_parameters"]["recommendation_weighting"] = 1-direct_weighting
-            information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID)
+            information["trustor"]["direct_parameters"]["interactionNumber"] = self.getInteractionNumber(trustorDID, trusteeDID, offerDID)
             information["trustor"]["direct_parameters"]["totalInteractionNumber"] = self.getLastTotalInteractionNumber(trusteeDID)
             information["trust_value"] = round(information["trustor"]["direct_parameters"]["direct_weighting"]*(information["trustee"]["trusteeSatisfaction"]*information["trustor"]["credibility"]*information["trustor"]["transactionFactor"])+information["trustor"]["indirect_parameters"]["recommendation_weighting"]*information["trustor"]["communityFactor"],4)
             information["currentInteractionNumber"] = self.getCurrentInteractionNumber(trustorDID)
@@ -537,10 +538,10 @@ class PeerTrust():
             information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             if information not in self.historical:
-                """ Adding the recommender list so as to have an initial set"""
-                recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
-                if len(recommender_list)>0:
-                    information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+                #""" Adding the recommender list so as to have an initial set"""
+                #recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
+                #if len(recommender_list)>0:
+                    #information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
                 self.historical.append(information)
 
@@ -564,22 +565,23 @@ class PeerTrust():
             self.kafka_interaction_list.append(data)
 
             for i in range(previous_interaction_number-1):
-                interaction_number = self.getInteractionNumber(trustorDID, trusteeDID)
+                interaction_number = self.getInteractionNumber(trustorDID, trusteeDID, offerDID)
 
                 trust_data = self.consumer.readLastTrustInterationValues(self.historical, trustorDID, trusteeDID, offerDID, interaction_number)
 
                 information = trustInformationTemplate.trustTemplate()
 
+
                 information["trustee"]["trusteeDID"] = trusteeDID
                 information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["trusteeSatisfaction"])/2, 4)
+                information["trustee"]["trusteeSatisfaction"] = round((round(random.uniform(0.8, 0.9),3) + (interaction_number * trust_data["trusteeSatisfaction"]))/(interaction_number+1), 4)
                 #information["trustee"]["trusteeSatisfaction"] = round(random.uniform(0.8, 0.9), 3)
                 information["trustor"]["trustorDID"] = trustorDID
                 information["trustor"]["trusteeDID"] = trusteeDID
                 information["trustor"]["offerDID"] = offerDID
-                information["trustor"]["credibility"] = round((round(random.uniform(0.8, 0.9),3) + trust_data["credibility"])/2, 4)
-                information["trustor"]["transactionFactor"] = round((round(random.uniform(0.75, 0.95), 3) + trust_data["transactionFactor"])/2, 4)
-                information["trustor"]["communityFactor"] = round((round(random.uniform(0.75, 0.9), 3) + trust_data["communityFactor"])/2, 4)
+                information["trustor"]["credibility"] = round((round(random.uniform(0.8, 0.9),3) + (interaction_number * trust_data["credibility"]))/(interaction_number+1), 4)
+                information["trustor"]["transactionFactor"] = round((round(random.uniform(0.75, 0.95), 3) + (interaction_number * trust_data["transactionFactor"]))/(interaction_number+1), 4)
+                information["trustor"]["communityFactor"] = round((round(random.uniform(0.75, 0.9), 3) + (interaction_number * trust_data["communityFactor"]))/(interaction_number+1), 4)
                 information["trustor"]["direct_parameters"]["userSatisfaction"] = round(random.uniform(0.5, 0.7),4)
                 direct_weighting = round(random.uniform(0.6, 0.7),2)
                 information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
@@ -592,10 +594,10 @@ class PeerTrust():
                 information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
                 if information not in self.historical:
-                    """ Adding the recommender list so as to have an initial set"""
-                    recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
-                    if len(recommender_list)>0:
-                        information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
+                    #""" Adding the recommender list so as to have an initial set"""
+                    #recommender_list = self.setRecommenderList(information["trustor"]["trustorDID"], information["trustor"]["trusteeDID"])
+                    #if len(recommender_list)>0:
+                        #information["trustor"]["indirect_parameters"]["recommendations"] = recommender_list
 
                     self.historical.append(information)
 
@@ -835,7 +837,8 @@ class PeerTrust():
         list_trustor_interactions = self.find_by_column('trustorDID', trustorDID)
         for interaction in list_trustor_interactions:
             if interaction not in trustee_interactions:
-                trustee_interactions.append(interaction["trusteeDID"])
+                #trustee_interactions.append(interaction["trusteeDID"])
+                trustee_interactions.append(interaction)
 
         return trustee_interactions
 
@@ -865,7 +868,7 @@ class PeerTrust():
         if previous_trustor_interactions:
             for previous_interaction in previous_trustor_interactions:
                 summation_counter = summation_counter + 1
-                similarity_summation = similarity_summation + self.similarity(previous_interaction)
+                similarity_summation = similarity_summation + self.similarity(previous_interaction["trusteeDID"])
         else:
             similarity_summation = 0.5
             summation_counter = 0.5
@@ -875,6 +878,9 @@ class PeerTrust():
         credibility = trustee_similarity/(similarity_summation/summation_counter)
         if credibility > 1.0:
             credibility = (similarity_summation/summation_counter)/trustee_similarity
+        elif credibility == 0.0:
+            "Just in case of cold-start"
+            return 0.5
 
         return round(credibility, 4)
 
@@ -887,24 +893,40 @@ class PeerTrust():
         trustor_interaction_list = self.getTrustorInteractions(trusteeDID)
 
         for interaction in trustor_interaction_list:
-            common_interaction = self.getTrusteeInteractions(trusteeDID, interaction)
+            common_interaction = self.getTrusteeInteractions(trusteeDID, interaction["trusteeDID"])
             if common_interaction:
                 """ Currently, only one common interaction is contemplated """
                 break
 
-        common_interaction_list = self.getTrustorInteractions(common_interaction[0])
+        common_interaction_list = self.getTrustorInteractions(common_interaction[0]["trusteeDID"])
 
         IJS_counter = 0
         global_satisfaction_summation = 0.0
 
         for interaction in trustor_interaction_list:
-            if interaction in common_interaction_list:
+            if interaction["trusteeDID"] in common_interaction_list:
 
-                trustor_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, trusteeDID, interaction)
-                common_interaction_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, common_interaction[0], interaction)
+                trustor_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, trusteeDID, interaction["trusteeDID"])
+                if trustor_satisfaction_summation == 0.0:
+                    endpoint = interaction["endpoint"].split("/")[2]
+                    data = {"trustorDID": trusteeDID, "trusteeDID": interaction["trusteeDID"], "offerDID": None}
+                    response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
+                    response = json.loads(response.text)
+                    trustor_satisfaction_summation = response['userSatisfaction']
+
+                common_interaction_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, common_interaction[0]["trusteeDID"], interaction["trusteeDID"])
+                if common_interaction_satisfaction_summation == 0.0:
+                    endpoint = interaction["endpoint"].split("/")[2]
+                    data = {"trustorDID": common_interaction[0]["trusteeDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": None}
+                    response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
+                    response = json.loads(response.text)
+                    common_interaction_satisfaction_summation = response['userSatisfaction']
+
+
                 satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
                 global_satisfaction_summation = global_satisfaction_summation + satisfaction_summation
                 IJS_counter = IJS_counter + 1
+
 
         final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
 
@@ -915,8 +937,10 @@ class PeerTrust():
         """ Static list of recommender based on the domains registered in the DLT. TODO dynamic """
 
         global consumer
+        global recommender_list
 
-        trustworthy_recommender_list = self.list_additional_did_providers[:]
+        #trustworthy_recommender_list = self.list_additional_did_providers[:]
+        trustworthy_recommender_list = self.recommender_list[:]
 
         total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, trusteeDID)
 
@@ -945,6 +969,8 @@ class PeerTrust():
     def bad_mouthing_attack_resilience(self, trustorDID, trusteeDID, new_trusteeDID, new_offerDID):
 
         global consumer
+        global recommender_list
+
         """ This constant displays the weighting of action trust and recommendation trust """
         ALPHA_WEIGTHING = 0.5
         RECOMMENDATION_THRESHOLD = 0.2
@@ -952,8 +978,8 @@ class PeerTrust():
         deleted_recommender = False
         no_recommendations = False
 
-        if bool(self.recommender_list):
-            self.recommender_list = self.list_additional_did_providers[:]
+        #if bool(self.recommender_list):
+            #self.recommender_list = self.list_additional_did_providers[:]
 
         #trustworthy_recommender_list = self.list_additional_did_providers[:]
 
@@ -1062,8 +1088,10 @@ class PeerTrust():
         getLastCredibility, the only difference being  """
 
         global consumer
+        global recommender_list
 
-        trustworthy_recommender_list = self.list_additional_did_providers[:]
+        #trustworthy_recommender_list = self.list_additional_did_providers[:]
+        trustworthy_recommender_list = self.recommender_list[:]
 
         total_registered_trustee_interaction = self.consumer.readTrusteeInteractions(self.historical, trusteeDID)
 

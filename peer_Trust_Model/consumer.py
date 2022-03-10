@@ -103,7 +103,7 @@ class Consumer():
         else:
             return additional_providers_and_offers
 
-    def start_reading_minimum_interactions(self, offset):
+    def start_reading_minimum_interactions(self):
         """ This method begins to retrieve messages from a KafkaTopic """
         logging.basicConfig(level=logging.INFO)
         global consumer
@@ -115,7 +115,7 @@ class Consumer():
                 trust_information = json.loads(message.value.decode())
                 minimum_interactions.append(trust_information)
 
-                if message.offset == offset - 1:
+                if message.offset == lastOffset - 1:
                     return minimum_interactions
         else:
             return minimum_interactions
@@ -160,21 +160,21 @@ class Consumer():
                         interactions["trustor"]["trusteeDID"] == trustee and \
                         int(interation_number) > int(last_interaction) and \
                         int(interation_number) == int(current_interation_number):
-                data = {"trustorDID": interactions["trustor"]["trustorDID"],
-                            "trusteeDID": interactions["trustor"]["trusteeDID"],
-                            "offerDID": interactions["trustor"]["offerDID"],
-                            "trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
-                            "credibility": interactions["trustor"]["credibility"],
-                            "transactionFactor": interactions["trustor"]["transactionFactor"],
-                            "communityFactor": interactions["trustor"]["communityFactor"],
-                            "interaction_number": interactions["trustor"]["direct_parameters"]["interactionNumber"],
-                            "totalInteractionNumber": interactions["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                            "userSatisfaction": interactions["trustor"]["direct_parameters"]["userSatisfaction"],
-                            "trust_value": interactions["trust_value"],
-                            "initEvaluationPeriod": interactions["initEvaluationPeriod"],
-                            "endEvaluationPeriod": interactions["endEvaluationPeriod"]
-                        }
-                values.append(data)
+                #data = {"trustorDID": interactions["trustor"]["trustorDID"],
+                            #"trusteeDID": interactions["trustor"]["trusteeDID"],
+                            #"offerDID": interactions["trustor"]["offerDID"],
+                            #"trusteeSatisfaction": interactions["trustee"]["trusteeSatisfaction"],
+                            #"credibility": interactions["trustor"]["credibility"],
+                            #"transactionFactor": interactions["trustor"]["transactionFactor"],
+                            #"communityFactor": interactions["trustor"]["communityFactor"],
+                            #"interaction_number": interactions["trustor"]["direct_parameters"]["interactionNumber"],
+                            #"totalInteractionNumber": interactions["trustor"]["direct_parameters"]["totalInteractionNumber"],
+                            #"userSatisfaction": interactions["trustor"]["direct_parameters"]["userSatisfaction"],
+                            #"trust_value": interactions["trust_value"],
+                            #"initEvaluationPeriod": interactions["initEvaluationPeriod"],
+                            #"endEvaluationPeriod": interactions["endEvaluationPeriod"]
+                        #}
+                values.append(interactions)
 
         return values
 
@@ -378,11 +378,18 @@ class Consumer():
         return counter
 
     def readSatisfaction(self, historical, trustor, trustee, offer):
-        for interactions in reversed(historical):
-            if interactions["trustor"]["trustorDID"] == trustor and \
-                    interactions["trustor"]["trusteeDID"] == trustee and \
-                    interactions["trustor"]["offerDID"] == offer:
-                return float(interactions["trustor"]["direct_parameters"]["userSatisfaction"])
+
+        if offer == None:
+            for interactions in reversed(historical):
+                    if interactions["trustor"]["trustorDID"] == trustor and \
+                            interactions["trustor"]["trusteeDID"] == trustee:
+                        return float(interactions["trustor"]["direct_parameters"]["userSatisfaction"])
+        else:
+            for interactions in reversed(historical):
+                if interactions["trustor"]["trustorDID"] == trustor and \
+                        interactions["trustor"]["trusteeDID"] == trustee and \
+                        interactions["trustor"]["offerDID"] == offer:
+                    return float(interactions["trustor"]["direct_parameters"]["userSatisfaction"])
 
     def readSatisfactionSummation(self, historical, trustor, trustee):
         """ This method returns the satisfaction average rate between a trustor and a trustee  """
