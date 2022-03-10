@@ -152,7 +152,6 @@ class Consumer():
 
         """ Starting from the end to discover new trust information faster """
         for interactions in reversed(historical):
-
             interation_number = interactions["currentInteractionNumber"]
 
             """ Looking for all new interactions not previously contemplated"""
@@ -267,7 +266,8 @@ class Consumer():
                         "initEvaluationPeriod": interactions["initEvaluationPeriod"],
                         "endEvaluationPeriod": interactions["endEvaluationPeriod"]
                         }
-                last_interaction = int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"])
+                #last_interaction = int(interactions["trustor"]["direct_parameters"]["totalInteractionNumber"])
+                last_interaction = int(interactions["trustor"]["direct_parameters"]["interactionNumber"])
                 #return data
 
         return data

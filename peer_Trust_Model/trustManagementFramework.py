@@ -192,7 +192,6 @@ class start_data_collection(Resource):
 
         if len(list_product_offers) >= 1 and bool(kafka_minimum_interaction_list):
             peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
-            print("Carga Kafka: ", peerTrust.kafka_interaction_list)
 
 
         """ Adding a set of minimum interactions between entities that compose the trust model """
@@ -476,14 +475,16 @@ class compute_trust_level(Resource):
 
                         if not bool(new_trustee_interaction):
                             new_interaction["last_trustee_interaction_registered"] = last_trustee_interaction_registered
-
-                            response = requests.post("http://172.28.3.126:31115/query_trust_info", data=json.dumps(new_interaction).encode("utf-8"))
+                            endpoint = new_interaction["endpoint"].split("/")[2]
+                            response = requests.post("http://"+endpoint+"/query_trust_info", data=json.dumps(new_interaction).encode("utf-8"))
                             if response.status_code == 200:
                                 response = json.loads(response.text)
                             else:
                                 print("Error:", response)
 
-                            peerTrust.historical.append(response)
+                            for interaction in response:
+                                if bool(interaction):
+                                    peerTrust.historical.append(interaction)
 
 
                         for i in new_trustee_interaction:
@@ -701,7 +702,7 @@ class compute_trust_level(Resource):
                     satisfaction = satisfaction + (time.time()-start_satisfaction)
 
             start_satisfaction = time.time()
-            print("Trustor antes provider: ", trustorDID)
+
             provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
             offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
             information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
@@ -755,7 +756,7 @@ class compute_trust_level(Resource):
             compute_time = compute_time + (time.time()-start_time)
             ###print("Compute time:", compute_time)
 
-            print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
+            print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",current_trustee, " $$$$$$$$$$$$$$\n")
 
             requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
@@ -1641,8 +1642,8 @@ class query_trust_information(Resource):
         information = json.loads(req)
 
         last_trust_value = consumer.readLastTrustValues(peerTrust.historical, information["trustorDID"],
-                                                        information["trusteeDID"], information["offerDID"],
-                                                        information['last_trustee_interaction_registered'])
+                                                        information["trusteeDID"], information['last_trustee_interaction_registered'],
+                                                        information['currentInteractionNumber'])
 
         return last_trust_value
 

@@ -479,7 +479,6 @@ class PeerTrust():
 
         trust_information = self.consumer.readLastTrustValue(self.historical, trustor, trustee)
         if bool(trust_information):
-            print("Trustor: ", trustor, "trustee: ", trustee, trust_information)
             last_truste_value = trust_information["trust_value"]
         else:
             interaction_list = self.find_by_two_column('trustorDID',trustor, 'trusteeDID', trustee)
@@ -927,37 +926,43 @@ class PeerTrust():
                 """ Currently, only one common interaction is contemplated """
                 break
 
-        common_interaction_list = self.getTrustorInteractions(common_interaction[0]["trusteeDID"])
 
-        IJS_counter = 0
-        global_satisfaction_summation = 0.0
+        if bool(trustor_interaction_list) and bool(common_interaction):
+            common_interaction_list = self.getTrustorInteractions(common_interaction[0]["trusteeDID"])
 
-        for interaction in trustor_interaction_list:
-            if interaction["trusteeDID"] in common_interaction_list:
+            IJS_counter = 0
+            global_satisfaction_summation = 0.0
 
-                trustor_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, trusteeDID, interaction["trusteeDID"])
-                if trustor_satisfaction_summation == 0.0:
-                    endpoint = interaction["endpoint"].split("/")[2]
-                    data = {"trustorDID": trusteeDID, "trusteeDID": interaction["trusteeDID"], "offerDID": None}
-                    response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
-                    response = json.loads(response.text)
-                    trustor_satisfaction_summation = response['userSatisfaction']
+            for interaction in trustor_interaction_list:
+                if interaction["trusteeDID"] in common_interaction_list:
 
-                common_interaction_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, common_interaction[0]["trusteeDID"], interaction["trusteeDID"])
-                if common_interaction_satisfaction_summation == 0.0:
-                    endpoint = interaction["endpoint"].split("/")[2]
-                    data = {"trustorDID": common_interaction[0]["trusteeDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": None}
-                    response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
-                    response = json.loads(response.text)
-                    common_interaction_satisfaction_summation = response['userSatisfaction']
+                    trustor_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, trusteeDID, interaction["trusteeDID"])
+                    if trustor_satisfaction_summation == 0.0:
+                        endpoint = interaction["endpoint"].split("/")[2]
+                        data = {"trustorDID": trusteeDID, "trusteeDID": interaction["trusteeDID"], "offerDID": None}
+                        response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
+                        response = json.loads(response.text)
+                        trustor_satisfaction_summation = response['userSatisfaction']
 
-
-                satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
-                global_satisfaction_summation = global_satisfaction_summation + satisfaction_summation
-                IJS_counter = IJS_counter + 1
+                    common_interaction_satisfaction_summation = self.consumer.readSatisfactionSummation(self.historical, common_interaction[0]["trusteeDID"], interaction["trusteeDID"])
+                    if common_interaction_satisfaction_summation == 0.0:
+                        endpoint = interaction["endpoint"].split("/")[2]
+                        data = {"trustorDID": common_interaction[0]["trusteeDID"], "trusteeDID": interaction["trusteeDID"], "offerDID": None}
+                        response = requests.post("http://"+endpoint+"/query_satisfaction_value", data=json.dumps(data).encode("utf-8"))
+                        response = json.loads(response.text)
+                        common_interaction_satisfaction_summation = response['userSatisfaction']
 
 
-        final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
+                    satisfaction_summation = pow((trustor_satisfaction_summation - common_interaction_satisfaction_summation), 2)
+                    global_satisfaction_summation = global_satisfaction_summation + satisfaction_summation
+                    IJS_counter = IJS_counter + 1
+
+
+            final_similarity = 1 - math.sqrt(global_satisfaction_summation/IJS_counter)
+
+        else:
+            "Just in case of no similarities in the cold-start"
+            final_similarity = 0.5
 
         return final_similarity
 
