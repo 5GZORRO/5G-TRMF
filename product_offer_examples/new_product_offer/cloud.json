@@ -9,17 +9,17 @@
 			{
 				"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/category/b88ff6b2-ecdb-4531-bdc3-05bac8b60cf3",
 				"id" : "b88ff6b2-ecdb-4531-bdc3-05bac8b60cf3",
-				"name" : "Cloud"
+				"name" : "Edge"
 			}
 		],
 		"channel" : [ ],
-		"description" : "Cloud sample offer",
+		"description" : "Edge sample offer",
 		"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productOffering/f605173b-d700-4dcc-a7d8-9d5067cc361b",
 		"id" : "f605173b-d700-4dcc-a7d8-9d5067cc361b",
 		"lastUpdate" : "2021-11-16T14:16:42.849Z",
 		"lifecycleStatus" : "Active",
 		"marketSegment" : [ ],
-		"name" : "Cloud sample offer",
+		"name" : "Edge sample offer",
 		"place" : [
 			{
 				"id" : "90afc0f6-34fb-4c09-a3c0-f880078b6e76",
@@ -88,12 +88,12 @@
 			"href" : "http://172.28.3.126:31080/tmf-api/productCatalogManagement/v4/productSpecification/c37beee8-b2ee-47dc-be16-f34a718c058b",
 			"id" : "c37beee8-b2ee-47dc-be16-f34a718c058b",
 			"lastUpdate" : "2021-11-16T14:16:42.762Z",
-			"name" : "Cloud sample offer",
+			"name" : "Edge sample offer",
 			"productSpecCharacteristic" : [ ],
 			"productSpecificationRelationship" : [ ],
 			"relatedParty" : [
 				{
-					"extendedInfo" : "KjuJxYb9ycEstuWMHjZSZ5",
+					"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
 					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 				}
@@ -101,16 +101,16 @@
 			"resourceSpecification" : [
 				{
 					"attachment" : [ ],
-					"description" : "Cloud radical",
+					"description" : "Edge radical",
 					"feature" : [ ],
 					"href" : "http://172.28.3.126:31080/tmf-api/resourceCatalogManagement/v2/resourceSpecification/6c5c5966-c296-42b5-9cea-035396a0d58f",
 					"id" : "6c5c5966-c296-42b5-9cea-035396a0d58f",
 					"lastUpdate" : "2021-11-16T14:13:00.120Z",
 					"lifecycleStatus" : "Active",
-					"name" : "Cloud radical",
+					"name" : "Edge radical",
 					"relatedParty" : [
 						{
-							"extendedInfo" : "KjuJxYb9ycEstuWMHjZSZ5",
+							"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
 							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 						}
@@ -174,6 +174,6 @@
 		},
 		"did" : "MzCciMdUNovcBSbUspeQHf"
 	},
-	"offer_category" : "cloud",
+	"offer_category" : "Edge",
 	"predicted_cluster" : 1
 }
