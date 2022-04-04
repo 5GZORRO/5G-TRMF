@@ -66,6 +66,7 @@ class stop_trust_relationship(Resource):
         response = requests.post("http://localhost:5002/stop_relationship", data=json.dumps(offerDID).encode("utf-8"))
 
         if response.status_code == 200:
+            response = json.loads(response.text)
             return response
         else:
             return response
@@ -124,7 +125,12 @@ class notify_final_selection(Resource):
 
         response = requests.post("http://localhost:5002/notify_selection", data=json.dumps(information).encode("utf-8"))
 
-        return response
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            """ Return a list of trust scores linked to the previous list of product offers """
+            return response
+        else:
+            return response
 
 
 def launch_server_REST(port):

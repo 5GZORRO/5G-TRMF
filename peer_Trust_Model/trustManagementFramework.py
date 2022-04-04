@@ -32,7 +32,6 @@ api = Api(app)
 
 producer = Producer()
 consumer = Consumer()
-consumer_2 = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
 trustInformationTemplate = TrustInformationTemplate()
@@ -805,7 +804,7 @@ class compute_trust_level(Resource):
 
             start_satisfaction = time.time()
 
-            provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
+            provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation, consumer)
             offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
             information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
             ps_weighting = round(random.uniform(0.4, 0.6),2)
@@ -1652,9 +1651,10 @@ class notify_selection(Resource):
         information = json.loads(req)
 
         "The ISSM sends to the TRMF the final selected offer"
-        requests.post("http://localhost:5002/update_trust_level", data=json.dumps(information).encode("utf-8"))
+        response = requests.post("http://localhost:5002/update_trust_level", data=json.dumps(information).encode("utf-8"))
 
-        return {'userSatisfaction': last_user_satisfaction}
+        return response
+
 
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')

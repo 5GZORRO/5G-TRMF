@@ -689,7 +689,7 @@ class PeerTrust():
         direct_weighting = round(random.uniform(0.6, 0.7),2)
         information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
         provider_reputation = self.providerReputation(availableAssets, totalAssets, availableAssetLocation, totalAssetLocation, managedViolations, predictedViolations, executedViolations, nonPredictedViolations)
-        provider_satisfaction = self.providerSatisfaction(trustorDID, trusteeDID, provider_reputation)
+        provider_satisfaction = self.providerSatisfaction(trustorDID, trusteeDID, provider_reputation, self.consumer)
         offer_reputation = self.offerReputation(consideredOffers, totalOffers, consideredOfferLocation, totalOfferLocation, managedOfferViolations, predictedOfferViolations, executedOfferViolations, nonPredictedOfferViolations)
         offer_satisfaction = self.offerSatisfaction(trustorDID, trusteeDID, offerDID, offer_reputation)
 
@@ -1188,10 +1188,13 @@ class PeerTrust():
         return PSWeighting*providerSatisfaction + OSWeighting*offerSatisfaction
 
 
-    def providerSatisfaction(self, trustorDID, trusteeDID, providerReputation):
+    def providerSatisfaction(self, trustorDID, trusteeDID, providerReputation, consumer_instance):
         """ This method computes the Provider's satisfaction considering its reputation and recommendations"""
 
         """ Only one recommendation is currently contemplated"""
+        global consumer
+
+        self.consumer = consumer_instance
         last_interaction = self.getRecommenderDLT(trustorDID, trusteeDID)
 
         if not bool(last_interaction):
