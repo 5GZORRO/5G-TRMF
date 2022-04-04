@@ -296,7 +296,7 @@ class start_data_collection(Resource):
                     peerTrust.getLastTotalInteractionNumber(interaction["trustor"]["trusteeDID"])
 
                 load_dotenv()
-                trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+                trmf_endpoint = os.getenv('TRMF_B_5GBARCELONA')
                 message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
                         "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
@@ -1097,7 +1097,11 @@ class update_trust_level(Resource):
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
             peerTrust.historical.append(last_trust_score)
-            mongoDB.insert_one(last_trust_score)
+            #mongoDB.insert_one(last_trust_score)
+            #itm = db.doctors.find_one({"email":doc_mail})
+            itm = mongoDB.find_one({'trustee.offerDID': offerDID, 'trustor.trusteeDID': last_trust_score["trustor"]["trusteeDID"]})
+            if itm != None:
+                mongoDB.replace_one({'_id': itm.get('_id')}, last_trust_score, True)
 
 
     def get_resource_list_network_service_offer(self, offerDID):
@@ -1653,7 +1657,7 @@ class notify_selection(Resource):
         "The ISSM sends to the TRMF the final selected offer"
         response = requests.post("http://localhost:5002/update_trust_level", data=json.dumps(information).encode("utf-8"))
 
-        return response
+        return response.text
 
 
 def launch_server_REST(port):
