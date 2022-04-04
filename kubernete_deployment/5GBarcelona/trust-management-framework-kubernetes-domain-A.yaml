@@ -85,25 +85,25 @@ items:
                 - containerPort: 27017
               resources: {}
               volumeMounts:
-                - mountPath: /data/db
-                  name: trust-mongodbdata
+                - mountPath: /data/db-a
+                  name: trust-mongodbdata-a
           restartPolicy: Always
           volumes:
-            - name: trust-mongodbdata
+            - name: trust-mongodbdata-a
               persistentVolumeClaim:
-                claimName: trust-mongodbdata
+                claimName: trust-mongodbdata-a
     status: {}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: trust-mongodbdata
+        io.kompose.service: trust-mongodbdata-a
         domain: operator-a
-      name: trust-mongodbdata
+      name: trust-mongodbdata-a
       namespace: domain-operator-a
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       accessModes:
         - ReadWriteOnce
       resources:
@@ -117,7 +117,7 @@ items:
       labels:
         type: local
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       capacity:
         storage: 100Mi
       accessModes:

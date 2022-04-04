@@ -33,18 +33,16 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "stakeholder_did"
-        description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
+      - name: "trustorDID"
+        description: "Stakeholder’s DID of who launches the process of continuous information recollection."
         required: true
         type: "string"
-      - in: "body"
-        name: "trust_parameters"
-        description: "Empty template with the data to be collected in the Data Lake."
-        required: true
-        schema:
-          $ref: "#/definitions/trust_dictionary"
-      - name: "specific_events"
-        description: "Set of triggers that enable an event driven pre-processing to take place directly in the Data Lake."
+      - name: "trusteeDID"
+          description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
+          required: true
+          type: "string"
+      - name: "offerDID"
+        description: "Offer’s DID on which it launches the process of continuous information recollection."
         required: false
         type: "list of objects"
       responses:
@@ -82,11 +80,11 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "participant_did"
+      - name: "trustorDID"
         description: "Unique identifier for a resource or service consumer."
         required: true
         type: "string"
-      - name: "list_offers"
+      - name: "offers_list"
         description: "Set of offers matching stakeholder’s criteria such as intent-based priorities."
         required: true
         type: "list of product offers"
@@ -100,11 +98,11 @@ paths:
       tags:
       - "5G-TRMF"
       summary: "Final resource or service/slice determined by ISSM-WFM."
-      description: "This method is employed by the ISSM-WFM to notify the Trust Management Framework the final resource or service/slice selected and on which the startDataCollection method will be launched internally."
+      description: "This method is employed by the ISSM-WFM to notify the 5G-TRMF the final resource or service/slice selected."
       produces:
       - "application/json"
       parameters:
-      - name: "participant_id"
+      - name: "offerDID"
         description: "Distributed identifier of the final resource or service/slice candidate."
         required: true
         type: "string"
@@ -125,6 +123,10 @@ paths:
       parameters:
       - name: "stakeholder_did"
         description: "Stakeholder’s DID on whom the previously collected data is to be recovered."
+        required: true
+        type: "string"
+      - name: "offerDID"
+        description: "Distributed identifier of the product offering on which it collects information."
         required: true
         type: "string"
       responses:

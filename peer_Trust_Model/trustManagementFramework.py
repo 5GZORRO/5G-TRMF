@@ -32,7 +32,6 @@ api = Api(app)
 
 producer = Producer()
 consumer = Consumer()
-consumer_2 = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
 trustInformationTemplate = TrustInformationTemplate()
@@ -51,7 +50,10 @@ consumer_instance = None
 history = {}
 trustor_acquired = False
 trustorDID = ""
-new_request = True
+update_catalog = False
+thread_catalog = False
+timestamp_thread_catalog = 0
+TIME_TO_UPDATE_CATALOG_INFO = 600
 
 gather_time = 0
 compute_time = 0
@@ -123,7 +125,9 @@ class start_data_collection(Resource):
         global TF
         global CF
         global considered_offer_list
-        global new_request
+        global update_catalog
+        global thread_catalog
+        global timestamp_thread_catalog
 
         gather_time, compute_time, storage_time, update_time, satisfaction, credibility, TF, CF = 0, 0, 0, 0, 0, 0, 0, 0
         trustor_acquired = False
@@ -138,15 +142,27 @@ class start_data_collection(Resource):
         dict_product_offers = json.loads(req)
         initial_timestamp = time.time()
 
-        """if not os.path.exists(dlt_file_name):
-            with open(dlt_file_name, 'w', encoding='UTF8', newline='') as dlt_data:
-                writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
-                writer.writeheader()"""
-
         trust_scores = []
         list_product_offers = {}
         considered_offer_list = []
         kafka_minimum_interaction_list = []
+
+        """ Loading Catalog information and launching thread to update info after 10 minutes"""
+        if not update_catalog:
+            self.gatherin_POs_catalog(False)
+            update_catalog = True
+            timestamp_thread_catalog = int(str(time.time()).split(".")[0])
+        else:
+            if not thread_catalog and int(str(time.time()).split(".")[0]) - timestamp_thread_catalog >= TIME_TO_UPDATE_CATALOG_INFO:
+                x = threading.Thread(target=self.gatherin_POs_catalog, args=(True,))
+                x.start()
+                thread_catalog = True
+                timestamp_thread_catalog = int(str(time.time()).split(".")[0])
+            elif thread_catalog and int(str(time.time()).split(".")[0]) - timestamp_thread_catalog >= TIME_TO_UPDATE_CATALOG_INFO:
+                x = threading.Thread(target=self.gatherin_POs_catalog, args=(True,))
+                x.start()
+                timestamp_thread_catalog = int(str(time.time()).split(".")[0])
+
 
         """ If it is not the first time that the 5G-TRMF is executed, it should retrieve information from the MongoDB
         in case of such an information is not already loaded in the historical parameter """
@@ -180,48 +196,56 @@ class start_data_collection(Resource):
                         else:
                             list_product_offers[trustee] = [offer]
 
+        #consumer.start("TRMF-interconnections")
+        #consumer.subscribe("TRMF-interconnections")
+        #cold_start_info = consumer.start_reading_cold_start(max_previous_interactions_DLT)
+
         consumer.start("TRMF-interconnections")
         consumer.subscribe("TRMF-interconnections")
-        cold_start_info = consumer.start_reading_cold_start(max_previous_interactions_DLT)
-        consumer.start("TRMF-interconnections")
-        consumer.subscribe("TRMF-interconnections")
-        kafka_minimum_interaction_list = consumer.start_reading_minimum_interactions(max_previous_interactions_DLT)
+        kafka_minimum_interaction_list = consumer.start_reading_minimum_interactions()
+
+        if len(list_product_offers) >= 1 and bool(kafka_minimum_interaction_list):
+            peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
 
 
         """ Adding a set of minimum interactions between entities that compose the trust model """
-        if len(list_product_offers)>1 and not bool(cold_start_info):
-            minimum_data = peerTrust.minimumTrustValuesDLT(producer, consumer, trustorDID, list_product_offers)
+        #if len(list_product_offers)>1 and not bool(cold_start_info):
+            #minimum_data = peerTrust.minimumTrustValuesDLT(producer, consumer, trustorDID, list_product_offers)
 
-            for data in minimum_data:
-                producer.createTopic("TRMF-interconnections")
-                producer.sendMessage("TRMF-interconnections", trustorDID, data)
+            #for data in minimum_data:
+                #producer.createTopic("TRMF-interconnections")
+                #producer.sendMessage("TRMF-interconnections", trustorDID, data)
 
-            producer.createTopic("TRMF-historical")
-            producer.sendMessage("TRMF-historical", trustorDID, peerTrust.historical)
+            #producer.createTopic("TRMF-historical")
+            #producer.sendMessage("TRMF-historical", trustorDID, peerTrust.historical)
 
-        elif len(list_product_offers) >= 1 and bool(cold_start_info):
+        #elif len(list_product_offers) >= 1 and bool(cold_start_info):
+            #"If we don't have the minimum stakeholder interactions we load from Kafka"
+            #if not bool(peerTrust.historical):
+                #consumer.start("TRMF-historical")
+                #consumer.subscribe("TRMF-historical")
+                #historical = consumer.start_reading_minimum_historical()
 
-            if not bool(peerTrust.historical):
-                consumer.start("TRMF-historical")
-                consumer.subscribe("TRMF-historical")
-                historical = consumer.start_reading_minimum_historical()
-                for i in historical:
-                    if i not in peerTrust.historical:
-                        peerTrust.historical.append(i)
+                #peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
+                #print("Kafka Cargado: ", peerTrust.kafka_interaction_list)
+                #for i in historical:
+                    #if i not in peerTrust.historical:
+                        #peerTrust.historical.append(i)
 
-            "Adding a set of minimum interaction between entities but generated by other TRMF"
-            backup = []
+            #"Adding a set of minimum interaction between entities but generated by other TRMF"
+            #backup = []
 
-            for trustee in cold_start_info:
-                backup.append(cold_start_info[trustee])
+            #for trustee in cold_start_info:
+                #backup.append(cold_start_info[trustee])
 
-                if trustee not in peerTrust.list_additional_did_providers:
-                    peerTrust.list_additional_did_providers.append(trustee)
-            "If we don't have the minimum stakeholder interactions we load from Kafka"
-            if not all(elem in peerTrust.kafka_interaction_list for elem in kafka_minimum_interaction_list):
-                peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
+                #if trustee not in peerTrust.list_additional_did_providers:
+                    #peerTrust.list_additional_did_providers.append(trustee)
+            #"If we don't have the minimum stakeholder interactions we load from Kafka"
+            #if not all(elem in peerTrust.kafka_interaction_list for elem in kafka_minimum_interaction_list):
+                #peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
+                #print("Kafka Cargado: ", peerTrust.kafka_interaction_list)
 
-            peerTrust.list_additional_did_offers = backup
+            #peerTrust.list_additional_did_offers = backup
 
         trustor_acquired = False
 
@@ -241,7 +265,7 @@ class start_data_collection(Resource):
                         if offer in value:
                             peerTrust.generateHistoryTrustInformation(producer, consumer, trustorDID, trustee, offer, 3)
                             """ Establish two new interactions per each provider"""
-                            peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
+                            #peerTrust.setTrusteeInteractions(producer, consumer, trustee, 2)
 
                     print("\n$$$$$$$$$$$$$$ Ending cold start procces on ",trustee, " $$$$$$$$$$$$$$\n")
 
@@ -266,6 +290,11 @@ class start_data_collection(Resource):
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
                         "currentInteractionNumber": interaction["currentInteractionNumber"]}"""
 
+                " Modifying the interaction number as the most recent one "
+                interaction["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
+                interaction["trustor"]["direct_parameters"]["totalInteractionNumber"] = \
+                    peerTrust.getLastTotalInteractionNumber(interaction["trustor"]["trusteeDID"])
+
                 load_dotenv()
                 trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
                 message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
@@ -283,10 +312,6 @@ class start_data_collection(Resource):
                 #interaction["trustor"]["direct_parameters"]["interactionNumber"] = message["interactionNumber"]
                 #interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
                 #peerTrust.historical.append(interaction)
-
-                "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
-                "The ISSM should send to the TRMF the final selected offer"
-                requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
 
         if not os.path.exists("tests"):
             os.makedirs("tests")
@@ -315,6 +340,119 @@ class start_data_collection(Resource):
                 writer.writerow(data)
 
         return json.dumps(trust_scores)
+
+    def gatherin_POs_catalog(self, update_statistic):
+        global statistic_catalog
+        global old_product_offering
+
+        if not bool(statistic_catalog) or update_statistic:
+            """Requesting all product offering objects"""
+            "5GBarcelona"
+            load_dotenv()
+            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+            response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
+
+            "5TONIC"
+            #madrid_address = os.getenv('5TONIC_CATALOG_A')
+            #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
+
+            product_offering = json.loads(response.text)
+
+            if bool(product_offering) and product_offering != old_product_offering:
+                "If there is any change in the Catalog, we need to update all statistics"
+                statistic_catalog = []
+
+                for i in product_offering:
+                    "Delete once the HTTP request will not be filtered in 5GBarcelona"
+                    if product_offering.index(i) < 111450:
+                        "Added to avoid some malformed POs"
+                        if "href" in i['productSpecification']:
+                            href = i['productSpecification']['href']
+                            id_product_offering = i['id']
+                            "Added to avoid some malformed POs"
+                            if len(i['place']) > 0:
+                                product_offering_location = i['place'][0]['href']
+                            category = i['category'][0]['name']
+
+                            """ Obtaining the real product offer specification object"""
+                            response = requests.get(href)
+                            response = json.loads(response.text)
+                            if 'relatedParty' in response:
+                                did_provider = response['relatedParty'][0]['extendedInfo']
+                            else:
+                                did_provider = ''
+
+                            """ Obtaining the location of the product offering object"""
+                            response = requests.get(product_offering_location)
+                            response = json.loads(response.text)
+
+                            "Check whether the POs have location information"
+                            new_object = {}
+                            location = ""
+
+                            if "city" and "country" and "locality" in response:
+                                city = response['city']
+                                country = response['country']
+                                locality = response['locality']
+                                x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                                y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                                z_coordinate = response['geographicLocation']['geometry'][0]['z']
+                                location = str(x_coordinate)+"_"+str(y_coordinate)+"_"+str(z_coordinate)
+
+                                "Initialise the object"
+                                new_object["provider"] = did_provider
+                                new_object["n_resource"] = 1
+                                new_object[location] = 1
+                                new_object["active"] = 0
+                                new_object["active"+"_"+location] = 0
+                                new_object["active"+"_"+category.lower()] = 0
+                                new_object["active"+"_"+category.lower()+"_"+location] = 0
+
+                                if i['lifecycleStatus'] == 'Active':
+                                    new_object["active"] = 1
+                                    new_object["active"+"_"+location] = 1
+                                    new_object["active"+"_"+category.lower()] = 1
+                                    new_object["active"+"_"+category.lower()+"_"+location] = 1
+
+
+                            if not bool(statistic_catalog):
+                                statistic_catalog.append(new_object)
+                            elif bool(new_object):
+                                "This variable will check whether we have a new provider in the Catalog"
+                                new_provider = True
+
+                                for product_offer in statistic_catalog:
+                                    if product_offer["provider"] == did_provider:
+                                        new_provider = False
+
+                                        product_offer["n_resource"] = product_offer["n_resource"] + new_object["n_resource"]
+                                        if location not in product_offer:
+                                            product_offer[location] = new_object[location]
+                                        else:
+                                            product_offer[location] = product_offer[location] + new_object[location]
+
+                                        product_offer['active'] =  product_offer['active'] + new_object["active"]
+
+                                        if 'active'+"_"+location not in product_offer:
+                                            product_offer['active'+"_"+location] = new_object["active"+"_"+location]
+                                        else:
+                                            product_offer["active"+"_"+location] = product_offer["active"+"_"+location] + new_object["active"+"_"+location]
+
+                                        if "active"+"_"+category.lower() not in product_offer:
+                                            product_offer['active'+"_"+category.lower()] = new_object["active"+"_"+category.lower()]
+                                        else:
+                                            product_offer["active"+"_"+category.lower()] = product_offer["active"+"_"+category.lower()] + new_object["active"+"_"+category.lower()]
+
+                                        if "active"+"_"+category.lower()+"_"+location not in product_offer:
+                                            product_offer['active'+"_"+category.lower()+"_"+location] = new_object["active"+"_"+category.lower()+"_"+location]
+                                        else:
+                                            product_offer["active"+"_"+category.lower()+"_"+location] = product_offer["active"+"_"+category.lower()+"_"+location] + new_object["active"+"_"+category.lower()+"_"+location]
+
+                                "Only when the provider is new, we add a new object"
+                                if new_provider:
+                                    statistic_catalog.append(new_object)
+
+                old_product_offering = product_offering
 
 
 class gather_information(Resource):
@@ -346,7 +484,8 @@ class gather_information(Resource):
         print("\nThe latest trust interaction (history) of "+trustorDID+" with "+trusteeDID+" was:\n",last_trust_value, "\n")
 
         """Read interactions related to a Trustee"""
-        interactions = self.getInteractionTrustee(trusteeDID)
+        interactions = self.getInteractionTrustee(trustorDID, trusteeDID)
+
         print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
 
         print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
@@ -366,10 +505,10 @@ class gather_information(Resource):
 
         return response
 
-    def getInteractionTrustee(self, trusteeDID):
+    def getInteractionTrustee(self, trustorDID, trusteeDID):
         """ This method retrieves all interactions related to a Trustee"""
 
-        return list(find_by_column("trustorDID", trusteeDID))
+        return find_by_column("trustorDID", trusteeDID)
 
 class compute_trust_level(Resource):
     def post(self):
@@ -392,7 +531,7 @@ class compute_trust_level(Resource):
         global totalOffers
         global consideredOfferLocation
         global totalOfferLocation
-        global new_request
+        global statistic_catalog
 
         FORGETTING_FACTOR = 0.2
 
@@ -437,279 +576,290 @@ class compute_trust_level(Resource):
 
             """Obtaining the last interaction registered by the Trustee in the DLT """
 
-            last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
-            print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
-            #print(last_interaction_DLT['currentInteractionNumber'], last_trustee_interaction_registered, "\n", last_interaction_DLT)
-            #print("Last Value: ", i['lastValue'])
-            #print("Now Value: ", consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID))
-            #given_offer = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
-            #print("Given offer: ", given_offer)
-            #given_offer['trustor']['direct_parameters']['totalInteractionNumber'] = int(last_interaction_DLT['currentInteractionNumber'])
-            #given_offer = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
-            #print("Given offer: ", given_offer)
-            #peerTrust.historical.append(given_offer)
+            if len(current_trustee_interactions) > 0:
+                last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
+                print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
+                if int(last_interaction_DLT['currentInteractionNumber']) > last_trustee_interaction_registered:
+                    print(int(last_interaction_DLT['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
+                    print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
+                    print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
+
+                    for new_interaction in current_trustee_interactions:
+
+                        new_trustee_interaction = consumer.readLastTrustValues(peerTrust.historical, current_trustee, new_interaction['trusteeDID'], last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
+
+                        if not bool(new_trustee_interaction):
+                            new_interaction["last_trustee_interaction_registered"] = last_trustee_interaction_registered
+                            endpoint = new_interaction["endpoint"].split("/")[2]
+                            response = requests.post("http://"+endpoint+"/query_trust_info", data=json.dumps(new_interaction).encode("utf-8"))
+                            if response.status_code == 200:
+                                response = json.loads(response.text)
+                            else:
+                                print("Error:", response)
+
+                            for interaction in response:
+                                if bool(interaction):
+                                    peerTrust.historical.append(interaction)
 
 
-            if int(last_interaction_DLT['currentInteractionNumber']) > last_trustee_interaction_registered:
-                print(int(last_interaction_DLT['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
-                print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
-                print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
+                        for i in new_trustee_interaction:
+                            print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
+                            print("\tS(u,i) ---> ", i["trustee"]["trusteeSatisfaction"])
+                            new_satisfaction = new_satisfaction + i["trustee"]["trusteeSatisfaction"]
+                            start_credibility = time.time()
+                            current_credibility = peerTrust.credibility(current_trustee, new_interaction['trusteeDID'])
+                            print("\tCr(p(u,i)) ---> ", round(current_credibility, 4))
+                            new_credibility = new_credibility + current_credibility
+                            credibility = credibility + (time.time()-start_credibility)
+                            start_TF = time.time()
+                            current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
+                            print("\tTF(u,i) ---> ", current_transaction_factor)
+                            new_transaction_factor = new_transaction_factor + current_transaction_factor
+                            TF = TF + (time.time()-start_TF)
+                            start_CF = time.time()
+                            #current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
+                            current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
+                            print("\tCF(u) ---> ", current_community_factor, "\n")
+                            new_community_factor = new_community_factor + current_community_factor
+                            CF = CF + (time.time()-start_CF)
+                            if current_community_factor > 0:
+                                "It could be the case we don't have recommender for a new PO"
+                                counter_new_CF_interactions += 1
 
-                for new_interaction in current_trustee_interactions:
+                            counter_new_interactions +=1
 
-                    new_trustee_interaction = consumer.readLastTrustValues(peerTrust.historical, current_trustee, new_interaction['trusteeDID'], last_trustee_interaction_registered, new_interaction['currentInteractionNumber'])
+            else:
+                print("Currently, "+current_trustee+" has "+str(len(current_trustee_interactions))+" interactions in total\n")
 
-                    for i in new_trustee_interaction:
-                        print(new_interaction['trustorDID']," had an interaction with ", new_interaction['trusteeDID'],"\n")
-                        print("\tS(u,i) ---> ", i['trusteeSatisfaction'])
-                        new_satisfaction = new_satisfaction + i['trusteeSatisfaction']
-                        start_credibility = time.time()
-                        current_credibility = peerTrust.credibility(current_trustee, new_interaction['trusteeDID'])
-                        print("\tCr(p(u,i)) ---> ", round(current_credibility, 4))
-                        new_credibility = new_credibility + current_credibility
-                        credibility = credibility + (time.time()-start_credibility)
-                        start_TF = time.time()
-                        current_transaction_factor = peerTrust.transactionContextFactor(current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
-                        print("\tTF(u,i) ---> ", current_transaction_factor)
-                        new_transaction_factor = new_transaction_factor + current_transaction_factor
-                        TF = TF + (time.time()-start_TF)
-                        start_CF = time.time()
-                        #current_community_factor = peerTrust.communityContextFactor2(current_trustee, new_interaction['trusteeDID'])
-                        current_community_factor = peerTrust.bad_mouthing_attack_resilience(trustorDID, current_trustee, new_interaction['trusteeDID'], new_interaction['offerDID'])
-                        print("\tCF(u) ---> ", current_community_factor, "\n")
-                        new_community_factor = new_community_factor + current_community_factor
-                        CF = CF + (time.time()-start_CF)
-                        if current_community_factor > 0:
-                            "It could be the case we don't have recommender for a new PO"
-                            counter_new_CF_interactions += 1
 
-                        counter_new_interactions +=1
-
-                #current_trustee_interactions[len(current_trustee_interactions)-1]["currentInteractionNumber"] = last_trustee_interaction_registered
-                #update_interaction = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, current_trustee, offerDID)
-                #update_interaction['trustor']['direct_parameters']['totalInteractionNumber'] = int(last_interaction_DLT['currentInteractionNumber'])
-                #print("Updated Trustee Interaction: ", update_interaction['trustor']['direct_parameters']['totalInteractionNumber'])
-                #peerTrust.historical.append(update_interaction)
-
+            "Only updates and applies forgetting factor whether there are new Trustee interactions"
+            if counter_new_interactions > 0:
                 """ Updating the last value with the summation of new interactions"""
                 new_satisfaction = round(self.recomputingTrustValue(last_satisfaction, (new_satisfaction/counter_new_interactions), FORGETTING_FACTOR), 4)
                 new_credibility = round(self.recomputingTrustValue(last_credibility, (new_credibility/counter_new_interactions), FORGETTING_FACTOR), 4)
                 new_transaction_factor = round(self.recomputingTrustValue(last_transaction_factor, (new_transaction_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
+            else:
+                new_satisfaction = last_satisfaction
+                new_credibility = last_credibility
+                new_transaction_factor = last_transaction_factor
 
-                "Only updates and applies forgetting factor to the CF whether we have new recommendations"
-                if counter_new_CF_interactions > 0:
-                    new_community_factor = round(self.recomputingTrustValue(last_community_factor, (new_community_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
-                else:
-                    new_community_factor = last_community_factor
+            if counter_new_CF_interactions > 0:
+                new_community_factor = round(self.recomputingTrustValue(last_community_factor, (new_community_factor/counter_new_interactions), FORGETTING_FACTOR), 4)
+            else:
+                new_community_factor = last_community_factor
 
-                information = trustInformationTemplate.trustTemplate()
-                information["trustee"]["trusteeDID"] = current_trustee
-                information["trustee"]["offerDID"] = offerDID
-                information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 4)
-                information["trustor"]["trustorDID"] = trustorDID
-                information["trustor"]["trusteeDID"] = current_trustee
-                information["trustor"]["offerDID"] = offerDID
-                information["trustor"]["credibility"] = round(new_credibility, 4)
-                information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
-                information["trustor"]["communityFactor"] = round(new_community_factor, 4)
+            information = trustInformationTemplate.trustTemplate()
+            information["trustee"]["trusteeDID"] = current_trustee
+            information["trustee"]["offerDID"] = offerDID
+            information["trustee"]["trusteeSatisfaction"] = round(new_satisfaction, 4)
+            information["trustor"]["trustorDID"] = trustorDID
+            information["trustor"]["trusteeDID"] = current_trustee
+            information["trustor"]["offerDID"] = offerDID
+            information["trustor"]["credibility"] = round(new_credibility, 4)
+            information["trustor"]["transactionFactor"] = round(new_transaction_factor, 4)
+            information["trustor"]["communityFactor"] = round(new_community_factor, 4)
 
-                "If we don't have recommendations, we only rely on ourself"
-                if new_community_factor > 0:
-                    direct_weighting = round(random.uniform(0.65, 0.7),2)
-                else:
-                    direct_weighting = 1
+            "If we don't have recommendations, we only rely on ourself"
+            if new_community_factor > 0:
+                direct_weighting = round(random.uniform(0.65, 0.7),2)
+            else:
+                direct_weighting = 1
 
-                information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
-                information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
-                information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
-                #print(peerTrust.getLastTotalInteractionNumber(current_trustee))
-                #information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
-                information["trustor"]["direct_parameters"]["totalInteractionNumber"] = last_interaction_DLT['currentInteractionNumber']
-                information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
-                information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
-                information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,4)
-                information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
-                information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
-                information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+            information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
+            information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
+            #information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
+            information["trustor"]["direct_parameters"]["interactionNumber"] = peerTrust.getInteractionNumber(trustorDID, current_trustee, offerDID)
+            #print(peerTrust.getLastTotalInteractionNumber(current_trustee))
+            information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
+            #information["trustor"]["direct_parameters"]["totalInteractionNumber"] = last_interaction_DLT['currentInteractionNumber']
+            information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
+            information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
+            information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,4)
+            information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
+            information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
+            information["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
-                """ These values should be requested from other 5GZORRO components in future releases, in particular, 
-                from the Calatog and SLA Breach Predictor"""
-                for interaction in provider_list:
-                    trustee = interaction.split("$")[0]
-                    offer = interaction.split("$")[1]
+            """ These values should be requested from other 5GZORRO components in future releases, in particular, 
+            from the Calatog and SLA Breach Predictor"""
 
-                    start_satisfaction = time.time()
-
-                    if current_trustee == trustee and offer == offerDID:
-
-                        availableAssets = 0
-                        totalAssets = 0
-                        availableAssetLocation = 0
-                        totalAssetLocation = 0
-                        consideredOffers = 0
-                        totalOffers= 0
-                        consideredOfferLocation = 0
-                        totalOfferLocation = 0
-
-                        "5GBarcelona"
-                        load_dotenv()
-                        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-                        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
-
-                        "5TONIC"
-                        #madrid_address = os.getenv('5TONIC_CATALOG_A')
-                        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
-
-                        response = json.loads(response.text)
-                        place = response['place'][0]['href']
-                        response = requests.get(place)
-                        response = json.loads(response.text)
-                        city = response['city']
-                        country = response['country']
-                        locality = response['locality']
-                        x_coordinate = response['geographicLocation']['geometry'][0]['x']
-                        y_coordinate = response['geographicLocation']['geometry'][0]['y']
-                        z_coordinate = response['geographicLocation']['geometry'][0]['z']
-
-                        self.productOfferingCatalog(trustee, offer, offer_type[offerDID], availableAssets, totalAssets,
-                                                    availableAssetLocation, totalAssetLocation, totalOffers,
-                                                             totalOfferLocation, city, country, locality, x_coordinate,
-                                                             y_coordinate, z_coordinate, new_request)
+            start_satisfaction = time.time()
 
 
-                        """Calculate the statistical parameters with respect to the considered offers"""
-                        for offer in considered_offer_list:
-                            if offer['trusteeDID'] == trustee:
-                                consideredOffers+=1
+            availableAssets = 0
+            totalAssets = 0
+            availableAssetLocation = 0
+            totalAssetLocation = 0
+            consideredOffers = 0
+            totalOffers= 0
+            consideredOfferLocation = 0
+            totalOfferLocation = 0
 
-                                "5GBarcelona"
-                                load_dotenv()
-                                barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-                                response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
+            "5GBarcelona"
+            load_dotenv()
+            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+            response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
 
-                                #madrid_address = os.getenv('5TONIC_CATALOG_A')
-                                #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
+            "5TONIC"
+            #madrid_address = os.getenv('5TONIC_CATALOG_A')
+            #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
 
-                                response = json.loads(response.text)
-
-                                current_offer_place = response['place'][0]['href']
-                                response = requests.get(current_offer_place)
-                                response = json.loads(response.text)
-
-                                "Check whether the POs have location information"
-                                if "city" and "country" and "locality" in response:
-                                    current_offer_city = response['city']
-                                    current_offer_country = response['country']
-                                    current_offer_locality = response['locality']
-                                    current_offer_x_coordinate = response['geographicLocation']['geometry'][0]['x']
-                                    current_offer_y_coordinate = response['geographicLocation']['geometry'][0]['y']
-                                    current_offer_z_coordinate = response['geographicLocation']['geometry'][0]['z']
-
-                                    if city == current_offer_city and country == current_offer_country and locality == \
-                                            current_offer_locality and x_coordinate == current_offer_x_coordinate and \
-                                            y_coordinate == current_offer_y_coordinate and z_coordinate \
-                                            == current_offer_z_coordinate:
-                                        consideredOfferLocation+=1
-                                else:
-                                    print("Product Offering without location information")
-
-                        "These parameter should be collected from SLA Breach Predictor in the future"
-                        managedViolations = random.randint(1,20)
-                        predictedViolations = managedViolations + random.randint(0,5)
-                        executedViolations = random.randint(0,6)
-                        nonPredictedViolations = random.randint(0,2)
-
-                        managedOfferViolations = random.randint(4,22)
-                        predictedOfferViolations = managedOfferViolations + random.randint(0,8)
-                        executedOfferViolations = random.randint(0,4)
-                        nonPredictedOfferViolations = random.randint(0,3)
-
-                        provider_reputation = peerTrust.providerReputation(availableAssets, totalAssets,
-                                                                           availableAssetLocation, totalAssetLocation,
-                                                                           managedViolations, predictedViolations,
-                                                                           executedViolations, nonPredictedViolations)
-
-                        information["trustor"]["direct_parameters"]["availableAssets"] = availableAssets
-                        information["trustor"]["direct_parameters"]["totalAssets"] = totalAssets
-                        information["trustor"]["direct_parameters"]["availableAssetLocation"] = availableAssetLocation
-                        information["trustor"]["direct_parameters"]["totalAssetLocation"] = totalAssetLocation
-                        information["trustor"]["direct_parameters"]["managedViolations"] = managedViolations
-                        information["trustor"]["direct_parameters"]["predictedViolations"] = predictedOfferViolations
-                        information["trustor"]["direct_parameters"]["executedViolations"] = executedViolations
-                        information["trustor"]["direct_parameters"]["nonPredictedViolations"] = nonPredictedViolations
-
-                        offer_reputation = peerTrust.offerReputation(consideredOffers, totalOffers, consideredOfferLocation,
-                                                                     totalOfferLocation, managedOfferViolations,
-                                                                     predictedOfferViolations, executedOfferViolations,
-                                                                     nonPredictedOfferViolations)
-
-                        information["trustor"]["direct_parameters"]["consideredOffers"] = consideredOffers
-                        information["trustor"]["direct_parameters"]["totalOffers"] = totalOffers
-                        information["trustor"]["direct_parameters"]["consideredOfferLocation"] = consideredOfferLocation
-                        information["trustor"]["direct_parameters"]["totalOfferLocation"] = totalOfferLocation
-                        information["trustor"]["direct_parameters"]["managedOfferViolations"] = managedOfferViolations
-                        information["trustor"]["direct_parameters"]["predictedOfferViolations"] = predictedOfferViolations
-                        information["trustor"]["direct_parameters"]["executedOfferViolations"] = executedOfferViolations
-                        information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = nonPredictedOfferViolations
-                        satisfaction = satisfaction + (time.time()-start_satisfaction)
-
-                start_satisfaction = time.time()
-                provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation)
-                offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
-                information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
-                ps_weighting = round(random.uniform(0.4, 0.6),2)
-                information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
-                information["trustor"]["direct_parameters"]["offerSatisfaction"] = round(offer_satisfaction, 4)
-                os_weighting = 1-ps_weighting
-                information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
-                information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 4)
-                information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 4)
-                new_trustor_satisfaction = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
-                information["trustor"]["direct_parameters"]["userSatisfaction"] = round(self.recomputingTrustValue(last_trustor_satisfaction, new_trustor_satisfaction, FORGETTING_FACTOR), 4)
-                new_trustor_satisfaction = information["trustor"]["direct_parameters"]["userSatisfaction"]
-                satisfaction = satisfaction + (time.time()-start_satisfaction)
-
-                """Updating the recommendation trust"""
-                recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
-                new_recommendation_list = []
-
-                for recommendation in recommendation_list:
-                    satisfaction_variance= last_trustor_satisfaction - new_trustor_satisfaction
-                    new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
-                    recommendation["recommendation_trust"] = new_recommendation_trust
-                    new_recommendation_list.append(recommendation)
-
-                if bool(new_recommendation_list):
-                    information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
-
-                response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
-
-                print("\nNew Trust values after considering new interactions of "+current_trustee+":")
-                print("\tα ---> ", direct_weighting)
-                print("\tS(u,i) ---> ", new_satisfaction)
-                print("\tCr(p(u,i)) ---> ", new_credibility)
-                print("\tTF(u,i) ---> ", new_transaction_factor)
-                print("\tβ ---> ", round(1-direct_weighting, 3))
-                print("\tCF(u) ---> ", new_community_factor)
+            response = json.loads(response.text)
+            place = response['place'][0]['href']
+            response = requests.get(place)
+            response = json.loads(response.text)
+            city = response['city']
+            country = response['country']
+            locality = response['locality']
+            x_coordinate = response['geographicLocation']['geometry'][0]['x']
+            y_coordinate = response['geographicLocation']['geometry'][0]['y']
+            z_coordinate = response['geographicLocation']['geometry'][0]['z']
 
 
-                print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
+            for product_offer in statistic_catalog:
+                if product_offer['provider'] == current_trustee:
+                    totalAssets = product_offer['n_resource']
+                    location = x_coordinate+"_"+y_coordinate+"_"+z_coordinate
+                    if location in product_offer:
+                        "Updating global variables"
+                        totalAssetLocation = product_offer[location]
+                        availableAssets = product_offer['active']
+                        availableAssetLocation = product_offer['active'+"_"+location]
+                        totalOffers = product_offer['active'+"_"+offer_type[offerDID].lower()]
+                        totalOfferLocation = product_offer['active'+"_"+offer_type[offerDID].lower()+"_"+location]
+                    break
 
-                #print("$$$$$ Historical: \n", peerTrust.historical)
-                #last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID)
-                #print("$$$$$ Last Value: ", last_trust_value)
 
-                peerTrust.historical.append(information)
-                #if information in peerTrust.historical:
-                    #print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
+            """Calculate the statistical parameters with respect to the considered offers"""
+            for offer in considered_offer_list:
+                if offer['trusteeDID'] == current_trustee:
+                    consideredOffers+=1
 
-                #print("$$$$$ Historical after: \n", peerTrust.historical)
-                compute_time = compute_time + (time.time()-start_time)
-                ###print("Compute time:", compute_time)
+                    "5GBarcelona"
+                    load_dotenv()
+                    barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                    response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
 
-                print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",i['trusteeDID'], " $$$$$$$$$$$$$$\n")
+                    #madrid_address = os.getenv('5TONIC_CATALOG_A')
+                    #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
 
-                requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
+                    response = json.loads(response.text)
+
+                    current_offer_place = response['place'][0]['href']
+                    response = requests.get(current_offer_place)
+                    response = json.loads(response.text)
+
+                    "Check whether the POs have location information"
+                    if "city" and "country" and "locality" in response:
+                        current_offer_city = response['city']
+                        current_offer_country = response['country']
+                        current_offer_locality = response['locality']
+                        current_offer_x_coordinate = response['geographicLocation']['geometry'][0]['x']
+                        current_offer_y_coordinate = response['geographicLocation']['geometry'][0]['y']
+                        current_offer_z_coordinate = response['geographicLocation']['geometry'][0]['z']
+
+                        if city == current_offer_city and country == current_offer_country and locality == \
+                                current_offer_locality and x_coordinate == current_offer_x_coordinate and \
+                                y_coordinate == current_offer_y_coordinate and z_coordinate == current_offer_z_coordinate:
+                            consideredOfferLocation+=1
+
+            "These parameter should be collected from SLA Breach Predictor in the future"
+            managedViolations = random.randint(1,20)
+            predictedViolations = managedViolations + random.randint(0,5)
+            executedViolations = random.randint(0,6)
+            nonPredictedViolations = random.randint(0,2)
+
+            managedOfferViolations = random.randint(4,22)
+            predictedOfferViolations = managedOfferViolations + random.randint(0,8)
+            executedOfferViolations = random.randint(0,4)
+            nonPredictedOfferViolations = random.randint(0,3)
+
+            provider_reputation = peerTrust.providerReputation(availableAssets, totalAssets,availableAssetLocation,
+                                                               totalAssetLocation,managedViolations, predictedViolations,
+                                                               executedViolations, nonPredictedViolations)
+
+            information["trustor"]["direct_parameters"]["availableAssets"] = availableAssets
+            information["trustor"]["direct_parameters"]["totalAssets"] = totalAssets
+            information["trustor"]["direct_parameters"]["availableAssetLocation"] = availableAssetLocation
+            information["trustor"]["direct_parameters"]["totalAssetLocation"] = totalAssetLocation
+            information["trustor"]["direct_parameters"]["managedViolations"] = managedViolations
+            information["trustor"]["direct_parameters"]["predictedViolations"] = predictedOfferViolations
+            information["trustor"]["direct_parameters"]["executedViolations"] = executedViolations
+            information["trustor"]["direct_parameters"]["nonPredictedViolations"] = nonPredictedViolations
+
+            offer_reputation = peerTrust.offerReputation(consideredOffers, totalOffers, consideredOfferLocation,
+                                                         totalOfferLocation, managedOfferViolations,
+                                                         predictedOfferViolations, executedOfferViolations,
+                                                         nonPredictedOfferViolations)
+
+            information["trustor"]["direct_parameters"]["consideredOffers"] = consideredOffers
+            information["trustor"]["direct_parameters"]["totalOffers"] = totalOffers
+            information["trustor"]["direct_parameters"]["consideredOfferLocation"] = consideredOfferLocation
+            information["trustor"]["direct_parameters"]["totalOfferLocation"] = totalOfferLocation
+            information["trustor"]["direct_parameters"]["managedOfferViolations"] = managedOfferViolations
+            information["trustor"]["direct_parameters"]["predictedOfferViolations"] = predictedOfferViolations
+            information["trustor"]["direct_parameters"]["executedOfferViolations"] = executedOfferViolations
+            information["trustor"]["direct_parameters"]["nonPredictedOfferViolations"] = nonPredictedOfferViolations
+            satisfaction = satisfaction + (time.time()-start_satisfaction)
+
+
+            start_satisfaction = time.time()
+
+            provider_satisfaction = peerTrust.providerSatisfaction(trustorDID, current_trustee, provider_reputation, consumer)
+            offer_satisfaction = peerTrust.offerSatisfaction(trustorDID, current_trustee, offerDID, offer_reputation)
+            information["trustor"]["direct_parameters"]["providerSatisfaction"] = round(provider_satisfaction, 4)
+            ps_weighting = round(random.uniform(0.4, 0.6),2)
+            information["trustor"]["direct_parameters"]["PSWeighting"] = ps_weighting
+            information["trustor"]["direct_parameters"]["offerSatisfaction"] = round(offer_satisfaction, 4)
+            os_weighting = 1-ps_weighting
+            information["trustor"]["direct_parameters"]["OSWeighting"] = os_weighting
+            information["trustor"]["direct_parameters"]["providerReputation"] = round(provider_reputation, 4)
+            information["trustor"]["direct_parameters"]["offerReputation"] = round(offer_reputation, 4)
+            new_trustor_satisfaction = round(peerTrust.satisfaction(ps_weighting, os_weighting, provider_satisfaction, offer_satisfaction), 4)
+            information["trustor"]["direct_parameters"]["userSatisfaction"] = round(self.recomputingTrustValue(last_trustor_satisfaction, new_trustor_satisfaction, FORGETTING_FACTOR), 4)
+            new_trustor_satisfaction = information["trustor"]["direct_parameters"]["userSatisfaction"]
+            satisfaction = satisfaction + (time.time()-start_satisfaction)
+
+            """Updating the recommendation trust"""
+            recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
+            new_recommendation_list = []
+
+            for recommendation in recommendation_list:
+                satisfaction_variance= last_trustor_satisfaction - new_trustor_satisfaction
+                new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
+                recommendation["recommendation_trust"] = new_recommendation_trust
+                new_recommendation_list.append(recommendation)
+
+            if bool(new_recommendation_list):
+                information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
+
+            response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
+
+            print("\nNew Trust values after considering new interactions of "+current_trustee+":")
+            print("\tα ---> ", direct_weighting)
+            print("\tS(u,i) ---> ", new_satisfaction)
+            print("\tCr(p(u,i)) ---> ", new_credibility)
+            print("\tTF(u,i) ---> ", new_transaction_factor)
+            print("\tβ ---> ", round(1-direct_weighting, 3))
+            print("\tCF(u) ---> ", new_community_factor)
+
+
+            print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
+
+            #print("$$$$$ Historical: \n", peerTrust.historical)
+            #last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID)
+            #print("$$$$$ Last Value: ", last_trust_value)
+
+            peerTrust.historical.append(information)
+            #if information in peerTrust.historical:
+                #print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
+
+            #print("$$$$$ Historical after: \n", peerTrust.historical)
+            compute_time = compute_time + (time.time()-start_time)
+            ###print("Compute time:", compute_time)
+
+            print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",current_trustee, " $$$$$$$$$$$$$$\n")
+
+            requests.post("http://localhost:5002/store_trust_level", data=json.dumps(information).encode("utf-8"))
 
         return response
 
@@ -748,132 +898,6 @@ class compute_trust_level(Resource):
 
         return (1-forgetting_factor) * historical_value + forgetting_factor * new_value
 
-    def productOfferingCatalog (self, trustee, offer, offer_type, current_availableAssets, current_totalAssets,
-                                current_availableAssetLocation, current_totalAssetLocation, current_totalOffers,
-                                current_totalOfferLocation, current_city_offer, current_country_offer,
-                                current_locality_offer, current_x_coordinate_offer, current_y_coordinate_offer,
-                                current_z_coordinate_offer, new_request):
-        """ This method collects statistical parameters from the Catalog which will be used by the PeerTrust"""
-        global availableAssets
-        global totalAssets
-        global availableAssetLocation
-        global totalAssetLocation
-        global totalOffers
-        global totalOfferLocation
-        global product_offering
-        global old_product_offering
-        global statistic_catalog
-
-        "Avoiding request again the product offering objects for an SRSD request with multiple offers to be analyzed"
-        if new_request:
-            """Requesting all product offering objects"""
-            "5GBarcelona"
-            load_dotenv()
-            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
-            response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
-
-            "5TONIC"
-            #madrid_address = os.getenv('5TONIC_CATALOG_A')
-            #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering")
-
-            product_offering = json.loads(response.text)
-
-        if bool(product_offering) and product_offering != old_product_offering:
-
-            for i in product_offering:
-                href = i['productSpecification']['href']
-                id_product_offering = i['id']
-                product_offering_location = i['place'][0]['href']
-                category = i['category'][0]['name']
-
-                """ Obtaining the real product offer specification object"""
-                response = requests.get(href)
-                response = json.loads(response.text)
-                did_provider = response['relatedParty'][0]['extendedInfo']
-
-                """ Obtaining the location of the product offering object"""
-                response = requests.get(product_offering_location)
-                response = json.loads(response.text)
-
-                "Check whether the POs have location information"
-                new_object = {}
-                location = ""
-
-                if "city" and "country" and "locality" in response:
-                    city = response['city']
-                    country = response['country']
-                    locality = response['locality']
-                    x_coordinate = response['geographicLocation']['geometry'][0]['x']
-                    y_coordinate = response['geographicLocation']['geometry'][0]['y']
-                    z_coordinate = response['geographicLocation']['geometry'][0]['z']
-                    location = str(x_coordinate)+"_"+str(y_coordinate)+"_"+str(z_coordinate)
-
-                    new_object["provider"] = did_provider
-                    new_object["n_resource"] = 1
-                    new_object[location] = 1
-
-                    if i['lifecycleStatus'] == 'Active':
-                        new_object["active"] = 1
-                        new_object["active"+"_"+location] = 1
-                        new_object["active"+"_"+category.lower()] = 1
-                        new_object["active"+"_"+category.lower()+"_"+location] = 1
-
-
-                if bool(statistic_catalog):
-                    statistic_catalog.append(new_object)
-                elif bool(new_object):
-                    for product_offer in statistic_catalog:
-                        if product_offer["provider"] == did_provider:
-                            product_offer["n_resource"] = product_offer["n_resource"] + new_object["n_resource"]
-                            if location not in product_offer:
-                                product_offer[location] = new_object[location]
-                            else:
-                                product_offer[location] = product_offer[location] + new_object[location]
-                            if 'active' not in product_offer:
-                                product_offer['active'] = new_object['active']
-                                product_offer["active"+"_"+location] = new_object["active"+"_"+location]
-                                product_offer["active"+"_"+category.lower()] = new_object["active"+"_"+category.lower()]
-                                product_offer["active"+"_"+category.lower()+"_"+location] = new_object["active"+"_"+category.lower()+"_"+location]
-                            else:
-                                product_offer['active'] =  product_offer['Active'] + new_object["active"]
-                                if 'active'+"_"+location not in product_offer:
-                                    product_offer['active'+"_"+location] = new_object["active"+"_"+location]
-                                else:
-                                    product_offer["active"+"_"+location] = product_offer["active"+"_"+location] + new_object["active"+"_"+location]
-
-                                if "active"+"_"+category.lower() not in product_offer:
-                                    product_offer['active'+"_"+category.lower()] = new_object["active"+"_"+category.lower()]
-                                else:
-                                    product_offer["active"+"_"+category.lower()] = product_offer["active"+"_"+category.lower()] + new_object["active"+"_"+category.lower()]
-
-                                if "active"+"_"+category.lower()+"_"+location not in product_offer:
-                                    product_offer['active'+"_"+category.lower()+"_"+location] = new_object["active"+"_"+category.lower()+"_"+location]
-                                else:
-                                    product_offer["active"+"_"+category.lower()+"_"+location] = product_offer["active"+"_"+category.lower()+"_"+location] + new_object["active"+"_"+category.lower()+"_"+location]
-
-                        else:
-                            statistic_catalog.append(new_object)
-
-            old_product_offering = product_offering
-
-        for product_offer in statistic_catalog:
-            if product_offer['provider'] == trustee:
-                current_totalAssets = product_offer['n_resource']
-                location = current_x_coordinate_offer+"_"+current_y_coordinate_offer+"_"+current_z_coordinate_offer
-                current_totalAssetLocation = product_offer[location]
-                current_availableAssets = product_offer['active']
-                current_availableAssetLocation = product_offer['active'+"_"+location]
-                current_totalOffers = product_offer['active'+"_"+offer_type.lower()]
-                current_totalOfferLocation = product_offer['active'+"_"+offer_type.lower()+"_"+location]
-                break
-
-        "Updating global variables"
-        availableAssets = current_availableAssets
-        totalAssets = current_totalAssets
-        availableAssetLocation = current_availableAssetLocation
-        totalAssetLocation = current_totalAssetLocation
-        totalOffers = current_totalOffers
-        totalOfferLocation = current_totalOfferLocation
 
 
 class store_trust_level(Resource):
@@ -931,12 +955,13 @@ class update_trust_level(Resource):
         print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
 
         #slaBreachPredictor_topic = information["SLABreachPredictor"]
-        trustorDID = information["trustor"]["trustorDID"]
-        trusteeDID = information["trustor"]["trusteeDID"]
-        offerDID = information["trustor"]["offerDID"]
+        #trustorDID = information["trustor"]["trustorDID"]
+        #trusteeDID = information["trustor"]["trusteeDID"]
+        #offerDID = information["trustor"]["offerDID"]
+        offerDID = information["offerDID"]
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
-        last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+        last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, offerDID)
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
         event = threading.Event()
@@ -1586,6 +1611,18 @@ class stop_relationship(Resource):
 
         return 400
 
+class query_trust_information(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        last_trust_value = consumer.readLastTrustValues(peerTrust.historical, information["trustorDID"],
+                                                        information["trusteeDID"], information['last_trustee_interaction_registered'],
+                                                        information['currentInteractionNumber'])
+
+        return last_trust_value
+
 class query_trust_score(Resource):
     def post(self):
         """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
@@ -1607,6 +1644,18 @@ class query_satisfaction_score(Resource):
 
         return {'userSatisfaction': last_user_satisfaction}
 
+class notify_selection(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        "The ISSM sends to the TRMF the final selected offer"
+        response = requests.post("http://localhost:5002/update_trust_level", data=json.dumps(information).encode("utf-8"))
+
+        return response
+
+
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
     api.add_resource(start_data_collection, '/start_data_collection')
@@ -1615,8 +1664,10 @@ def launch_server_REST(port):
     api.add_resource(store_trust_level, '/store_trust_level')
     api.add_resource(update_trust_level, '/update_trust_level')
     api.add_resource(stop_relationship, '/stop_relationship')
+    api.add_resource(query_trust_information, '/query_trust_information')
     api.add_resource(query_trust_score, '/query_trust_score')
     api.add_resource(query_satisfaction_score, '/query_satisfaction_score')
+    api.add_resource(notify_selection, '/notify_selection')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 
