@@ -103,7 +103,7 @@ items:
       name: trust-mongodbdata-a
       namespace: domain-operator-a
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       accessModes:
         - ReadWriteOnce
       resources:
@@ -117,7 +117,7 @@ items:
       labels:
         type: local
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       capacity:
         storage: 100Mi
       accessModes:

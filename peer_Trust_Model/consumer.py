@@ -300,16 +300,17 @@ class Consumer():
         return data
 
 
-    def readAllInformationTrustValue(self, historical, trustor, trustee, offer):
+    def readAllInformationTrustValue(self, historical, offer):
         """ This method obtains the last trust value recorded in Kafka for a specific a trustor, trustee and offer. All
          previously recorded trust information is returned """
 
         data = {}
 
         for interactions in reversed(historical):
-            if interactions["trustor"]["trustorDID"] == trustor and \
+            """if interactions["trustor"]["trustorDID"] == trustor and \
                         interactions["trustor"]["trusteeDID"] == trustee and \
-                        interactions["trustor"]["offerDID"] == offer:
+                        interactions["trustor"]["offerDID"] == offer:"""
+            if interactions["trustor"]["offerDID"] == offer:
                 """data = {"trustorDID": interactions["trustor"]["trustorDID"],
                             "trusteeDID": interactions["trustor"]["trusteeDID"],
                             "offerDID": interactions["trustor"]["offerDID"],

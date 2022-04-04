@@ -314,10 +314,6 @@ class start_data_collection(Resource):
                 #interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
                 #peerTrust.historical.append(interaction)
 
-                "HERE LAUNCH THE UPDATE METHOD WITH THE HIGHEST TRUST VALUE"
-                "The ISSM should send to the TRMF the final selected offer"
-                #requests.post("http://localhost:5002/update_trust_level", data=json.dumps(interaction).encode("utf-8"))
-
         if not os.path.exists("tests"):
             os.makedirs("tests")
 
@@ -382,7 +378,10 @@ class start_data_collection(Resource):
                             """ Obtaining the real product offer specification object"""
                             response = requests.get(href)
                             response = json.loads(response.text)
-                            did_provider = response['relatedParty'][0]['extendedInfo']
+                            if 'relatedParty' in response:
+                                did_provider = response['relatedParty'][0]['extendedInfo']
+                            else:
+                                did_provider = ''
 
                             """ Obtaining the location of the product offering object"""
                             response = requests.get(product_offering_location)
@@ -957,12 +956,13 @@ class update_trust_level(Resource):
         print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
 
         #slaBreachPredictor_topic = information["SLABreachPredictor"]
-        trustorDID = information["trustor"]["trustorDID"]
-        trusteeDID = information["trustor"]["trusteeDID"]
-        offerDID = information["trustor"]["offerDID"]
+        #trustorDID = information["trustor"]["trustorDID"]
+        #trusteeDID = information["trustor"]["trusteeDID"]
+        #offerDID = information["trustor"]["offerDID"]
+        offerDID = information["offerDID"]
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
-        last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
+        last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, offerDID)
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
         event = threading.Event()
@@ -1645,6 +1645,17 @@ class query_satisfaction_score(Resource):
 
         return {'userSatisfaction': last_user_satisfaction}
 
+class notify_selection(Resource):
+    def post(self):
+        """ This method will request a recommendation to a given recommender after looking in the interactions in the Data Lake"""
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        "The ISSM sends to the TRMF the final selected offer"
+        requests.post("http://localhost:5002/update_trust_level", data=json.dumps(information).encode("utf-8"))
+
+        return {'userSatisfaction': last_user_satisfaction}
+
 def launch_server_REST(port):
     api.add_resource(initialise_offer_type, '/initialise_offer_type')
     api.add_resource(start_data_collection, '/start_data_collection')
@@ -1656,6 +1667,7 @@ def launch_server_REST(port):
     api.add_resource(query_trust_information, '/query_trust_information')
     api.add_resource(query_trust_score, '/query_trust_score')
     api.add_resource(query_satisfaction_score, '/query_satisfaction_score')
+    api.add_resource(notify_selection, '/notify_selection')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 

@@ -66,9 +66,9 @@ else:
     print("Error:", response)
 
 "We are finishing all the trust establishments"
-time.sleep(3)
-response = requests.post("http://172.28.3.126:31115/stop_trust_relationship", data=json.dumps(best_offer).encode("utf-8"))
-if response.status_code == 200:
-    print("Finished")
-else:
-    print("Error:", response)
+#time.sleep(3)
+#response = requests.post("http://172.28.3.126:31115/stop_trust_relationship", data=json.dumps(best_offer).encode("utf-8"))
+#if response.status_code == 200:
+    #print("Finished")
+#else:
+    #print("Error:", response)

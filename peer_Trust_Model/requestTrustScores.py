@@ -66,8 +66,6 @@ class stop_trust_relationship(Resource):
         response = requests.post("http://localhost:5002/stop_relationship", data=json.dumps(offerDID).encode("utf-8"))
 
         if response.status_code == 200:
-            response = json.loads(response.text)
-            """ Return a list of trust scores linked to the previous list of product offers """
             return response
         else:
             return response
@@ -118,6 +116,16 @@ class query_satisfaction_value(Resource):
         else:
             return response
 
+class notify_final_selection(Resource):
+    def post(self):
+        """ This method will inform to the 5G-TRMF about the best PO considered by ISSM-WFM """
+        req = request.data.decode("utf-8")
+        information = json.loads(req)
+
+        response = requests.post("http://localhost:5002/notify_selection", data=json.dumps(information).encode("utf-8"))
+
+        return response
+
 
 def launch_server_REST(port):
     api.add_resource(request_trust_scores, '/request_trust_scores')
@@ -125,6 +133,7 @@ def launch_server_REST(port):
     api.add_resource(query_trust_info, '/query_trust_info')
     api.add_resource(query_trust_level, '/query_trust_level')
     api.add_resource(query_satisfaction_value, '/query_satisfaction_value')
+    api.add_resource(notify_final_selection, '/notify_final_selection')
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
 
