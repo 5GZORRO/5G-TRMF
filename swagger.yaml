@@ -38,9 +38,9 @@ paths:
         required: true
         type: "string"
       - name: "trusteeDID"
-          description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
-          required: true
-          type: "string"
+        description: "Stakeholder’s DID on which it launches the process of continuous information recollection."
+        required: true
+        type: "string"
       - name: "offerDID"
         description: "Offer’s DID on which it launches the process of continuous information recollection."
         required: false
