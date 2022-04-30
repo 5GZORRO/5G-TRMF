@@ -1,5 +1,5 @@
 {
-	"offer_did" : "VHRN56FxhC5YQYkZSLK5KG",
+	"offer_did" : "PMaLZq2RzTRd73XSSJe1zy",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -93,7 +93,7 @@
 			"productSpecificationRelationship" : [ ],
 			"relatedParty" : [
 				{
-					"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
+					"extendedInfo" : "M10KauVlQwdMu7Ho9Wk5mp",
 					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 				}
@@ -110,7 +110,7 @@
 					"name" : "edge_cache_vnfd",
 					"relatedParty" : [
 						{
-							"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
+							"extendedInfo" : "M10KauVlQwdMu7Ho9Wk5mp",
 							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 						}
@@ -254,7 +254,7 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-15T11:00:00.000Z"
 		},
-		"did" : "VHRN56FxhC5YQYkZSLK5KG"
+		"did" : "PMaLZq2RzTRd73XSSJe1zy"
 	},
 	"offer_category" : "vnf",
 	"predicted_cluster" : 0

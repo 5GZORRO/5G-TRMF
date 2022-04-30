@@ -17,7 +17,7 @@ list_product_offers = sorted(glob.glob('./product_offer_examples/new_product_off
 ran_offers = []
 
 #trustor_DID = {"trustorDID": rstr.xeger("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}")}
-trustor_DID = {"trustorDID": "99lm6s88-jv84-ii57-qq53-6166qvw8l3zt"}
+trustor_DID = {"trustorDID": "88-lm6s88-jv84-ii57-qq53-6166qvw8l3zt"}
 
 ran_offers.append(trustor_DID)
 
@@ -40,7 +40,7 @@ else:
 
 start_time = time.time()
 "5GBarcelona"
-response = requests.post("http://172.28.3.126:31115/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
+response = requests.post("http://172.28.3.15:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
 
 "5TONIC"
 #response = requests.post("http://10.4.2.110:31113/request_trust_scores", data=json.dumps(ran_offers).encode("utf-8"))
@@ -66,9 +66,16 @@ else:
     print("Error:", response)
 
 "We are finishing all the trust establishments"
+
 #time.sleep(3)
-#response = requests.post("http://172.28.3.126:31115/stop_trust_relationship", data=json.dumps(best_offer).encode("utf-8"))
+#response = requests.post("http://172.28.3.15:31113/notify_final_selection", data=json.dumps(best_offer).encode("utf-8"))
 #if response.status_code == 200:
     #print("Finished")
+    #time.sleep(10)
+    #response = requests.post("http://172.28.3.15:31113/stop_trust_relationship", data=json.dumps(best_offer).encode("utf-8"))
+    #if response.status_code == 200:
+        #print("Finished")
+    #else:
+        #print("Error:", response)
 #else:
     #print("Error:", response)
