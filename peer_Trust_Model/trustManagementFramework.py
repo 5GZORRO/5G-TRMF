@@ -865,7 +865,7 @@ class compute_trust_level(Resource):
 
     def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object):
         """ This method updates the recommendation trust (RT) value after new interactions between a trustor and a trustee.
-        The method makes use of the satisfaction and recommendation variances to increase o decrease the RT."""
+        The method makes use of the satisfaction and recommendation variances to increase or decrease the RT."""
 
         mean_variance = recommendation_object["average_recommendations"] - recommendation_object["last_recommendation"]
         if satisfaction_variance > 0 and mean_variance > 0:
