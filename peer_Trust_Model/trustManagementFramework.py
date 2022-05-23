@@ -952,7 +952,7 @@ class update_trust_level(Resource):
         req = request.data.decode("utf-8")
         information = json.loads(req)
 
-        print("\n$$$$$$$$$$$$$$ Starting update trust level process process $$$$$$$$$$$$$$\n")
+        print("\n$$$$$$$$$$$$$$ Starting update trust level process on", information["offerDID"], "$$$$$$$$$$$$$$\n")
 
         #slaBreachPredictor_topic = information["SLABreachPredictor"]
         #trustorDID = information["trustor"]["trustorDID"]
@@ -1020,7 +1020,7 @@ class update_trust_level(Resource):
             #peerTrust.historical.append(last_trust_score)
             #mongoDB.insert_one(last_trust_score)
 
-        print("\n$$$$$$$$$$$$$$ Ending update trust level process $$$$$$$$$$$$$$\n")
+        #print("\n$$$$$$$$$$$$$$ Ending update trust level process $$$$$$$$$$$$$$\n")
 
         return 200
 
@@ -1079,17 +1079,22 @@ class update_trust_level(Resource):
 
                 current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)
 
-            final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
+            if current_reward_and_punishment >= 0:
+                final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
 
-            if final_security_reward_and_punishment >= 0.5:
-                reward_and_punishment = final_security_reward_and_punishment - 0.5
-                n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
-                new_trust_score = min(n_ts, 1)
-            elif final_security_reward_and_punishment < 0.5:
-                "The lower value the higher punishment"
-                reward_and_punishment = 0.5 - final_security_reward_and_punishment
-                n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
-                new_trust_score = max(0, n_ts)
+                if final_security_reward_and_punishment >= 0.5:
+                    reward_and_punishment = final_security_reward_and_punishment - 0.5
+                    n_ts = float(last_trust_score ["trust_value"]) + reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+                    new_trust_score = min(n_ts, 1)
+                elif final_security_reward_and_punishment < 0.5:
+                    "The lower value the higher punishment"
+                    reward_and_punishment = 0.5 - final_security_reward_and_punishment
+                    n_ts = float(last_trust_score ["trust_value"]) - reward_and_punishment * ((1-float(last_trust_score ["trust_value"]))/10)
+                    new_trust_score = max(0, n_ts)
+            else:
+                new_trust_score = last_trust_score ["trust_value"]
+                final_security_reward_and_punishment = total_reward_and_punishment
+                print("No new Security Analysis events have been generated in the last time-window")
 
             print("\n\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
             last_trust_score["trustor"]["reward_and_punishment"] = final_security_reward_and_punishment
@@ -1149,8 +1154,8 @@ class update_trust_level(Resource):
 
         indices_info = self.get_ELK_information(offerDID)
 
-        if bool(indices_info):
-            print('No matches were detected by the ', offerDID, 'indexes in the Security Analysis Service logs')
+        if len(indices_info) == 0:
+            print('No matches were detected by the ', offerDID, 'index in the Security Analysis Service logs')
 
         for index in indices_info:
             for hit in index["hits"]["hits"]:
@@ -1170,13 +1175,20 @@ class update_trust_level(Resource):
             #first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
 
         "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
+        if len(indices_info) > 0:
+            first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+            first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+            first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+            first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
-        return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
-               + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+            if first_conn_value and first_stats_value and first_weird_value and first_notice_value == 0:
+                "We don't have new SAS events in the current time-window"
+                return -1
+            return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
+                   + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
+        else:
+            "In this case, the PO does not have a Service Specification and in consequence the SAS cannot generate an index"
+            return -1
 
     def get_ELK_information(self, offerDID):
         """ This method gets all new index from the ELK"""
@@ -1203,7 +1215,11 @@ class update_trust_level(Resource):
         product_specification = response['productSpecification']['href']
         response = requests.get(product_specification)
         response = json.loads(response.text)
-        id_service_specification = response['serviceSpecification'][0]['id']
+        if len(response['serviceSpecification']) > 0:
+            id_service_specification = response['serviceSpecification'][0]['id']
+        else:
+            id_service_specification = 'None'
+            print('The POs does not contain the serviceSpecification field')
 
         with open('output.txt', 'r') as f:
             for line in f:
@@ -1628,6 +1644,7 @@ class stop_relationship(Resource):
             if information['offerDID'] in threads[i]:
                 del threads[i]
                 print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
+                print("\n$$$$$$$$$$$$$$ Ending update trust level process on", information['offerDID'], "$$$$$$$$$$$$$$\n")
                 return 200
 
         return 400
