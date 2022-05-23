@@ -296,7 +296,7 @@ class start_data_collection(Resource):
                     peerTrust.getLastTotalInteractionNumber(interaction["trustor"]["trusteeDID"])
 
                 load_dotenv()
-                trmf_endpoint = os.getenv('TRMF_B_5GBARCELONA')
+                trmf_endpoint = os.getenv('TRMF_5GBARCELONA')
                 message = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
                         "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
                         "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
@@ -1044,12 +1044,12 @@ class update_trust_level(Resource):
             current_reward_and_punishment = 0.0
 
             if current_offer_type.lower() == 'ran' or current_offer_type.lower() == 'spectrum':
-                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.4, 0.1, 0.1, 0.4)
             elif current_offer_type.lower() == 'edge' or current_offer_type.lower() == 'cloud':
-                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.2, 0.35, 0.25, 0.2)
             elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
-                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
-            elif current_offer_type.lower() == 'network service' or current_offer_type.lower() == 'network slice':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+            elif current_offer_type.lower() == 'network service' or current_offer_type.lower() == 'slice':
                 "We deal in particular with offers of the network service/slice type"
                 resource_specification_list = self.get_resource_list_network_service_offer(offerDID)
                 for resource in resource_specification_list:
@@ -1060,22 +1060,22 @@ class update_trust_level(Resource):
 
                     if 'ran' in type.lower():
                         current_offer_type = 'ran'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.4, 0.1, 0.1, 0.4)
                     elif 'spectrum' in type.lower():
                         current_offer_type = 'spectrum'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.4, 0.1, 0.1, 0.4)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.4, 0.1, 0.1, 0.4)
                     elif 'edge' in type.lower():
                         current_offer_type = 'edge'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.2, 0.35, 0.25, 0.2)
                     elif 'cloud' in type.lower():
                         current_offer_type = 'cloud'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.2, 0.35, 0.25, 0.2)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.2, 0.35, 0.25, 0.2)
                     elif 'vnf' in type.lower():
                         current_offer_type = 'vnf'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
                     elif 'cnf' in type.lower():
                         current_offer_type = 'cnf'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, current_offer_type, 0.233, 0.3, 0.233, 0.233)
+                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
 
                 current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)
 
@@ -1126,7 +1126,7 @@ class update_trust_level(Resource):
 
         return resource_specification
 
-    def generic_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offer_type, CONN_DIMENSION_WEIGHTING,
+    def generic_reward_and_punishment_based_on_security(self, CURRENT_TIME_WINDOW, offerDID, offer_type, CONN_DIMENSION_WEIGHTING,
                                                         NOTICE_DIMENSION_WEIGHTING, WEIRD_DIMENSION_WEIGHTING,
                                                         STATS_DIMENSION_WEIGHTING):
         """ This methods collects from ElasticSearch new security effects and computes the reward or punishment based on
@@ -1147,7 +1147,10 @@ class update_trust_level(Resource):
         first_weird_value = 0
         first_stats_value = 0
 
-        indices_info = self.get_ELK_information()
+        indices_info = self.get_ELK_information(offerDID)
+
+        if bool(indices_info):
+            print('No matches were detected by the ', offerDID, 'indexes in the Security Analysis Service logs')
 
         for index in indices_info:
             for hit in index["hits"]["hits"]:
@@ -1161,21 +1164,21 @@ class update_trust_level(Resource):
                     stats_info.append(hit)
 
             "Now, we can have multiple VMs linked to the same slices"
-            first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
-            first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
-            first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
-            first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
+            #first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
+            #first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
+            #first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
+            #first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
 
         "After option 1 will be developed, we will only need to compute 1 value per dimension"
-        #first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
-        #first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
-        #first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
-        #first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
+        first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
+        first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
+        first_weird_value = self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info)
+        first_stats_value = self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info)
 
         return CONN_DIMENSION_WEIGHTING * first_conn_value + NOTICE_DIMENSION_WEIGHTING * first_notice_value \
                + WEIRD_DIMENSION_WEIGHTING * first_weird_value + STATS_DIMENSION_WEIGHTING * first_stats_value
 
-    def get_ELK_information(self):
+    def get_ELK_information(self, offerDID):
         """ This method gets all new index from the ELK"""
         load_dotenv()
         elk_address = os.getenv('ELK')
@@ -1189,11 +1192,25 @@ class update_trust_level(Resource):
         instances = []
         indices_info = []
 
+        load_dotenv()
+        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+        response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
+        "5TONIC"
+        #madrid_address = os.getenv('5TONIC_CATALOG_A')
+        #response = requests.get(madrid_address+"productCatalogManagement/v4/productOffering/did/")
+
+        response = json.loads(response.text)
+        product_specification = response['productSpecification']['href']
+        response = requests.get(product_specification)
+        response = json.loads(response.text)
+        id_service_specification = response['serviceSpecification'][0]['id']
+
         with open('output.txt', 'r') as f:
             for line in f:
                 if 'yellow' in line:
                     indice = line.split('open ')[1].split(" ")[0]
-                    instances.append(indice)
+                    if id_service_specification in indice:
+                        instances.append(indice)
 
         for instance in instances:
             response = requests.post(elk_address+instance+'/_search')

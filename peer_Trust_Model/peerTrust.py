@@ -132,7 +132,7 @@ class PeerTrust():
         self.consumer = consumer_instance
 
         load_dotenv()
-        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+        trmf_endpoint = os.getenv('TRMF_5GBARCELONA')
 
         print("\n\nSet of previous trust interactions between 5GZORRO domains\n")
         data = []
@@ -538,7 +538,7 @@ class PeerTrust():
         self.consumer = consumer_instance
 
         load_dotenv()
-        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+        trmf_endpoint = os.getenv('TRMF_5GBARCELONA')
 
         if previous_interaction_number != 0:
             trustInformationTemplate = TrustInformationTemplate()
@@ -650,7 +650,7 @@ class PeerTrust():
 
         self.consumer = consumer
         load_dotenv()
-        trmf_endpoint = os.getenv('TRMF_C_5GBARCELONA')
+        trmf_endpoint = os.getenv('TRMF_5GBARCELONA')
 
         trustee_selection = random.randint(0,3)
         offer_selection = random.randint(0,1)
