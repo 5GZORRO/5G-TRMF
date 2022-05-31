@@ -120,6 +120,42 @@ class Consumer():
         else:
             return minimum_interactions
 
+    def start_reading_breach_events(self, offset, offerDID):
+        """ This method begins to retrieve Breach Prediction messages from a KafkaTopic """
+        logging.basicConfig(level=logging.INFO)
+        global consumer
+        global lastOffset
+
+        minimum_interactions = []
+        if lastOffset != 0:
+            for message in self.consumer:
+                prediction_information = json.loads(message.value.decode())
+                if message.offset > offset and prediction_information["breachPredictionNotification"]["productID"] == offerDID:
+                    minimum_interactions.append(prediction_information)
+
+                if message.offset == lastOffset - 1:
+                    return minimum_interactions
+        else:
+            return minimum_interactions
+
+    def start_reading_violation_events(self, offset, offerDID):
+        """ This method begins to retrieve SLA violation messages from a KafkaTopic """
+        logging.basicConfig(level=logging.INFO)
+        global consumer
+        global lastOffset
+
+        minimum_interactions = []
+        if lastOffset != 0:
+            for message in self.consumer:
+                violation_information = json.loads(message.value.decode())
+                if message.offset > offset and violation_information["productID"] == offerDID:
+                    minimum_interactions.append(violation_information)
+
+                if message.offset == lastOffset - 1:
+                    return minimum_interactions
+        else:
+            return minimum_interactions
+
     def start_reading_minimum_historical(self):
         """ This method begins to retrieve minimum historical info from a KafkaTopic and the miminum interactions """
         logging.basicConfig(level=logging.INFO)

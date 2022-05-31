@@ -19,6 +19,7 @@ from peerTrust import *
 from producer import *
 from consumer import *
 from trustInformationTemplate import *
+from fuzzy_sets import *
 from datetime import datetime
 from multiprocessing import Process, Value, Manager
 logging.basicConfig(level=logging.INFO)
@@ -52,8 +53,10 @@ trustor_acquired = False
 trustorDID = ""
 update_catalog = False
 thread_catalog = False
+newSLAViolation = False
 timestamp_thread_catalog = 0
 TIME_TO_UPDATE_CATALOG_INFO = 600
+
 
 gather_time = 0
 compute_time = 0
@@ -67,7 +70,8 @@ offer_type = {}
 product_offering = []
 old_product_offering = []
 statistic_catalog = []
-threads = list()
+threads_security = list()
+threads_sla = list()
 
 """ Parameters to define a minimum interactions in the system and avoid a cold start"""
 max_previous_providers_DLT = 4
@@ -966,7 +970,13 @@ class update_trust_level(Resource):
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
         event = threading.Event()
         x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
-        threads.append({offerDID:x, "stop_event": event})
+        threads_security.append({offerDID:x, "stop_event": event})
+        x.start()
+
+        """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
+        event = threading.Event()
+        x = threading.Thread(target=self.reward_and_punishment_based_on_SLA_events, args=(last_trust_score, event,))
+        threads_sla.append({offerDID:x, "stop_event": event})
         x.start()
 
         #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
@@ -1035,7 +1045,7 @@ class update_trust_level(Resource):
         "Sliding window definition IN SECONDS"
         CURRENT_TIME_WINDOW = 1800
 
-        total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment"])
+        total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment_security"])
         offerDID = last_trust_score["trustor"]["offerDID"]
         current_offer_type = offer_type[offerDID]
 
@@ -1097,7 +1107,7 @@ class update_trust_level(Resource):
                 print("No new Security Analysis events have been generated in the last time-window")
 
             print("\n\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After Reward and Punishment --->", round(new_trust_score, 4), "\n")
-            last_trust_score["trustor"]["reward_and_punishment"] = final_security_reward_and_punishment
+            last_trust_score["trustor"]["reward_and_punishment_security"] = final_security_reward_and_punishment
             last_trust_score["trust_value"] = round(new_trust_score, 4)
             last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
 
@@ -1629,6 +1639,190 @@ class update_trust_level(Resource):
 
         return final_stats_value
 
+    def reward_and_punishment_based_on_SLA_events(self, last_trust_score, event):
+        """This methods analyses the SLA Breach Predictions and Detections to adapt an ongoing trust score"""
+        global newSLAViolation
+        "Sliding window definition IN SECONDS"
+        CURRENT_TIME_WINDOW = 15
+
+        offerDID = last_trust_score["trustor"]["offerDID"]
+        RP_SLA = last_trust_score["trustor"]["reward_and_punishment_SLA"]
+        SLO_list = []
+        violation_list = []
+
+        "Loading the SLA Breach Prediction Topic"
+        load_dotenv()
+        prediction_topic = os.getenv('BREACH_PREDICTION_TOPIC')
+
+        "Defining the offset of the last message"
+        last_offset_predictions = 0
+        last_offset_violations = 0
+
+        while not event.isSet():
+            time.sleep(CURRENT_TIME_WINDOW)
+            "Getting the offset of the current message"
+            consumer.start(prediction_topic)
+            current_offset_predictions = consumer.lastOffset
+            consumer.subscribe(prediction_topic)
+            breach_notification_list = []
+            violation_notification_list = []
+            current_breach_prediction_rate = []
+            current_sla_violation_rate = []
+            last_SLAVRate = 0
+            newSLAViolation = False
+
+            if current_offset_predictions > last_offset_predictions:
+                "Reading new breach predictions"
+                breach_notification_list = consumer.start_reading_breach_events(last_offset_predictions, offerDID)
+                for breach_notification in breach_notification_list:
+                    type_metric = breach_notification["breachPredictionNotification"]["metric"]
+                    "Adding new metrics not previously considered"
+                    if type_metric not in SLO_list:
+                        SLO_list.append(type_metric)
+
+                    "Update the breach predictions of a metric depending on if it previously had measured in the system"
+                    if type_metric+'_breaches' in RP_SLA:
+                        RP_SLA[type_metric+'_breaches']['value'] += 1
+                    else:
+                        RP_SLA[type_metric+'_breaches'] = {"value": 1, "certainty": 1.0}
+
+                "Update the total number of breach predictions"
+                RP_SLA["total_breach_predictions"] += len(breach_notification_list)
+                current_breach_prediction_rate = self.breach_prediction_rate(SLO_list, RP_SLA)
+                last_offset_predictions = current_offset_predictions
+
+            "Since the impact of trust is not linked to the number of new events, it should be calculated one time"
+            current_impact_trust = self.impact_trust(last_trust_score["trust_value"])
+
+            "Retrieving new SLA Violations"
+            violation_topic = os.getenv('SLA_VIOLATION_TOPIC')
+            consumer.start(violation_topic)
+            current_offset_violations = consumer.lastOffset
+            consumer.subscribe(violation_topic)
+
+            if current_offset_violations > last_offset_violations:
+                "Obtaining last SLA Violation Rate"
+                if 'SLAVRate' in RP_SLA:
+                    last_SLAVRate = RP_SLA['SLAVRate']
+
+                "Reading new violations"
+                violation_notification_list = consumer.start_reading_violation_events(last_offset_violations, offerDID)
+                for violation_notification in violation_notification_list:
+                    type_metric = violation_notification["rule"]["metric"]
+                    "Adding new metrics not previously considered"
+                    if type_metric not in violation_list:
+                        violation_list.append(type_metric)
+
+                current_sla_violation_rate = self.sla_violation_rate(last_offset_violations, RP_SLA, violation_notification_list, violation_list)
+                "Updating last offset for SLA violations"
+                last_offset_violations = current_offset_violations
+            "Generating a set from the two list of metrics"
+            metric_set = list(set().union(SLO_list, violation_list))
+            BPRate_summation = 0
+            SLAVRate_summation = 0
+            final_result = 0
+
+            if newSLAViolation and len(SLO_list) > 0:
+                "If we have new Violations and Predictions the whole equation is considered"
+                for metric in metric_set:
+                    if metric+'_breaches' in current_breach_prediction_rate and metric+'_violations' in current_sla_violation_rate:
+                        BPRate_summation += current_breach_prediction_rate[metric+'_breaches']
+                        SLAVRate_summation += current_sla_violation_rate[metric+'_violations']
+                    elif metric+'_breaches' in current_breach_prediction_rate and metric+'_violations' not in current_sla_violation_rate:
+                        BPRate_summation += current_breach_prediction_rate[metric+'_breaches']
+                    elif metric+'_breaches' not in current_breach_prediction_rate and metric+'_violations' in current_sla_violation_rate:
+                        SLAVRate_summation += current_sla_violation_rate[metric+'_violations']
+                final_result = ((BPRate_summation/SLO_list) + (current_impact_trust * SLAVRate_summation)/len(metric_set))/2
+                final_result = float(last_trust_score ["trust_value"]) - final_result * ((1-float(last_trust_score ["trust_value"]))/5)
+            elif newSLAViolation and len(SLO_list) == 0:
+                "If we only have new Violations and Predictions the whole equation is considered"
+                for metric in metric_set:
+                    if metric+'_violations' in current_sla_violation_rate:
+                        SLAVRate_summation += current_sla_violation_rate[metric+'_violations']
+                final_result = (current_impact_trust * SLAVRate_summation) / len(violation_list)
+                final_result = float(last_trust_score ["trust_value"]) - final_result * ((1-float(last_trust_score ["trust_value"]))/5)
+            elif not newSLAViolation:
+                for metric in metric_set:
+                    if metric+'_violations' in current_sla_violation_rate:
+                        SLAVRate_summation += current_sla_violation_rate[metric+'_violations']
+                final_result = last_SLAVRate - (SLAVRate_summation / len(violation_list))
+                final_result = float(last_trust_score ["trust_value"]) + final_result * ((1-float(last_trust_score ["trust_value"]))/5)
+
+            print("\n\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score After SLA-driven Reward and Punishment --->", round(final_result, 4), "\n")
+            last_trust_score["trustor"]["reward_and_punishment_SLA"] = RP_SLA
+            last_trust_score["trust_value"] = round(final_result, 4)
+            last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
+
+            peerTrust.historical.append(last_trust_score)
+            #mongoDB.insert_one(last_trust_score)
+            #itm = db.doctors.find_one({"email":doc_mail})
+            itm = mongoDB.find_one({'trustee.offerDID': offerDID, 'trustor.trusteeDID': last_trust_score["trustor"]["trusteeDID"]})
+            if itm != None:
+                mongoDB.replace_one({'_id': itm.get('_id')}, last_trust_score, True)
+
+
+    def breach_prediction_rate(self, SLO_list, RP_SLA):
+        BP_rate_per_metric = []
+        for SLO in SLO_list:
+            "Computing BPRate(u,m)"
+            BP_rate = (RP_SLA[SLO+'_breaches']['value'] / RP_SLA['total_breach_predictions']) * RP_SLA[SLO+'_breaches']['certainty']
+            BP_rate_per_metric.append({SLO+'_breaches': BP_rate})
+
+        return BP_rate_per_metric
+
+    def impact_trust(self, current_trust_score):
+        trust_level_impact = trust_fuzzy_set(current_trust_score)
+        return (1- (1-current_trust_score)/(1+current_trust_score)) * trust_level_impact
+
+    def sla_violation_rate(self, last_offset_violations, RP_SLA, violation_notification_list, violation_list):
+        "Sliding window weighting with respect to the forgetting factor"
+        global newSLAViolation
+
+        TOTAL_RW = 0.9
+        NOW_RW = 1 - TOTAL_RW
+
+        SLAV_rate_per_metric = []
+
+        if last_offset_violations == 0:
+            for violation_notification in violation_notification_list:
+                type_metric = violation_notification["rule"]["metric"]
+                if type_metric not in RP_SLA:
+                    RP_SLA[type_metric+'_violations'] = 1
+                else:
+                    RP_SLA[type_metric+'_violations'] +=1
+
+            for violation in violation_list:
+                SLAV_rate_per_metric.append({violation+'_violations': RP_SLA[violation+'_violations']})
+
+            return SLAV_rate_per_metric
+
+        for violation in violation_list:
+            "Computing SLAVRate^t(u,m)"
+            "Update the violation of a metric depending on if it previously had measured in the system"
+            if violation+'_violations' in RP_SLA:
+                previous_SLAVRate = RP_SLA[violation+'_violations']
+            else:
+                previous_SLAVRate = 0
+
+            new_SLAViolations = 0
+            for violation_notification in violation_notification_list:
+                if violation_notification["rule"]["metric"] == violation:
+                    new_SLAViolations = new_SLAViolations + 1
+                    newSLAViolation = True
+
+            if previous_SLAVRate == 0:
+                SLAV_rate_per_metric.append({violation+'_violations': new_SLAViolations})
+            else:
+                new_SLAVRate = TOTAL_RW * previous_SLAVRate + NOW_RW * (self.increment(new_SLAViolations, previous_SLAVRate)*violation_fuzzy_set(new_SLAViolations, previous_SLAVRate))
+                SLAVRate = min(abs(previous_SLAVRate - new_SLAVRate), 1)
+                SLAV_rate_per_metric.append({violation+'_violations': SLAVRate})
+
+        return SLAV_rate_per_metric
+
+    def increment(self, new_SLAViolations, previous_SLAVRate):
+        if new_SLAViolations > previous_SLAVRate:
+            return new_SLAViolations/previous_SLAVRate
+        return 0
 
 class stop_relationship(Resource):
     def post(self):
@@ -1636,13 +1830,24 @@ class stop_relationship(Resource):
         req = request.data.decode("utf-8")
         information = json.loads(req)
         print("\n$$$$$$$$$$$$$$ Finishing a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
-        for thread in threads:
+        for thread in threads_security:
             if information['offerDID'] in thread:
                 thread['stop_event'].set()
 
-        for i in range(len(threads)):
-            if information['offerDID'] in threads[i]:
-                del threads[i]
+        for i in range(len(threads_security)):
+            if information['offerDID'] in threads_security[i]:
+                del threads_security[i]
+                #print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
+                #print("\n$$$$$$$$$$$$$$ Ending update trust level process on", information['offerDID'], "$$$$$$$$$$$$$$\n")
+                #return 200
+
+        for thread in threads_sla:
+            if information['offerDID'] in thread:
+                thread['stop_event'].set()
+
+        for i in range(len(threads_sla)):
+            if information['offerDID'] in threads_sla[i]:
+                del threads_sla[i]
                 print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
                 print("\n$$$$$$$$$$$$$$ Ending update trust level process on", information['offerDID'], "$$$$$$$$$$$$$$\n")
                 return 200

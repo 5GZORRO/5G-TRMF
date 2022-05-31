@@ -11,4 +11,5 @@ pandas
 matplotlib
 seaborn
 python-dotenv
+pyit2fls
 
