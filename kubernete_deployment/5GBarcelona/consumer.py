@@ -1,6 +1,6 @@
 from kafka import KafkaConsumer, TopicPartition
 import json
-import logging
+#import logging
 import time
 import requests
 import copy
@@ -28,6 +28,7 @@ class Consumer():
 
         # obtain the last offset value
         self.lastOffset = self.consumer.end_offsets([tp])[tp]
+        print("LastOffset", self.lastOffset)
         #self.consumer = KafkaConsumer(topic, bootstrap_servers=self.name_servername_server, group_id=None,
                                       #enable_auto_commit=False, auto_offset_reset='earliest')
 
@@ -53,7 +54,7 @@ class Consumer():
     def start_reading(self, trustorDID, offerDID):
         """ This method begins to retrieve messages from a KafkaTopic.
         IT MUST BE LAUNCHED AS A THREAD TO AVOID BLOCKING THE APP """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
         global lastOffset
 
@@ -83,7 +84,7 @@ class Consumer():
 
     def start_reading_cold_start(self, offset):
         """ This method begins to retrieve messages from a KafkaTopic """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
         global lastOffset
 
@@ -105,7 +106,7 @@ class Consumer():
 
     def start_reading_minimum_interactions(self):
         """ This method begins to retrieve messages from a KafkaTopic """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
         global lastOffset
 
@@ -122,7 +123,7 @@ class Consumer():
 
     def start_reading_breach_events(self, offset, offerDID):
         """ This method begins to retrieve Breach Prediction messages from a KafkaTopic """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
         global lastOffset
 
@@ -140,7 +141,7 @@ class Consumer():
 
     def start_reading_violation_events(self, offset, offerDID):
         """ This method begins to retrieve SLA violation messages from a KafkaTopic """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
         global lastOffset
 
@@ -158,7 +159,7 @@ class Consumer():
 
     def start_reading_minimum_historical(self):
         """ This method begins to retrieve minimum historical info from a KafkaTopic and the miminum interactions """
-        logging.basicConfig(level=logging.INFO)
+        #logging.basicConfig(level=logging.INFO)
         global consumer
 
         for message in self.consumer:

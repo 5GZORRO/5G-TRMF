@@ -22,7 +22,7 @@ from trustInformationTemplate import *
 from fuzzy_sets import *
 from datetime import datetime
 from multiprocessing import Process, Value, Manager
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 import queue
 
 from gevent import monkey
@@ -968,16 +968,16 @@ class update_trust_level(Resource):
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, offerDID)
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
-        event = threading.Event()
-        x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
-        threads_security.append({offerDID:x, "stop_event": event})
-        x.start()
+        #event = threading.Event()
+        #x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
+        #threads_security.append({offerDID:x, "stop_event": event})
+        #x.start()
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
-        event = threading.Event()
-        x = threading.Thread(target=self.reward_and_punishment_based_on_SLA_events, args=(last_trust_score, event,))
-        threads_sla.append({offerDID:x, "stop_event": event})
-        x.start()
+        #event = threading.Event()
+        #x = threading.Thread(target=self.reward_and_punishment_based_on_SLA_events, args=(last_trust_score, event,))
+        #threads_sla.append({offerDID:x, "stop_event": event})
+        #x.start()
 
         #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
 
@@ -1043,7 +1043,7 @@ class update_trust_level(Resource):
         NOW_RW = 1 - TOTAL_RW
 
         "Sliding window definition IN SECONDS"
-        CURRENT_TIME_WINDOW = 1800
+        CURRENT_TIME_WINDOW = 10
 
         total_reward_and_punishment = float(last_trust_score["trustor"]["reward_and_punishment_security"])
         offerDID = last_trust_score["trustor"]["offerDID"]
@@ -1643,7 +1643,7 @@ class update_trust_level(Resource):
         """This methods analyses the SLA Breach Predictions and Detections to adapt an ongoing trust score"""
         global newSLAViolation
         "Sliding window definition IN SECONDS"
-        CURRENT_TIME_WINDOW = 15
+        CURRENT_TIME_WINDOW = 5
 
         offerDID = last_trust_score["trustor"]["offerDID"]
         RP_SLA = last_trust_score["trustor"]["reward_and_punishment_SLA"]
@@ -1655,14 +1655,14 @@ class update_trust_level(Resource):
         prediction_topic = os.getenv('BREACH_PREDICTION_TOPIC')
 
         "Defining the offset of the last message"
-        last_offset_predictions = 0
-        last_offset_violations = 0
+        last_offset_predictions = -1
+        last_offset_violations = -1
 
         while not event.isSet():
             time.sleep(CURRENT_TIME_WINDOW)
             "Getting the offset of the current message"
             consumer.start(prediction_topic)
-            current_offset_predictions = consumer.lastOffset
+            current_offset_predictions = consumer.lastOffset - 1 
             consumer.subscribe(prediction_topic)
             breach_notification_list = []
             violation_notification_list = []
@@ -1697,36 +1697,33 @@ class update_trust_level(Resource):
             "Retrieving new SLA Violations"
             violation_topic = os.getenv('SLA_VIOLATION_TOPIC')
             consumer.start(violation_topic)
-            current_offset_violations = consumer.lastOffset
+            current_offset_violations = consumer.lastOffset - 1
             consumer.subscribe(violation_topic)
 
-            #if current_offset_violations > last_offset_violations:
-            "Obtaining last SLA Violation Rate"
-            if 'SLAVRate' in RP_SLA:
-                last_SLAVRate = RP_SLA['SLAVRate']
+            if current_offset_violations > last_offset_violations:
+                "Obtaining last SLA Violation Rate"
+                if 'SLAVRate' in RP_SLA:
+                    last_SLAVRate = RP_SLA['SLAVRate']
 
-            "Reading new violations"
-            violation_notification_list = consumer.start_reading_violation_events(last_offset_violations, offerDID)
-            for violation_notification in violation_notification_list:
-                type_metric = violation_notification["rule"]["metric"]
-                "Adding new metrics not previously considered"
-                if type_metric not in violation_list:
-                    violation_list.append(type_metric)
+                "Reading new violations"
+                violation_notification_list = consumer.start_reading_violation_events(last_offset_violations, offerDID)
+                for violation_notification in violation_notification_list:
+                    type_metric = violation_notification["rule"]["metric"]
+                    "Adding new metrics not previously considered"
+                    if type_metric not in violation_list:
+                        violation_list.append(type_metric)
 
-            current_sla_violation_rate = self.sla_violation_rate(last_offset_violations, RP_SLA, violation_notification_list, violation_list)
-            "Updating SLA Violation Rates"
-            for violation in violation_list:
-                RP_SLA[violation+'_violations'] = current_sla_violation_rate[violation+'_violations']
-
-            "Updating last offset for SLA violations"
-            last_offset_violations = current_offset_violations
-            "--Generating a set from the two list of metrics"
+                current_sla_violation_rate = self.sla_violation_rate(last_offset_violations, RP_SLA, violation_notification_list, violation_list)
+                "Updating last offset for SLA violations"
+                last_offset_violations = current_offset_violations
+            "Generating a set from the two list of metrics"
             metric_set = list(set().union(SLO_list, violation_list))
             BPRate_summation = 0
             SLAVRate_summation = 0
             final_result = 0
 
             if newSLAViolation and len(SLO_list) > 0:
+                print("Info about Violations and BPs")
                 "If we have new Violations and Predictions the whole equation is considered"
                 for metric in metric_set:
                     if metric+'_breaches' in current_breach_prediction_rate and metric+'_violations' in current_sla_violation_rate:
@@ -1737,8 +1734,12 @@ class update_trust_level(Resource):
                     elif metric+'_breaches' not in current_breach_prediction_rate and metric+'_violations' in current_sla_violation_rate:
                         SLAVRate_summation += current_sla_violation_rate[metric+'_violations']
                 final_result = ((BPRate_summation/len(SLO_list)) + (current_impact_trust * SLAVRate_summation)/len(metric_set))/2
+                print(final_result, BPRate_summation, SLO_list, current_impact_trust, SLAVRate_summation, metric_set)
+                print(current_breach_prediction_rate, current_sla_violation_rate)
                 final_result = float(last_trust_score ["trust_value"]) - final_result * ((1-float(last_trust_score ["trust_value"]))/5)
+                print(final_result)
             elif newSLAViolation and len(SLO_list) == 0:
+                print("Info about Violations")
                 "If we only have new Violations and Predictions the whole equation is considered"
                 for metric in metric_set:
                     if metric+'_violations' in current_sla_violation_rate:
@@ -1746,6 +1747,7 @@ class update_trust_level(Resource):
                 final_result = (current_impact_trust * SLAVRate_summation) / len(violation_list)
                 final_result = float(last_trust_score ["trust_value"]) - final_result * ((1-float(last_trust_score ["trust_value"]))/5)
             elif not newSLAViolation:
+                print("Reward")
                 for metric in metric_set:
                     if metric+'_violations' in RP_SLA:
                         SLAVRate_summation += RP_SLA[metric+'_violations']
