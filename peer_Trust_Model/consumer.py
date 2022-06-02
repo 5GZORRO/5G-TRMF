@@ -28,7 +28,6 @@ class Consumer():
 
         # obtain the last offset value
         self.lastOffset = self.consumer.end_offsets([tp])[tp]
-        print("LastOffset", self.lastOffset)
         #self.consumer = KafkaConsumer(topic, bootstrap_servers=self.name_servername_server, group_id=None,
                                       #enable_auto_commit=False, auto_offset_reset='earliest')
 
