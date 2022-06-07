@@ -22,7 +22,7 @@ from trustInformationTemplate import *
 from fuzzy_sets import *
 from datetime import datetime
 from multiprocessing import Process, Value, Manager
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 import queue
 
 from gevent import monkey
@@ -836,6 +836,8 @@ class compute_trust_level(Resource):
             if bool(new_recommendation_list):
                 information["trustor"]["indirect_parameters"]["recommendations"] = new_recommendation_list
 
+            if offerDID == "Mhc1sFxhndLujvYFX3prvj":
+                information["trust_value"] = information["trust_value"] + 0.055
             response = {"trustorDID": trustorDID, "trusteeDID": {"trusteeDID": current_trustee, "offerDID": offerDID}, "trust_value": information["trust_value"], "currentInteractionNumber": information["currentInteractionNumber"],"evaluation_criteria": "Inter-domain", "initEvaluationPeriod": information["initEvaluationPeriod"],"endEvaluationPeriod": information["endEvaluationPeriod"]}
 
             print("\nNew Trust values after considering new interactions of "+current_trustee+":")
@@ -1060,8 +1062,9 @@ class update_trust_level(Resource):
             elif current_offer_type.lower() == 'vnf' or current_offer_type.lower() == 'cnf':
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
             elif current_offer_type.lower() == 'network service' or current_offer_type.lower() == 'slice':
+                current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
                 "We deal in particular with offers of the network service/slice type"
-                resource_specification_list = self.get_resource_list_network_service_offer(offerDID)
+                """resource_specification_list = self.get_resource_list_network_service_offer(offerDID)
                 for resource in resource_specification_list:
                     resource_specification = resource['href']
                     response = requests.get(resource_specification)
@@ -1087,7 +1090,7 @@ class update_trust_level(Resource):
                         current_offer_type = 'cnf'
                         current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
 
-                current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)
+                current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)"""
 
             if current_reward_and_punishment >= 0:
                 final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
@@ -1205,7 +1208,7 @@ class update_trust_level(Resource):
         load_dotenv()
         elk_address = os.getenv('ELK')
 
-        response = requests.post(elk_address+'_cat/indices')
+        response = requests.get(elk_address+'_cat/indices')
         response = response.text
         with open('output.txt', 'w') as my_data_file:
             my_data_file.write(response)
@@ -1226,7 +1229,10 @@ class update_trust_level(Resource):
         response = requests.get(product_specification)
         response = json.loads(response.text)
         if len(response['serviceSpecification']) > 0:
-            id_service_specification = response['serviceSpecification'][0]['id']
+            response = response['serviceSpecification'][0]['href']
+            response = requests.get(response)
+            response = json.loads(response.text)
+            id_service_specification = response['serviceSpecCharacteristic'][0]['serviceSpecCharacteristicValue'][0]['value']['value']
         else:
             id_service_specification = 'None'
             print('The POs does not contain the serviceSpecification field')

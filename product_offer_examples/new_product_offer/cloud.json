@@ -1,5 +1,5 @@
 {
-	"offer_did" : "MzCciMdUNovcBSbUspeQHf",
+	"offer_did" : "Mhc1sFxhndLujvYFX3prvj",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -93,7 +93,7 @@
 			"productSpecificationRelationship" : [ ],
 			"relatedParty" : [
 				{
-					"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
+					"extendedInfo" : "OD1ndI3xw0Pi6Sl4rgoa6F",
 					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 				}
@@ -110,7 +110,7 @@
 					"name" : "Edge radical",
 					"relatedParty" : [
 						{
-							"extendedInfo" : "uBb4nE8zf3mVZVgUhff7Ap",
+							"extendedInfo" : "OD1ndI3xw0Pi6Sl4rgoa6F",
 							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 						}
@@ -172,8 +172,8 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-16T11:00:00.000Z"
 		},
-		"did" : "MzCciMdUNovcBSbUspeQHf"
+		"did" : "Mhc1sFxhndLujvYFX3prvj"
 	},
-	"offer_category" : "Edge",
+	"offer_category" : "Network Service",
 	"predicted_cluster" : 1
 }

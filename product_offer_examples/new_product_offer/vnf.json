@@ -1,5 +1,5 @@
 {
-	"offer_did" : "PMaLZq2RzTRd73XSSJe1zy",
+	"offer_did" : "4B8q8dmm7EtFEdeLU1NiAh",
         "trust_value" : 0.787,
 	"offer_object" : {
 		"agreement" : [ ],
@@ -93,7 +93,7 @@
 			"productSpecificationRelationship" : [ ],
 			"relatedParty" : [
 				{
-					"extendedInfo" : "M10KauVlQwdMu7Ho9Wk5mp",
+					"extendedInfo" : "V7GMvKbYXujtJhZwiBdxCu",
 					"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 					"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 				}
@@ -110,7 +110,7 @@
 					"name" : "edge_cache_vnfd",
 					"relatedParty" : [
 						{
-							"extendedInfo" : "M10KauVlQwdMu7Ho9Wk5mp",
+							"extendedInfo" : "V7GMvKbYXujtJhZwiBdxCu",
 							"href" : "http://172.28.3.126:31080/tmf-api/party/v4/organization/",
 							"id" : "c06d2b07-815b-40cb-8282-e62eafe42292"
 						}
@@ -254,8 +254,8 @@
 			"endDateTime" : "2021-11-30T11:00:00.000Z",
 			"startDateTime" : "2021-11-15T11:00:00.000Z"
 		},
-		"did" : "PMaLZq2RzTRd73XSSJe1zy"
+		"did" : "4B8q8dmm7EtFEdeLU1NiAh"
 	},
-	"offer_category" : "vnf",
+	"offer_category" : "Edge",
 	"predicted_cluster" : 0
 }
