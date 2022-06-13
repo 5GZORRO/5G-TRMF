@@ -69,7 +69,7 @@ def simulatedSLAViolations():
         producer.createTopic(topic_name)
         message = {
             "id": "uuidv4()",
-            "productID": offerDID,
+            "productDID": offerDID,
             "sla": {
                 "id": "slaId",
                 "href": "slaHref"
@@ -96,7 +96,7 @@ def simulatedSLAViolations_afterPrediction(producer, offerDID, metric):
     producer.createTopic(topic_name)
     message = {
         "id": "uuidv4()",
-        "productID": offerDID,
+        "productDID": offerDID,
         "sla": {
             "id": "slaId",
             "href": "slaHref"

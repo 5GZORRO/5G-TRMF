@@ -130,7 +130,7 @@ class Consumer():
         if self.lastOffset != 0:
             for message in self.consumer:
                 prediction_information = json.loads(message.value.decode())
-                if message.offset > offset and prediction_information["breachPredictionNotification"]["productID"] == offerDID:
+                if message.offset >= offset and prediction_information["breachPredictionNotification"]["productID"] == offerDID:
                     minimum_interactions.append(prediction_information)
 
                 if message.offset == self.lastOffset - 1:
@@ -148,7 +148,8 @@ class Consumer():
         if self.lastOffset != 0:
             for message in self.consumer:
                 violation_information = json.loads(message.value.decode())
-                if message.offset > offset and violation_information["productID"] == offerDID:
+
+                if message.offset >= offset and violation_information["productDID"] == offerDID:
                     minimum_interactions.append(violation_information)
 
                 if message.offset == self.lastOffset - 1:
