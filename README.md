@@ -5,7 +5,7 @@
 The current methods and information are available [here](https://5gzorro.github.io/5G-TRMF/).
 
 
-![alt text](https://github.com/5GZORRO/5G-TRMF/tree/main/images/5G-TRMF.png?raw=true)
+![alt text](https://github.com/5GZORRO/5G-TRMF/blob/main/images/5G-TRMF.png?raw=true)
 ## Pre-requisites
 
 #### System Requirements
