@@ -31,7 +31,7 @@ monkey.patch_all()
 app = Flask(__name__)
 api = Api(app)
 
-producer = Producer()
+producer = None
 consumer = Consumer()
 peerTrust = PeerTrust()
 data_lock = Lock()
@@ -132,11 +132,13 @@ class start_data_collection(Resource):
         global update_catalog
         global thread_catalog
         global timestamp_thread_catalog
+        global producer
 
         gather_time, compute_time, storage_time, update_time, satisfaction, credibility, TF, CF = 0, 0, 0, 0, 0, 0, 0, 0
         trustor_acquired = False
         max_trust_score = 0
         max_trust_score_offerDID = ""
+        producer = Producer()
 
         time_file_name = 'tests/time.csv'
         time_headers = ["start_timestamp","end_timestamp","total_time", "total_without_cold", "cold_time", "gather_time", "compute_time",

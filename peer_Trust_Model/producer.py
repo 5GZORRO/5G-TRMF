@@ -6,17 +6,10 @@ from dotenv import load_dotenv
 
 class Producer():
 
-
-    admin_client = None
-    producer = None
-
-    def __init__(self):
-        global admin_client
-        global producer
-
-        load_dotenv()
-        admin_client = KafkaAdminClient(bootstrap_servers=os.getenv('KAFKA'),client_id='test')
-        producer = KafkaProducer(bootstrap_servers=os.getenv('KAFKA'), value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+    load_dotenv()
+    address = os.getenv('KAFKA')
+    admin_client = KafkaAdminClient(bootstrap_servers=address,client_id='test')
+    producer =  KafkaProducer(bootstrap_servers=address, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     def createTopic(self, topic_name):
         """ This function allows generating new kafka topics where the topic name is composed by trustor's DID +

@@ -5,7 +5,7 @@ import requests
 from flask import Flask, request
 from flask_restful import Resource, Api
 from gevent.pywsgi import WSGIServer
-from trustManagementFramework import *
+#from trustManagementFramework import *
 
 from gevent import monkey
 monkey.patch_all()
