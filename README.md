@@ -2,10 +2,10 @@
 
 ## Introduction
 5GZORRO's trust and reputation management component manages the computation of trust values among different stakeholders based on previous experiences and the trust chain with other intermediary entities involved in the trust link. By means of this framework, end-to-end trustworthiness relationships can be established.
-* The current methods and information are available [here](https://5gzorro.github.io/5G-TRMF/)
+The current methods and information are available [here](https://5gzorro.github.io/5G-TRMF/).
 
 
-![alt text](https://github.com/5GZORRO/5G-TRMF/blob/main/images/5G-TRMF.pdf?raw=true)
+[embed] https://raw.githubusercontent.com/5GZORRO/5G-TRMF/main/images/5G-TRMF.pdf [/embed]
 
 ## Pre-requisites
 
@@ -17,11 +17,23 @@
 * **Deployment/Virtualization technology**: containers
 
 ### Software dependecies
-This project is written in Python, and consequently, Python 3 is required to deploy its funcionalities. In addition, multiple libraries such as Kafka, PyMongo, Flask, Flask Restful, Gevent and Werkzeug, among others, are needeed in order to utilise such a framework. These dependencies can be installed through the _requirements.txt_ file.
 
-```
-pip install -r requirements.txt
-```
+In order to run the 5G-TRMF, the following libraries, included in the _requirements.txt_ file, are mandatory:
+* kafka-python
+* flask, flask_restful
+* gevent
+* Werkzeug
+* requests
+* pymongo
+* rstr
+* threaded
+* pandas
+* matplotlib
+* seaborn
+* python-dotenv
+* pyit2fls
+* pyvim
+
 
 ### 5GZORRO Module dependencies
 Due to the fact that the 5G-TRMF interacts with the Resource & Service Offer Catalog, the Security Analysis Service, the Data Lake Platform and the Intelligent SLA Monitoring and Breach Predictor, these 5GZORRO modules should be up and running for the proper 5G-TRMF behaviour. In order to install the aforementioned 5G-ZORRO modules, please, check the README.md file of each one:
@@ -68,7 +80,7 @@ pip install -r requirements.txt
 ## Configuration
 Before starting the 5G-TRMF, a two configuration steps should be carried out. 
 
-On the one hand, we need to uncomment the proper endpoint to be consulted, 31113 for operator-A, 31114 for operator-B, 31115 for operator-C. These endpoints are declared in the _.env_ file as part of the root folder.
+On the one hand, we need to uncomment the proper endpoint to be consulted, 31113 for operator-A, 31114 for operator-B, 31115 for operator-C. Similarly, it should be also uncomment the proper Kafka endpoint based on the deployment testbed. These endpoints are declared in the _.env_ file as part of the root folder.
 
 ```
 pyvim .env
