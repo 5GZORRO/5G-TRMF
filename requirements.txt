@@ -12,4 +12,5 @@ matplotlib
 seaborn
 python-dotenv
 pyit2fls
+pyvim
 

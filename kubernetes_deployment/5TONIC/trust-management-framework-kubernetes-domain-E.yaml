@@ -39,7 +39,7 @@ items:
         - name: "5001"
           port: 5001
           targetPort: 5001
-          nodePort: 31113
+          nodePort: 31116
       selector:
         io.kompose.service: trmf
     status:
