@@ -158,6 +158,8 @@ items:
               ports:
                 - containerPort: 5001
               resources: {}
+              command: ["python3"]
+              args: ["peer_Trust_Model/trustManagementFramework.py", "5002"]
           restartPolicy: Always
           imagePullSecrets:
           - name: regcred-trmf

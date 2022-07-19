@@ -77,19 +77,14 @@ pip install -r requirements.txt
 
 
 ## Configuration
-Before starting the 5G-TRMF, a two configuration steps should be carried out. 
+Before starting the 5G-TRMF, an additional configuration step should be carried out. 
 
-On the one hand, we need to uncomment the proper endpoint to be consulted, 31113 for operator-A, 31114 for operator-B, 31115 for operator-C. Similarly, it should be also uncomment the proper Kafka endpoint based on the deployment testbed. These endpoints are declared in the _.env_ file as part of the root folder.
+We need to uncomment the proper endpoint to be consulted, 31113 for operator-A, 31114 for operator-B, 31115 for operator-C. Similarly, it should be also uncomment the proper Kafka endpoint based on the deployment testbed. These endpoints are declared in the _.env_ file as part of the root folder.
 
 ```
 pyvim .env
 ```
 
-In order to start all functionalities of the 5G-TRMF such as gathering information, computing trust scores, storing trust information, and updating trust scores from new events, it is required to launch the _trustManagementFramework.py_ in the port _5002_.
-
-```
-python3 peer_Trust_Model/trustManagementFramework.py 5002
-```
 
 ## Maintainers
 **José María Jorquera Valero** - *Developer and Designer* - josemaria.jorquera@um.es
