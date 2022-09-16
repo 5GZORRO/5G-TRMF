@@ -158,8 +158,6 @@ items:
               ports:
                 - containerPort: 5001
               resources: {}
-              command: ["python3"]
-              args: ["launch_TRMF.py"]
           restartPolicy: Always
           imagePullSecrets:
           - name: regcred-trmf

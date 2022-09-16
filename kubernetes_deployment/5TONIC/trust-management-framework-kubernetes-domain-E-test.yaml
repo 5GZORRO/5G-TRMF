@@ -9,9 +9,9 @@ items:
       creationTimestamp: null
       labels:
         io.kompose.service: mongodb-trmf
-        domain: operator-a
+        domain: operator-e
       name: mongodb-trmf
-      namespace: domain-operator-a
+      namespace: domain-operator-e
     spec:
       ports:
         - name: "27017"
@@ -30,16 +30,16 @@ items:
       creationTimestamp: null
       labels:
         io.kompose.service: trmf
-        domain: operator-a
+        domain: operator-e
       name: trmf
-      namespace: domain-operator-a
+      namespace: domain-operator-e
     spec:
       type: NodePort
       ports:
         - name: "5001"
           port: 5001
           targetPort: 5001
-          nodePort: 31113
+          nodePort: 31116
       selector:
         io.kompose.service: trmf
     status:
@@ -53,9 +53,9 @@ items:
       creationTimestamp: null
       labels:
         io.kompose.service: mongodb-trmf
-        domain: operator-a
+        domain: operator-e
       name: mongodb-trmf
-      namespace: domain-operator-a
+      namespace: domain-operator-e
     spec:
       replicas: 1
       selector:
@@ -71,7 +71,7 @@ items:
           creationTimestamp: null
           labels:
             io.kompose.service: mongodb-trmf
-            domain: operator-a
+            domain: operator-e
         spec:
           containers:
             - env:
@@ -85,7 +85,7 @@ items:
                 - containerPort: 27017
               resources: {}
               volumeMounts:
-                - mountPath: /data/db
+                - mountPath: /data/db-e
                   name: trust-mongodbdata
           restartPolicy: Always
           volumes:
@@ -99,9 +99,9 @@ items:
       creationTimestamp: null
       labels:
         io.kompose.service: trust-mongodbdata
-        domain: operator-a
+        domain: operator-e
       name: trust-mongodbdata
-      namespace: domain-operator-a
+      namespace: domain-operator-e
     spec:
       storageClassName: trustmongodbdata
       accessModes:
@@ -113,7 +113,7 @@ items:
   - apiVersion: v1
     kind: PersistentVolume
     metadata:
-      name: trust-mongodbdata-pv-a
+      name: trust-mongodbdata-pv-e
       labels:
         type: local
     spec:
@@ -133,9 +133,9 @@ items:
       creationTimestamp: null
       labels:
         io.kompose.service: trmf
-        domain: operator-a
+        domain: operator-e
       name: trmf
-      namespace: domain-operator-a
+      namespace: domain-operator-e
     spec:
       replicas: 1
       selector:
@@ -150,7 +150,7 @@ items:
           creationTimestamp: null
           labels:
             io.kompose.service: trmf
-            domain: operator-a
+            domain: operator-e
         spec:
           containers:
             - image: ghcr.io/5gzorro/5g-trmf-5tonic/5g-trmf-5tonic:latest
@@ -158,11 +158,9 @@ items:
               ports:
                 - containerPort: 5001
               resources: {}
-              command: ["python3"]
-              args: ["launch_TRMF.py"]
           restartPolicy: Always
           imagePullSecrets:
-          - name: regcred-trmf
+            - name: regcred-trmf
     status: {}
 kind: List
 metadata: {}

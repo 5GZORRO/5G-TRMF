@@ -85,25 +85,25 @@ items:
                 - containerPort: 27017
               resources: {}
               volumeMounts:
-                - mountPath: /data/db
-                  name: trust-mongodbdata
+                - mountPath: /data/db-a
+                  name: trust-mongodbdata-a
           restartPolicy: Always
           volumes:
-            - name: trust-mongodbdata
+            - name: trust-mongodbdata-a
               persistentVolumeClaim:
-                claimName: trust-mongodbdata
+                claimName: trust-mongodbdata-a
     status: {}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: trust-mongodbdata
+        io.kompose.service: trust-mongodbdata-a
         domain: operator-a
-      name: trust-mongodbdata
+      name: trust-mongodbdata-a
       namespace: domain-operator-a
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       accessModes:
         - ReadWriteOnce
       resources:
@@ -117,7 +117,7 @@ items:
       labels:
         type: local
     spec:
-      storageClassName: trustmongodbdata
+      storageClassName: trustmongodbdata-a
       capacity:
         storage: 100Mi
       accessModes:
@@ -153,13 +153,11 @@ items:
             domain: operator-a
         spec:
           containers:
-            - image: ghcr.io/5gzorro/5g-trmf-5tonic/5g-trmf-5tonic:latest
+            - image: ghcr.io/5gzorro/5g-trmf-5gbarcelona/5g-trmf-5gbarcelona:latest
               name: trmf
               ports:
                 - containerPort: 5001
               resources: {}
-              command: ["python3"]
-              args: ["launch_TRMF.py"]
           restartPolicy: Always
           imagePullSecrets:
           - name: regcred-trmf

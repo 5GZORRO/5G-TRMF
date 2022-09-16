@@ -372,7 +372,7 @@ class start_data_collection(Resource):
                     "Delete once the HTTP request will not be filtered in 5GBarcelona"
                     if product_offering.index(i) < 111450:
                         "Added to avoid some malformed POs"
-                        if "href" in i['productSpecification']:
+                        if "href" in i['productSpecification'] and "172.28.3.100" not in i['productSpecification']['href']:
                             href = i['productSpecification']['href']
                             id_product_offering = i['id']
                             "Added to avoid some malformed POs"
@@ -1649,8 +1649,8 @@ class update_trust_level(Resource):
         global newSLAViolation
         "Sliding window definition IN SECONDS"
         CURRENT_TIME_WINDOW = 300
-        TOTAL_RW = 0.9
-        NOW_RW = 1 - TOTAL_RW
+        eigen_factor = 0.02
+        n = 10
 
         offerDID = last_trust_score["trustor"]["offerDID"]
         RP_SLA = last_trust_score["trustor"]["reward_and_punishment_SLA"]
@@ -1773,13 +1773,14 @@ class update_trust_level(Resource):
                     if metric+'_violations' in RP_SLA:
                         SLAVRate_summation += RP_SLA[metric+'_violations']
                 try:
-                    reward = last_SLAVRate - (SLAVRate_summation / len(violation_list))
+                    #reward = last_SLAVRate - (SLAVRate_summation / len(violation_list))
+                    reward = last_trust_score ["trust_value"] + eigen_factor * ((1-last_trust_score ["trust_value"])/n)
                 except ZeroDivisionError:
                     reward = last_SLAVRate
 
                 #print("Reward --> ", reward, last_SLAVRate, SLAVRate_summation / len(violation_list), SLAVRate_summation, len(violation_list))
                 #print("Reward -->", min(reward,1))
-                final_result = float(last_trust_score ["trust_value"]) + reward * ((1-float(last_trust_score ["trust_value"]))/5)
+                final_result = float(last_trust_score ["trust_value"]) + min(reward,1) * ((1-float(last_trust_score ["trust_value"]))/5)
 
                 "Update SLAVRate total"
                 try:
@@ -1817,7 +1818,7 @@ class update_trust_level(Resource):
         "Sliding window weighting with respect to the forgetting factor"
         global newSLAViolation
 
-        TOTAL_RW = 0.9
+        TOTAL_RW = 0.60
         NOW_RW = 1 - TOTAL_RW
 
         SLAV_rate_per_metric = {}
@@ -1855,7 +1856,7 @@ class update_trust_level(Resource):
             if previous_SLAVRate == 0:
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAViolations
             else:
-                new_SLAVRate = TOTAL_RW * previous_SLAVRate + NOW_RW * (self.increment(new_SLAViolations, previous_SLAVRate)*violation_fuzzy_set(new_SLAViolations, previous_SLAVRate))
+                new_SLAVRate = previous_SLAVRate + TOTAL_RW * (self.increment(new_SLAViolations, previous_SLAVRate)*violation_fuzzy_set(new_SLAViolations, previous_SLAVRate))
                 #SLAVRate = min(abs(previous_SLAVRate - new_SLAVRate), 1)
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAVRate
 
