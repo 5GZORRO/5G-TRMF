@@ -421,7 +421,7 @@ class start_data_collection(Resource):
                                     new_object["active"+"_"+category.lower()+"_"+location] = 1
 
 
-                            if not bool(statistic_catalog):
+                            if not bool(statistic_catalog) and bool(new_object):
                                 statistic_catalog.append(new_object)
                             elif bool(new_object):
                                 "This variable will check whether we have a new provider in the Catalog"
@@ -1651,6 +1651,7 @@ class update_trust_level(Resource):
         CURRENT_TIME_WINDOW = 300
         eigen_factor = 0.02
         n = 10
+	number_updates = 0
 
         offerDID = last_trust_score["trustor"]["offerDID"]
         RP_SLA = last_trust_score["trustor"]["reward_and_punishment_SLA"]
@@ -1667,6 +1668,8 @@ class update_trust_level(Resource):
 
         while not event.isSet():
             time.sleep(CURRENT_TIME_WINDOW)
+	    number_updates+=1
+
             "Getting the offset of the current message"
             consumer.start(prediction_topic)
             current_offset_predictions = consumer.lastOffset
@@ -1720,7 +1723,7 @@ class update_trust_level(Resource):
                 if type_metric not in violation_list:
                     violation_list.append(type_metric)
 
-            current_sla_violation_rate = self.sla_violation_rate(last_offset_violations, RP_SLA, violation_notification_list, violation_list)
+            current_sla_violation_rate = self.sla_violation_rate(last_offset_violations, RP_SLA, violation_notification_list, violation_list, number_updates)
             "Updating SLA Violation Rates"
             for violation in violation_list:
                 RP_SLA[violation+'_violations'] = current_sla_violation_rate[violation+'_violations']
@@ -1751,7 +1754,7 @@ class update_trust_level(Resource):
                     RP_SLA['SLAVRate'] = 0
 
                 "Compute the penalization"
-                punishment = ((BPRate_summation/len(SLO_list)) + (current_impact_trust * SLAVRate_summation)/len(violation_list))/2
+                punishment = max(0,((BPRate_summation/len(SLO_list)) + (current_impact_trust * SLAVRate_summation)/len(violation_list))/2)
                 final_result = float(last_trust_score ["trust_value"]) - punishment * ((1-float(last_trust_score ["trust_value"]))/5)
             elif newSLAViolation and len(SLO_list) == 0:
                 "If we only have new Violations and Predictions the whole equation is considered"
@@ -1766,7 +1769,7 @@ class update_trust_level(Resource):
                     RP_SLA['SLAVRate'] = 0
 
                 "Compute the penalization"
-                punishment = (current_impact_trust * SLAVRate_summation) / len(violation_list)
+                punishment = max(0,(current_impact_trust * SLAVRate_summation) / len(violation_list))
                 final_result = float(last_trust_score ["trust_value"]) - punishment * ((1-float(last_trust_score ["trust_value"]))/5)
             elif not newSLAViolation:
                 for metric in metric_set:
@@ -1774,7 +1777,7 @@ class update_trust_level(Resource):
                         SLAVRate_summation += RP_SLA[metric+'_violations']
                 try:
                     #reward = last_SLAVRate - (SLAVRate_summation / len(violation_list))
-                    reward = last_trust_score ["trust_value"] + eigen_factor * ((1-last_trust_score ["trust_value"])/n)
+                    reward = min(last_trust_score ["trust_value"] + eigen_factor * ((1-last_trust_score ["trust_value"])/n),1)
                 except ZeroDivisionError:
                     reward = last_SLAVRate
 
@@ -1814,7 +1817,7 @@ class update_trust_level(Resource):
         trust_level_impact = trust_fuzzy_set(current_trust_score)
         return (1- (1-current_trust_score)/(1+current_trust_score)) * trust_level_impact
 
-    def sla_violation_rate(self, last_offset_violations, RP_SLA, violation_notification_list, violation_list):
+    def sla_violation_rate(self, last_offset_violations, RP_SLA, violation_notification_list, violation_list, number_updates):
         "Sliding window weighting with respect to the forgetting factor"
         global newSLAViolation
 
@@ -1826,7 +1829,7 @@ class update_trust_level(Resource):
         if last_offset_violations == 0:
             for violation_notification in violation_notification_list:
                 type_metric = violation_notification["rule"]["metric"]
-                if type_metric not in RP_SLA:
+                if type_metric+'_violations' not in RP_SLA:
                     RP_SLA[type_metric+'_violations'] = 1
                 else:
                     RP_SLA[type_metric+'_violations'] +=1
@@ -1857,6 +1860,8 @@ class update_trust_level(Resource):
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAViolations
             else:
                 new_SLAVRate = previous_SLAVRate + TOTAL_RW * (self.increment(new_SLAViolations, previous_SLAVRate)*violation_fuzzy_set(new_SLAViolations, previous_SLAVRate))
+		if new_SLAVRate == 0:
+                    new_SLAVRate = (previous_SLAVRate*number_updates + new_SLAViolations) / (number_updates+1)
                 #SLAVRate = min(abs(previous_SLAVRate - new_SLAVRate), 1)
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAVRate
 

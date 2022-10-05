@@ -101,10 +101,10 @@ def trust_fuzzy_set(trust_score):
     mySet_3 = T1FS(domain_3, trapezoid_mf, [0.55, 0.675, 0.8, 0.925, 1.])
     mySet_4 = T1FS(domain_4, trapezoid_mf, [0.8, 0.925, 1.05, 1.175, 1.])
 
-    own_T1FS_plot(mySet, mySet_1, mySet_2, mySet_3, mySet_4, legends=["Untrustworthy", "Little Trustworthy",
+    """own_T1FS_plot(mySet, mySet_1, mySet_2, mySet_3, mySet_4, legends=["Untrustworthy", "Little Trustworthy",
      "Moderately Trustworthy", "Trustworthy", "Full Trustworthy"], xlabel='Trust and Reputation values',
-     filename='trust_levels', ext='pdf', n_colums=2)
-    print(trapezoid_mf(linspace(0.82, 0.82, 100), [0.55, 0.675, 0.8, 0.925, 1.]), trapezoid_mf(linspace(0.82, 0.82, 100), [0.8, 0.925, 1.05, 1.175, 1.]))
+     filename='trust_levels', ext='pdf', n_colums=2)"""
+    #print(trapezoid_mf(linspace(0.82, 0.82, 100), [0.55, 0.675, 0.8, 0.925, 1.]), trapezoid_mf(linspace(0.82, 0.82, 100), [0.8, 0.925, 1.05, 1.175, 1.]))
 
     if trust_score <= 0.175:
         untrustworthy = trapezoid_mf(linspace(trust_score, trust_score, 100), [-1, 0., 0.05, 0.175, 1.])
@@ -134,8 +134,7 @@ def trust_fuzzy_set(trust_score):
         return 1.0
 
 
-def violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate,):
-
+def violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate):
     domain = linspace(0., historical_SLA_violation_rate, 100)
     domain_1 = linspace(historical_SLA_violation_rate/2, historical_SLA_violation_rate*2, 100)
     domain_2 = linspace(historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*3, 100)
@@ -149,7 +148,8 @@ def violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate,):
     recurrent= trapezoid_mf(linspace(new_SLAViolations, new_SLAViolations, 100), [historical_SLA_violation_rate/2, historical_SLA_violation_rate, historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, 1.])
     persistent = trapezoid_mf(linspace(new_SLAViolations, new_SLAViolations, 100), [historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, historical_SLA_violation_rate*2.5, historical_SLA_violation_rate*3, 1.])
 
-    if momentary[0] > 0 and recurrent[0] == 0:
+    if int(momentary[0]) > 0 and recurrent[0] == 0:
+        print(momentary, recurrent, persistent)
         return 1
     elif momentary[0] > 0 and recurrent[0] != 0:
         return 2
@@ -159,11 +159,14 @@ def violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate,):
         return 3
     elif persistent[0] > 0 and recurrent[0] == 0:
         return 3
+    elif new_SLAViolations >= historical_SLA_violation_rate*3:
+        return 3
 
 
 #trust_fuzzy_set(0.75)
-#historical_SLA_violation_rate = 1.84
-#violation_fuzzy_set(historical_SLA_violation_rate)
+#new_SLAViolations = 1
+#historical_SLA_violation_rate = 16
+#violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate)
 
 #print(trapezoid_mf(linspace(3, 3, 100), [-1, 0., historical_SLA_violation_rate/2, historical_SLA_violation_rate, 1.]), trapezoid_mf(linspace(3, 3, 100), [historical_SLA_violation_rate/2, historical_SLA_violation_rate, historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, 1.]), trapezoid_mf(linspace(3, 3, 100), [historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, historical_SLA_violation_rate*2.5, historical_SLA_violation_rate*3, 1.]))
 
