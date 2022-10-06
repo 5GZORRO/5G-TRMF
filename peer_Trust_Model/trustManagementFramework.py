@@ -1651,7 +1651,7 @@ class update_trust_level(Resource):
         CURRENT_TIME_WINDOW = 300
         eigen_factor = 0.02
         n = 10
-	number_updates = 0
+        number_updates = 0
 
         offerDID = last_trust_score["trustor"]["offerDID"]
         RP_SLA = last_trust_score["trustor"]["reward_and_punishment_SLA"]
@@ -1668,7 +1668,7 @@ class update_trust_level(Resource):
 
         while not event.isSet():
             time.sleep(CURRENT_TIME_WINDOW)
-	    number_updates+=1
+            number_updates+=1
 
             "Getting the offset of the current message"
             consumer.start(prediction_topic)
@@ -1860,8 +1860,9 @@ class update_trust_level(Resource):
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAViolations
             else:
                 new_SLAVRate = previous_SLAVRate + TOTAL_RW * (self.increment(new_SLAViolations, previous_SLAVRate)*violation_fuzzy_set(new_SLAViolations, previous_SLAVRate))
-		if new_SLAVRate == 0:
+                if new_SLAVRate == 0:
                     new_SLAVRate = (previous_SLAVRate*number_updates + new_SLAViolations) / (number_updates+1)
+
                 #SLAVRate = min(abs(previous_SLAVRate - new_SLAVRate), 1)
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAVRate
 
