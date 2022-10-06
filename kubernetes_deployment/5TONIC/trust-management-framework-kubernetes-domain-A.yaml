@@ -86,21 +86,21 @@ items:
               resources: {}
               volumeMounts:
                 - mountPath: /data/db
-                  name: trust-mongodbdata-a
+                  name: trust-mongodbdata
           restartPolicy: Always
           volumes:
-            - name: trust-mongodbdata-a
+            - name: trust-mongodbdata
               persistentVolumeClaim:
-                claimName: trust-mongodbdata-a
+                claimName: trust-mongodbdata
     status: {}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: trust-mongodbdata-a
+        io.kompose.service: trust-mongodbdata
         domain: operator-a
-      name: trust-mongodbdata-a
+      name: trust-mongodbdata
       namespace: domain-operator-a
     spec:
       storageClassName: trustmongodbdata
