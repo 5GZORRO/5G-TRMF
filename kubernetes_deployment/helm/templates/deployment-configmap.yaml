@@ -1,0 +1,12 @@
+{{- $imageValues := .Values.image }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "trmf.fullname" . }}
+data:
+  5GBARCELONA_CATALOG_A: {{ .Values.catalogue.uri }}
+  ELK: {{ .Values.elk.uri }}
+  KAFKA: {{ .Values.datalake.kafka }}
+  SLA_VIOLATION_TOPIC: sla-monitor-topic-out
+  BREACH_PREDICTION_TOPIC: isbp-topic-out

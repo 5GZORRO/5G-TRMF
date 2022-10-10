@@ -1,0 +1,22 @@
+image:
+  tag: gitlab-ci
+  app: trmf
+  image: gitlab-registry.fbk.eu/kubernetes-deploy/5g-zorro/trmf
+  pullPolicy: Always
+  pullSecrets: tmrfregsecret
+
+tmrfrest:
+  nodePort: 5001
+
+trmfdb:
+
+catalogue:
+  uri: http://172.28.3.103:31080/tmf-api/
+
+
+elk:
+  uri: http://192.168.1.210:9200/
+
+datalake:
+  kafka: 172.28.3.196:9092
+

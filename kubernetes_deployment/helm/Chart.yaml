@@ -1,0 +1,7 @@
+apiVersion: v2
+name: trmf
+version: "1.0.0"
+description: TRMF
+type: application
+keywords:
+- trmf
