@@ -161,13 +161,3 @@ def violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate):
         return 3
     elif new_SLAViolations >= historical_SLA_violation_rate*3:
         return 3
-
-
-#trust_fuzzy_set(0.75)
-#new_SLAViolations = 1
-#historical_SLA_violation_rate = 16
-#violation_fuzzy_set(new_SLAViolations, historical_SLA_violation_rate)
-
-#print(trapezoid_mf(linspace(3, 3, 100), [-1, 0., historical_SLA_violation_rate/2, historical_SLA_violation_rate, 1.]), trapezoid_mf(linspace(3, 3, 100), [historical_SLA_violation_rate/2, historical_SLA_violation_rate, historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, 1.]), trapezoid_mf(linspace(3, 3, 100), [historical_SLA_violation_rate*1.5, historical_SLA_violation_rate*2, historical_SLA_violation_rate*2.5, historical_SLA_violation_rate*3, 1.]))
-
-

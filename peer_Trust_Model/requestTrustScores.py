@@ -31,8 +31,6 @@ class request_trust_scores(Resource):
                 trustor_acquired = True
             else:
                 """ Acquire both provider's DID and offer's DID """
-                #did_provider = i['productSpecification']['relatedParty'][0]['extendedInfo']
-                #did_resource = i['did']
                 did_provider = i['offer_object']['productSpecification']['relatedParty'][0]['extendedInfo']
                 did_resource = i['offer_did']
                 type_offer_list[did_resource] = i['offer_category']

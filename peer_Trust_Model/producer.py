@@ -36,19 +36,3 @@ class Producer():
         self.producer.flush()
 
         return 1
-
-"""producer = Producer()
-message = {"trustorDID": "99lm6s88-jv84-ii57-qq53-6166qvw8l3zt", "trusteeDID": "90afc0f6-34fb-4c09-a3c0-f880078b6e76",
-           "offerDID": "MzCciMdUNovcBSbUspeQHf", "interactionNumber": 1, "totalInteractionNumber": 2,
-           "currentInteractionNumber": 3,}
-
-creation = producer.createTopic("test1")
-
-
-if creation == 200:
-    print("Generation of a new Topic")
-    producer.sendMessage("test1","did1234", message)
-    print("Message sent")
-else:
-    producer.sendMessage("test1","did12345", message)
-    print("Message sent after creation")"""

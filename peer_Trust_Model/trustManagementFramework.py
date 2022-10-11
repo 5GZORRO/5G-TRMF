@@ -23,7 +23,6 @@ from fuzzy_sets import *
 from datetime import datetime
 from multiprocessing import Process, Value, Manager
 #logging.basicConfig(filename='TRMF_logs',filemode='a',format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',datefmt='%H:%M:%S',level=logging.INFO)
-import queue
 
 from gevent import monkey
 monkey.patch_all()
@@ -40,9 +39,6 @@ trustInformationTemplate = TrustInformationTemplate()
 client = MongoClient(host='mongodb-trmf', port=27017, username='5gzorro', password='password')
 db = client.rptutorials
 mongoDB = db.tutorial
-
-dlt_headers = ["trustorDID","trusteeDID", "offerDID", "userSatisfaction","interactionNumber","totalInteractionNumber", "currentInteractionNumber"]
-dlt_file_name = 'DLT.csv'
 
 provider_list = []
 considered_offer_list = []
@@ -74,34 +70,18 @@ threads_security = list()
 threads_sla = list()
 
 """ Parameters to define a minimum interactions in the system and avoid a cold start"""
-max_previous_providers_DLT = 4
-max_previous_providers_interactions_DLT = 3
-max_previous_interactions_DLT = max_previous_providers_DLT * max_previous_providers_interactions_DLT
+max_previous_providers = 4
+max_previous_providers_interactions = 3
+max_previous_interactions = max_previous_providers * max_previous_providers_interactions
 
 
 def find_by_column(column, value):
-    """ This method discovers interactions registered in the DLT looking at one specific value"""
+    """ This method discovers interactions registered in the Kafka looking at one specific value"""
     list = []
-    """with open(filename) as f:
-        reader = csv.DictReader(f)
-        for item in reader:
-            if item[column] == value:
-                list.append(item)"""
     for interaction in peerTrust.kafka_interaction_list:
         if interaction[column] == value:
             list.append(interaction)
     return list
-
-
-def write_data_to_csv(filename, rows):
-    with open(filename, 'a', encoding='UTF8', newline='') as dlt_data:
-        writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
-        writer.writerows(rows)
-
-def write_only_row_to_csv(filename, row):
-    with open(filename, 'a', encoding='UTF8', newline='') as dlt_data:
-        writer = csv.DictWriter(dlt_data, fieldnames=dlt_headers)
-        writer.writerow(row)
 
 class initialise_offer_type(Resource):
     """ This class recaps the type of offers being analysed per request. Then, the informatation is leveraged by the
@@ -202,10 +182,6 @@ class start_data_collection(Resource):
                         else:
                             list_product_offers[trustee] = [offer]
 
-        #consumer.start("TRMF-interconnections")
-        #consumer.subscribe("TRMF-interconnections")
-        #cold_start_info = consumer.start_reading_cold_start(max_previous_interactions_DLT)
-
         consumer.start("TRMF-interconnections")
         consumer.subscribe("TRMF-interconnections")
         kafka_minimum_interaction_list = consumer.start_reading_minimum_interactions()
@@ -213,10 +189,14 @@ class start_data_collection(Resource):
         if len(list_product_offers) >= 1 and bool(kafka_minimum_interaction_list):
             peerTrust.kafka_interaction_list = kafka_minimum_interaction_list
 
+        #Uncomment following lines if we need to generate basis information to run the 5G-TRMF
+        #consumer.start("TRMF-interconnections")
+        #consumer.subscribe("TRMF-interconnections")
+        #cold_start_info = consumer.start_reading_cold_start(max_previous_interactions)
 
         """ Adding a set of minimum interactions between entities that compose the trust model """
         #if len(list_product_offers)>1 and not bool(cold_start_info):
-            #minimum_data = peerTrust.minimumTrustValuesDLT(producer, consumer, trustorDID, list_product_offers)
+            #minimum_data = peerTrust.minimumTrustValues(producer, consumer, trustorDID, list_product_offers)
 
             #for data in minimum_data:
                 #producer.createTopic("TRMF-interconnections")
@@ -290,11 +270,6 @@ class start_data_collection(Resource):
         for interaction in reversed(peerTrust.historical):
             if interaction["trust_value"] == max_trust_score and \
                     interaction["trustor"]["offerDID"] == max_trust_score_offerDID:
-                """data = {"trustorDID": trustorDID, "trusteeDID": interaction["trustor"]["trusteeDID"], "offerDID": max_trust_score_offerDID,
-                        "userSatisfaction": interaction["trustor"]["direct_parameters"]["userSatisfaction"],
-                        "interactionNumber": interaction["trustor"]["direct_parameters"]["interactionNumber"],
-                        "totalInteractionNumber": interaction["trustor"]["direct_parameters"]["totalInteractionNumber"],
-                        "currentInteractionNumber": interaction["currentInteractionNumber"]}"""
 
                 " Modifying the interaction number as the most recent one "
                 interaction["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
@@ -309,15 +284,11 @@ class start_data_collection(Resource):
                         "currentInteractionNumber": interaction["currentInteractionNumber"], "timestamp": interaction["endEvaluationPeriod"],
                            "endpoint":trmf_endpoint}
 
-                #write_only_row_to_csv(dlt_file_name, data)
-                #producer.start()
                 producer.createTopic("TRMF-interconnections")
                 producer.sendMessage("TRMF-interconnections",max_trust_score_offerDID, message)
 
                 "Adjusting the parameters based on new interactions"
-                #interaction["trustor"]["direct_parameters"]["interactionNumber"] = message["interactionNumber"]
-                #interaction["currentInteractionNumber"] = message["currentInteractionNumber"]
-                #peerTrust.historical.append(interaction)
+                peerTrust.historical.append(interaction)
 
         if not os.path.exists("tests"):
             os.makedirs("tests")
@@ -464,7 +435,7 @@ class start_data_collection(Resource):
 class gather_information(Resource):
     def post(self):
         """ This method will retrieve information from the historical (MongoDB)+
-        search for supplier/offer interactions in the simulated DLT to retrieve recommendations from
+        search for supplier/offer interactions in the Kafka bus to retrieve recommendations from
         other 5G-TRMFs. Currently there is no interaction with other 5G-TRMFs, we generate our
         internal information """
 
@@ -492,7 +463,7 @@ class gather_information(Resource):
         """Read interactions related to a Trustee"""
         interactions = self.getInteractionTrustee(trustorDID, trusteeDID)
 
-        print("Public information from "+trusteeDID+" interactions registered in the DLT:\n", interactions, "\n")
+        print("Public information from "+trusteeDID+" interactions registered in the Kafka:\n", interactions, "\n")
 
         print("$$$$$$$$$$$$$$ Ending data collection procces on ",trusteeDID, " $$$$$$$$$$$$$$\n")
 
@@ -580,13 +551,13 @@ class compute_trust_level(Resource):
             counter_new_interactions = 0
             counter_new_CF_interactions = 0
 
-            """Obtaining the last interaction registered by the Trustee in the DLT """
+            """Obtaining the last interaction registered by the Trustee in the Kafka """
 
             if len(current_trustee_interactions) > 0:
-                last_interaction_DLT = current_trustee_interactions[len(current_trustee_interactions)-1]
-                print("Currently, "+current_trustee+" has "+str(last_interaction_DLT['currentInteractionNumber'])+" interactions in total\n")
-                if int(last_interaction_DLT['currentInteractionNumber']) > last_trustee_interaction_registered:
-                    print(int(last_interaction_DLT['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
+                last_interaction_Kafka = current_trustee_interactions[len(current_trustee_interactions)-1]
+                print("Currently, "+current_trustee+" has "+str(last_interaction_Kafka['currentInteractionNumber'])+" interactions in total\n")
+                if int(last_interaction_Kafka['currentInteractionNumber']) > last_trustee_interaction_registered:
+                    print(int(last_interaction_Kafka['currentInteractionNumber'])-last_trustee_interaction_registered, " new interactions should be contemplated to compute the new trust score on "+current_trustee+"\n")
                     print("%%%%%%%%%%%%%% Principal PeerTrust equation %%%%%%%%%%%%%%\n")
                     print("\tT(u) = α * ((∑ S(u,i) * Cr(p(u,i) * TF(u,i)) / I(u)) + β * CF(u)\n")
 
@@ -673,13 +644,10 @@ class compute_trust_level(Resource):
 
             information["trustor"]["direct_parameters"]["direct_weighting"] = direct_weighting
             information["trustor"]["indirect_parameters"]["recommendation_weighting"] = round(1-direct_weighting, 4)
-            #information["trustor"]["direct_parameters"]["interactionNumber"] = last_interaction_number+1
             information["trustor"]["direct_parameters"]["interactionNumber"] = peerTrust.getInteractionNumber(trustorDID, current_trustee, offerDID)
-            #print(peerTrust.getLastTotalInteractionNumber(current_trustee))
             information["trustor"]["direct_parameters"]["totalInteractionNumber"] = peerTrust.getLastTotalInteractionNumber(current_trustee)
-            #information["trustor"]["direct_parameters"]["totalInteractionNumber"] = last_interaction_DLT['currentInteractionNumber']
-            information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberDLT(current_trustee)
-            information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberDLT(current_trustee, offerDID)
+            information["trustor"]["direct_parameters"]["feedbackNumber"] = peerTrust.getTrusteeFeedbackNumberKafka(current_trustee)
+            information["trustor"]["direct_parameters"]["feedbackOfferNumber"] = peerTrust.getOfferFeedbackNumberKafka(current_trustee, offerDID)
             information["trust_value"] = round(direct_weighting*(new_satisfaction*new_credibility*new_transaction_factor)+(1-direct_weighting)*new_community_factor,4)
             information["currentInteractionNumber"] = peerTrust.getCurrentInteractionNumber(trustorDID)
             information["initEvaluationPeriod"] = datetime.timestamp(datetime.now())-1000
@@ -768,7 +736,7 @@ class compute_trust_level(Resource):
                                 y_coordinate == current_offer_y_coordinate and z_coordinate == current_offer_z_coordinate:
                             consideredOfferLocation+=1
 
-            "These parameter should be collected from SLA Breach Predictor in the future"
+
             managedViolations = random.randint(1,20)
             predictedViolations = managedViolations + random.randint(0,5)
             executedViolations = random.randint(0,6)
@@ -858,17 +826,9 @@ class compute_trust_level(Resource):
 
             print("\nPrevious Trust score of "+trustorDID+" on "+current_trustee+" --->", last_trust_value, " -- New trust score --->", information["trust_value"])
 
-            #print("$$$$$ Historical: \n", peerTrust.historical)
-            #last_trust_value = consumer.readLastTrustValueOffer(peerTrust.historical, trustorDID, current_trustee, offerDID)
-            #print("$$$$$ Last Value: ", last_trust_value)
-
             peerTrust.historical.append(information)
-            #if information in peerTrust.historical:
-                #print("Guardado: \n", information['trustor']['direct_parameters']['totalInteractionNumber'], time.time())
 
-            #print("$$$$$ Historical after: \n", peerTrust.historical)
             compute_time = compute_time + (time.time()-start_time)
-            ###print("Compute time:", compute_time)
 
             print("\n$$$$$$$$$$$$$$ Ending trust computation procces on ",current_trustee, " $$$$$$$$$$$$$$\n")
 
@@ -878,9 +838,8 @@ class compute_trust_level(Resource):
 
     def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object, total_recommendations):
         """ This method updates the recommendation trust (RT) value after new interactions between a trustor and a trustee.
-        The method makes use of the satisfaction and recommendation variances to increase or decrease the RT."""
+        The method makes use of the satisfaction and global average recommendation variances to increase or decrease the RT."""
 
-        #mean_variance = recommendation_object["average_recommendations"] - recommendation_object["last_recommendation"]
         mean_variance =  pow(recommendation_object["last_recommendation"] - recommendation_object["global_average_recommendations"], 2) / total_recommendations
         if satisfaction_variance > 0 and mean_variance > 0:
             new_recommendation_trust = (1 + satisfaction_variance)*(mean_variance/10) + recommendation_object["recommendation_trust"]
@@ -926,7 +885,7 @@ class store_trust_level(Resource):
 
         start_time = time.time()
 
-        print("Registering a new trust interaction between two domains in the DLT\n")
+        print("Registering a new trust interaction between two domains in the Data Lake\n")
         data = "{\"trustorDID\": \""+information["trustor"]["trustorDID"]+"\", \"trusteeDID\": \""+information["trustee"]["trusteeDID"]+"\", \"offerDID\": \""+information["trustee"]["offerDID"]+"\",\"userSatisfaction\": "+str(information["trustor"]["direct_parameters"]["userSatisfaction"])+", \"interactionNumber\": "+str(information["trustor"]["direct_parameters"]["interactionNumber"])+", \"totalInteractionNumber\": "+str(information["trustor"]["direct_parameters"]["totalInteractionNumber"])+", \"currentInteractionNumber\": "+str(information["currentInteractionNumber"])+"}\""
         print(data,"\n")
         print("Sending new trust information in the historical generated by the Trust Management Framework \n")
@@ -946,13 +905,7 @@ class store_trust_level(Resource):
 
         mongoDB.insert_one(information)
 
-        #pprint.pprint(mongoDB.find_one({"trustorDID": trustorDID}))
-        #mongoDB.insert_many([tutorial2, tutorial1])
-        #for doc in mongoDB.find():
-        #pprint.pprint(doc)
-
         storage_time = storage_time + (time.time()-start_time)
-        ###print("Storage time:", storage_time)
 
         return 200
 
@@ -968,79 +921,22 @@ class update_trust_level(Resource):
 
         print("\n$$$$$$$$$$$$$$ Starting update trust level process on", information["offerDID"], "$$$$$$$$$$$$$$\n")
 
-        #slaBreachPredictor_topic = information["SLABreachPredictor"]
-        #trustorDID = information["trustor"]["trustorDID"]
-        #trusteeDID = information["trustor"]["trusteeDID"]
-        #offerDID = information["trustor"]["offerDID"]
         offerDID = information["offerDID"]
 
         " Equation for calculating new trust --> n_ts = n_ts+o_ts*((1-n_ts)/10) from security events"
         last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, offerDID)
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
-        #event = threading.Event()
-        #x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
-        #threads_security.append({offerDID:x, "stop_event": event})
-        #x.start()
+        event = threading.Event()
+        x = threading.Thread(target=self.reward_and_punishment_based_on_security, args=(last_trust_score, offer_type, event,))
+        threads_security.append({offerDID:x, "stop_event": event})
+        x.start()
 
         """ Defining a new thread per each trust relationship as well as an event to stop the relationship"""
         event = threading.Event()
         x = threading.Thread(target=self.reward_and_punishment_based_on_SLA_events, args=(last_trust_score, event,))
         threads_sla.append({offerDID:x, "stop_event": event})
         x.start()
-
-        #notifications = consumer.readSLANotification(peerTrust.historical, slaBreachPredictor_topic, trustorDID, trusteeDID, offerDID)
-
-        #positive_notification = "was able to manage the SLA violation successfully"
-        #negative_notification = "was not able to manage the SLA violation successfully"
-        #first_range_probability = 0.25
-        #second_range_probability = 0.50
-        #third_range_probability = 0.75
-        #fourth_range_probability = 1.0
-
-        #new_trust_score = 0.0
-
-        #for notification in notifications:
-            #print("Notification received from the SLA Breach Predictor about", notification["breachPredictionNotification"],":\n")
-
-            #current_notification = notification["notification"]
-            #print("\t-", current_notification,"\n")
-            #likehood = notification["breachPredictionNotification"]["value"]
-
-            #last_trust_score = consumer.readAllInformationTrustValue(peerTrust.historical, trustorDID, trusteeDID, offerDID)
-
-            #if positive_notification in current_notification:
-                #if likehood <= first_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.075
-                #elif likehood <= second_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.10
-                #elif likehood <= third_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.125
-                #elif likehood <= fourth_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] + last_trust_score["trust_value"]*0.15
-            #elif negative_notification in current_notification:
-                #if likehood <= first_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.10
-                #elif likehood <= second_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.125
-                #elif likehood <= third_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.15
-                #elif likehood <= fourth_range_probability:
-                    #new_trust_score = last_trust_score["trust_value"] - last_trust_score["trust_value"]*0.175
-
-            #if new_trust_score > 1.0:
-                #new_trust_score = 1.0
-            #elif new_trust_score < 0.0:
-                #new_trust_score = 0.0
-
-            #print("\t\tPrevious Trust Score", last_trust_score ["trust_value"], " --- Updated Trust Score --->", round(new_trust_score, 3), "\n")
-            #last_trust_score["trust_value"] = round(new_trust_score, 3)
-            #last_trust_score["endEvaluationPeriod"] = datetime.timestamp(datetime.now())
-            
-            #peerTrust.historical.append(last_trust_score)
-            #mongoDB.insert_one(last_trust_score)
-
-        #print("\n$$$$$$$$$$$$$$ Ending update trust level process $$$$$$$$$$$$$$\n")
 
         return 200
 
@@ -1071,34 +967,6 @@ class update_trust_level(Resource):
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
             elif current_offer_type.lower() == 'network service' or current_offer_type.lower() == 'slice':
                 current_reward_and_punishment = self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
-                "We deal in particular with offers of the network service/slice type"
-                """resource_specification_list = self.get_resource_list_network_service_offer(offerDID)
-                for resource in resource_specification_list:
-                    resource_specification = resource['href']
-                    response = requests.get(resource_specification)
-                    response = json.loads(response.text)
-                    type = response['resourceSpecCharacteristic'][0]['name']
-
-                    if 'ran' in type.lower():
-                        current_offer_type = 'ran'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.4, 0.1, 0.1, 0.4)
-                    elif 'spectrum' in type.lower():
-                        current_offer_type = 'spectrum'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.4, 0.1, 0.1, 0.4)
-                    elif 'edge' in type.lower():
-                        current_offer_type = 'edge'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.2, 0.35, 0.25, 0.2)
-                    elif 'cloud' in type.lower():
-                        current_offer_type = 'cloud'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.2, 0.35, 0.25, 0.2)
-                    elif 'vnf' in type.lower():
-                        current_offer_type = 'vnf'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
-                    elif 'cnf' in type.lower():
-                        current_offer_type = 'cnf'
-                        current_reward_and_punishment = current_reward_and_punishment + self.generic_reward_and_punishment_based_on_security(CURRENT_TIME_WINDOW, offerDID, current_offer_type, 0.233, 0.3, 0.233, 0.233)
-
-                current_reward_and_punishment = current_reward_and_punishment / len(resource_specification_list)"""
 
             if current_reward_and_punishment >= 0:
                 final_security_reward_and_punishment = TOTAL_RW * total_reward_and_punishment + NOW_RW * current_reward_and_punishment
@@ -1188,13 +1056,13 @@ class update_trust_level(Resource):
                 elif "stats.log" in hit["_source"]["log"]["file"]["path"] and hit not in stats_info:
                     stats_info.append(hit)
 
-            "Now, we can have multiple VMs linked to the same slices"
+            "Previously, we had multiple VMs linked to the same slices"
             #first_conn_value = (first_conn_value + self.conn_log(CURRENT_TIME_WINDOW, conn_info))/len(indices_info)
             #first_notice_value = (first_notice_value + self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info))/len(indices_info)
             #first_weird_value = (first_weird_value + self.weird_log(CURRENT_TIME_WINDOW, offer_type, weird_info))/len(indices_info)
             #first_stats_value = (first_stats_value + self.stats_log(CURRENT_TIME_WINDOW, icmp_orig_pkts, tcp_orig_pkts, udp_orig_pkts, stats_info))/len(indices_info)
 
-        "After option 1 will be developed, we will only need to compute 1 value per dimension"
+        "Now, we have a SAS VNF which collects all information from multiple Network Services in the same Network Slice"
         if len(indices_info) > 0:
             first_conn_value = self.conn_log(CURRENT_TIME_WINDOW, conn_info)
             first_notice_value = self.notice_log(CURRENT_TIME_WINDOW, offer_type, notice_info)
@@ -1718,7 +1586,6 @@ class update_trust_level(Resource):
             current_offset_violations = consumer.lastOffset
             consumer.subscribe(violation_topic)
 
-            #if current_offset_violations > last_offset_violations:
             "Obtaining last SLA Violation Rate"
             if 'SLAVRate' in RP_SLA:
                 last_SLAVRate = RP_SLA['SLAVRate']
@@ -1784,13 +1651,10 @@ class update_trust_level(Resource):
                     if metric+'_violations' in RP_SLA:
                         SLAVRate_summation += RP_SLA[metric+'_violations']
                 try:
-                    #reward = last_SLAVRate - (SLAVRate_summation / len(violation_list))
                     reward = min(last_trust_score ["trust_value"] + eigen_factor * ((1-last_trust_score ["trust_value"])/n),1)
                 except ZeroDivisionError:
                     reward = last_SLAVRate
 
-                #print("Reward --> ", reward, last_SLAVRate, SLAVRate_summation / len(violation_list), SLAVRate_summation, len(violation_list))
-                #print("Reward -->", min(reward,1))
                 final_result = float(last_trust_score ["trust_value"]) + min(reward,1) * ((1-float(last_trust_score ["trust_value"]))/5)
 
                 "Update SLAVRate total"
@@ -1806,7 +1670,6 @@ class update_trust_level(Resource):
 
             peerTrust.historical.append(last_trust_score)
             #mongoDB.insert_one(last_trust_score)
-            #itm = db.doctors.find_one({"email":doc_mail})
             itm = mongoDB.find_one({'trustee.offerDID': offerDID, 'trustor.trusteeDID': last_trust_score["trustor"]["trusteeDID"]})
             if itm != None:
                 mongoDB.replace_one({'_id': itm.get('_id')}, last_trust_score, True)
@@ -1871,7 +1734,6 @@ class update_trust_level(Resource):
                 if new_SLAVRate == 0:
                     new_SLAVRate = (previous_SLAVRate*number_updates + new_SLAViolations) / (number_updates+1)
 
-                #SLAVRate = min(abs(previous_SLAVRate - new_SLAVRate), 1)
                 SLAV_rate_per_metric[violation+'_violations'] = new_SLAVRate
 
         return SLAV_rate_per_metric
@@ -1894,9 +1756,6 @@ class stop_relationship(Resource):
         for i in range(len(threads_security)):
             if information['offerDID'] in threads_security[i]:
                 del threads_security[i]
-                #print("\n$$$$$$$$$$$$$$ Finished a trust relationship with", information['offerDID'],"$$$$$$$$$$$$$$\n")
-                #print("\n$$$$$$$$$$$$$$ Ending update trust level process on", information['offerDID'], "$$$$$$$$$$$$$$\n")
-                #return 200
 
         for thread in threads_sla:
             if information['offerDID'] in thread:
