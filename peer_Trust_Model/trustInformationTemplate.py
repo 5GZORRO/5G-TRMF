@@ -50,6 +50,7 @@ class TrustInformationTemplate():
                             },
                             "indirect_parameters": {
                                 "recommendation_weighting": "Unknown Type: double",
+                                "global_average_recommendations": 0.0,
                                 "recommendations": [{
                                     "recommender": "string",
                                     "trust_value": "double",

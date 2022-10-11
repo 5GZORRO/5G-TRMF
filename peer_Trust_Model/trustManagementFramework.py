@@ -825,13 +825,20 @@ class compute_trust_level(Resource):
             new_trustor_satisfaction = information["trustor"]["direct_parameters"]["userSatisfaction"]
             satisfaction = satisfaction + (time.time()-start_satisfaction)
 
-            """Updating the recommendation trust"""
+            """Updating the global average recommendations"""
             recommendation_list = consumer.readAllRecommenders(peerTrust.historical, trustorDID, current_trustee)
-            new_recommendation_list = []
-
+            global_average_recommendation = 0.0
             for recommendation in recommendation_list:
-                satisfaction_variance= last_trustor_satisfaction - new_trustor_satisfaction
-                new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation)
+                global_average_recommendation += recommendation["average_recommendations"]
+
+            if global_average_recommendation > 0:
+                information["trustor"]["indirect_parameters"]["global_average_recommendations"] = global_average_recommendation / len(recommendation_list)
+
+            new_recommendation_list = []
+            """Updating the recommendation trust"""
+            for recommendation in recommendation_list:
+                satisfaction_variance = new_trustor_satisfaction - last_trustor_satisfaction
+                new_recommendation_trust = self.recomputingRecommendationTrust(satisfaction_variance, recommendation, len(recommendation_list))
                 recommendation["recommendation_trust"] = new_recommendation_trust
                 new_recommendation_list.append(recommendation)
 
@@ -869,11 +876,12 @@ class compute_trust_level(Resource):
 
         return response
 
-    def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object):
+    def recomputingRecommendationTrust(self, satisfaction_variance, recommendation_object, total_recommendations):
         """ This method updates the recommendation trust (RT) value after new interactions between a trustor and a trustee.
         The method makes use of the satisfaction and recommendation variances to increase or decrease the RT."""
 
-        mean_variance = recommendation_object["average_recommendations"] - recommendation_object["last_recommendation"]
+        #mean_variance = recommendation_object["average_recommendations"] - recommendation_object["last_recommendation"]
+        mean_variance =  pow(recommendation_object["last_recommendation"] - recommendation_object["global_average_recommendations"], 2) / total_recommendations
         if satisfaction_variance > 0 and mean_variance > 0:
             new_recommendation_trust = (1 + satisfaction_variance)*(mean_variance/10) + recommendation_object["recommendation_trust"]
             if new_recommendation_trust > 1.0:
