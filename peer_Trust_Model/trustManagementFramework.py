@@ -326,7 +326,7 @@ class start_data_collection(Resource):
             """Requesting all product offering objects"""
             "5GBarcelona"
             load_dotenv()
-            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+            barcelona_address = os.getenv('BARCELONA_CATALOG_A')
             response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering")
 
             "5TONIC"
@@ -670,7 +670,7 @@ class compute_trust_level(Resource):
 
             "5GBarcelona"
             load_dotenv()
-            barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+            barcelona_address = os.getenv('BARCELONA_CATALOG_A')
             response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
 
             "5TONIC"
@@ -710,7 +710,7 @@ class compute_trust_level(Resource):
 
                     "5GBarcelona"
                     load_dotenv()
-                    barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+                    barcelona_address = os.getenv('BARCELONA_CATALOG_A')
                     response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offer['offerDID'])
 
                     #madrid_address = os.getenv('5TONIC_CATALOG_A')
@@ -1001,7 +1001,7 @@ class update_trust_level(Resource):
         """ This method retrieves one or more resources involved in a Network Service/Slice Product Offering"""
         "5GBarcelona"
         load_dotenv()
-        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+        barcelona_address = os.getenv('BARCELONA_CATALOG_A')
         response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
         "5TONIC"
         #madrid_address = os.getenv('5TONIC_CATALOG_A')
@@ -1093,7 +1093,7 @@ class update_trust_level(Resource):
         indices_info = []
 
         load_dotenv()
-        barcelona_address = os.getenv('5GBARCELONA_CATALOG_A')
+        barcelona_address = os.getenv('BARCELONA_CATALOG_A')
         response = requests.get(barcelona_address+"productCatalogManagement/v4/productOffering/did/"+offerDID)
         "5TONIC"
         #madrid_address = os.getenv('5TONIC_CATALOG_A')

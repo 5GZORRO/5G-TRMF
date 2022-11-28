@@ -1,0 +1,54 @@
+{{- $imageValues := .Values.image }}
+{{- $trmfrest := .Values.trmfrest }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trmf
+  namespace: "{{ $imageValues.namespace }}"
+  labels:
+    app: "{{ $imageValues.app }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trmf
+  template:
+    metadata:
+      labels:
+        app: trmf
+    spec:
+      containers:
+        - envFrom:
+          - configMapRef:
+              name: trmf-deployment-configmap
+          - secretRef:
+              name: trmf-deployment-secret
+          image: {{ $imageValues.image }}:{{ $imageValues.tag }}
+          command: ["python3"]
+          args: ["launch_TRMF.py"]
+          imagePullPolicy: "{{ $imageValues.pullPolicy }}"
+          name: trmf
+          ports:
+            - containerPort: 5001
+          resources: {}
+      {{- if $imageValues.pullSecrets }}
+      imagePullSecrets:
+        - name: {{ $imageValues.pullSecrets }}
+      {{- end }}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trmf
+  namespace: "{{ $imageValues.namespace }}"
+spec:
+  selector:
+    app: trmf
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+      nodePort: {{ $trmfrest.nodePort }}
